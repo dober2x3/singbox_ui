@@ -1,6 +1,6 @@
 # Sing-box UI
 
-**English | [中文](README.md)**
+> **Fork notice**: This is a fork of [SpadesA/singbox_ui](https://github.com/SpadesA99/singbox_ui) — a modern web-based configuration management tool for sing-box.
 
 <div align="center">
 
