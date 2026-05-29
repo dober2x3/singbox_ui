@@ -1,0 +1,60 @@
+# .understandignore — patterns for files/dirs to exclude from analysis
+# Syntax: same as .gitignore (globs, # comments, ! negation, trailing / for dirs)
+# Lines below are suggestions — uncomment to activate.
+# Use ! prefix to force-include something excluded by defaults.
+#
+# Built-in defaults (always excluded unless negated):
+#   node_modules/, .git/, dist/, build/, obj/, *.lock, *.min.js, etc.
+#
+# --- From .gitignore (uncomment to exclude) ---
+
+# frontend/node_modules/
+# frontend/.next/
+# frontend/out/
+# frontend/build/
+# frontend/dist/
+# frontend/.env
+# frontend/.env.local
+# frontend/.env.*.local
+# frontend/.DS_Store
+# frontend/*.tsbuildinfo
+# frontend/*.log
+# frontend/npm-debug.log*
+# frontend/yarn-debug.log*
+# frontend/yarn-error.log*
+# server/*.exe
+# server/*.exe~
+# server/*.dll
+# server/*.so
+# server/*.dylib
+# server/*.test
+# server/*.out
+# server/go.work
+# server/dist/
+# server/singbox/
+# server/wireguard/
+# server/data/
+# *.swp
+# *.swo
+# *~
+# .DS_Store
+# Thumbs.db
+# desktop.ini
+# logs/
+# tmp/
+# temp/
+# *.tmp
+# .claude/
+# .omc/
+# dist/certs/
+# frontend/next-env.d.ts
+
+# --- Detected directories (uncomment to exclude) ---
+
+# docs/
+
+# --- Test file patterns (uncomment to exclude) ---
+
+# *.test.*
+# *.spec.*
+# *.snap

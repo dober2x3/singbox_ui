@@ -18,14 +18,14 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-// GenerateCertRequest 生成证书请求
+// GenerateCertRequest certificate generation request
 type GenerateCertRequest struct {
-	Domain    string `json:"domain" binding:"required"`   // 域名或 IP
-	ValidDays int    `json:"valid_days"`                  // 有效期天数，默认 365
-	Instance  string `json:"instance" binding:"required"` // 实例名称（必填）
+	Domain    string `json:"domain" binding:"required"`   // domain or IP
+	ValidDays int    `json:"valid_days"`                  // validity period in days, default 365
+	Instance  string `json:"instance" binding:"required"` // instance name (required)
 }
 
-// GenerateSelfSignedCert 生成自签名证书
+// GenerateSelfSignedCert generate self-signed certificate
 func GenerateSelfSignedCert(c *gin.Context) {
 	var req GenerateCertRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -36,10 +36,10 @@ func GenerateSelfSignedCert(c *gin.Context) {
 		return
 	}
 
-	// 获取证书目录（实例目录）
+	// get certificate directory (instance directory)
 	certDir := getInstanceCertDir(req.Instance)
 
-	// 生成证书
+	// generate certificate
 	certInfo, err := services.GenerateSelfSignedCert(req.Domain, req.ValidDays, certDir)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -49,7 +49,7 @@ func GenerateSelfSignedCert(c *gin.Context) {
 		return
 	}
 
-	// 返回容器内的路径（sing-box 容器中的路径）
+	// return the path inside the container (sing-box container path)
 	c.JSON(http.StatusOK, gin.H{
 		"cert_path":      "/etc/sing-box/cert.pem",
 		"key_path":       "/etc/sing-box/key.pem",
@@ -62,7 +62,7 @@ func GenerateSelfSignedCert(c *gin.Context) {
 	})
 }
 
-// GetCertificateInfo 获取证书信息
+// GetCertificateInfo get certificate info
 func GetCertificateInfo(c *gin.Context) {
 	instance := c.Query("instance")
 	if instance == "" {
@@ -76,7 +76,7 @@ func GetCertificateInfo(c *gin.Context) {
 	certDir := getInstanceCertDir(instance)
 	certPath := filepath.Join(certDir, "cert.pem")
 
-	// 检查证书是否存在
+	// check if certificate exists
 	if !services.CertificateExists(certDir) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"exists":  false,
@@ -85,7 +85,7 @@ func GetCertificateInfo(c *gin.Context) {
 		return
 	}
 
-	// 获取证书信息
+	// get certificate info
 	certInfo, err := services.GetCertificateInfo(certPath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -108,12 +108,12 @@ func GetCertificateInfo(c *gin.Context) {
 	})
 }
 
-// getInstanceCertDir 获取实例证书目录
+// getInstanceCertDir get instance certificate directory
 func getInstanceCertDir(instance string) string {
 	return filepath.Join(services.GetSingboxDir(), "configs", instance)
 }
 
-// UploadCertificate 上传证书文件
+// UploadCertificate upload certificate file
 func UploadCertificate(c *gin.Context) {
 	instance := c.PostForm("instance")
 	if instance == "" {
@@ -124,10 +124,10 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 获取证书目录
+	// get certificate directory
 	certDir := getInstanceCertDir(instance)
 
-	// 确保目录存在
+	// ensure directory exists
 	if err := os.MkdirAll(certDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal Server Error",
@@ -136,7 +136,7 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 处理证书文件
+	// handle certificate file
 	certFile, err := c.FormFile("cert")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -146,7 +146,7 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 处理私钥文件
+	// handle private key file
 	keyFile, err := c.FormFile("key")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -156,7 +156,7 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 保存证书文件
+	// save certificate file
 	certPath := filepath.Join(certDir, "cert.pem")
 	certSrc, err := certFile.Open()
 	if err != nil {
@@ -186,7 +186,7 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 保存私钥文件
+	// save private key file
 	keyPath := filepath.Join(certDir, "key.pem")
 	keySrc, err := keyFile.Open()
 	if err != nil {
@@ -216,10 +216,10 @@ func UploadCertificate(c *gin.Context) {
 		return
 	}
 
-	// 获取证书信息
+	// get certificate info
 	certInfo, err := services.GetCertificateInfo(certPath)
 	if err != nil {
-		// 证书已保存，但无法解析证书信息
+		// certificate saved, but could not parse certificate info
 		c.JSON(http.StatusOK, gin.H{
 			"cert_path":      "/etc/sing-box/cert.pem",
 			"key_path":       "/etc/sing-box/key.pem",
@@ -242,7 +242,7 @@ func UploadCertificate(c *gin.Context) {
 	})
 }
 
-// DeriveRealityPublicKey 从 Reality 私钥派生公钥
+// DeriveRealityPublicKey derive public key from Reality private key
 func DeriveRealityPublicKey(c *gin.Context) {
 	var req struct {
 		PrivateKey string `json:"private_key" binding:"required"`
@@ -272,7 +272,7 @@ func DeriveRealityPublicKey(c *gin.Context) {
 		return
 	}
 
-	// Clamp private key for x25519 (与 GenerateRealityKeypair 保持一致)
+	// Clamp private key for x25519 (consistent with GenerateRealityKeypair)
 	privateKeyBytes[0] &= 248
 	privateKeyBytes[31] &= 127
 	privateKeyBytes[31] |= 64
@@ -291,9 +291,9 @@ func DeriveRealityPublicKey(c *gin.Context) {
 	})
 }
 
-// GenerateRealityKeypair 生成 Reality x25519 密钥对
+// GenerateRealityKeypair generate Reality x25519 key pair
 func GenerateRealityKeypair(c *gin.Context) {
-	// 生成随机私钥
+	// generate random private key
 	var privateKey [32]byte
 	if _, err := rand.Read(privateKey[:]); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -308,7 +308,7 @@ func GenerateRealityKeypair(c *gin.Context) {
 	privateKey[31] &= 127
 	privateKey[31] |= 64
 
-	// 计算公钥
+	// derive public key
 	publicKey, err := curve25519.X25519(privateKey[:], curve25519.Basepoint)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -324,7 +324,7 @@ func GenerateRealityKeypair(c *gin.Context) {
 	})
 }
 
-// CheckTLS13Support 检测目标域名是否支持 TLS 1.3（Reality 伪装域名要求）
+// CheckTLS13Support check if the target domain supports TLS 1.3 (Reality disguise domain requirement)
 func CheckTLS13Support(c *gin.Context) {
 	var req struct {
 		Server string `json:"server" binding:"required"`
@@ -341,7 +341,7 @@ func CheckTLS13Support(c *gin.Context) {
 		req.Port = 443
 	}
 
-	// 安全校验：拒绝 IP 地址（Reality 目标必须是域名）
+	// security check: reject IP addresses (Reality target must be a domain name)
 	if ip := net.ParseIP(req.Server); ip != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",
@@ -350,7 +350,7 @@ func CheckTLS13Support(c *gin.Context) {
 		return
 	}
 
-	// 端口范围校验
+	// port range validation
 	if req.Port < 1 || req.Port > 65535 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",

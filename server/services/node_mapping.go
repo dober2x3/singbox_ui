@@ -7,8 +7,8 @@ import (
 	"sync"
 )
 
-// NodeMapping 存储 outbound tag -> 节点名称的映射，用于订阅自动更新时的备用匹配
-// 文件存放在 data 目录，不与 sing-box config 混用
+// NodeMapping stores outbound tag -> node name mapping, used for fallback matching during subscription auto-update
+// File is stored in data directory, not mixed with sing-box config
 
 var nodeMappingMu sync.RWMutex
 
@@ -20,7 +20,7 @@ func getNodeMappingFilePath() string {
 	return filepath.Join(baseDir, "node-mapping.json")
 }
 
-// LoadNodeMapping 加载 tag -> nodeName 映射
+// LoadNodeMapping loads tag -> nodeName mapping
 func LoadNodeMapping() map[string]string {
 	nodeMappingMu.RLock()
 	defer nodeMappingMu.RUnlock()
@@ -36,7 +36,7 @@ func LoadNodeMapping() map[string]string {
 	return m
 }
 
-// SaveNodeMapping 保存 tag -> nodeName 映射
+// SaveNodeMapping saves tag -> nodeName mapping
 func SaveNodeMapping(m map[string]string) error {
 	nodeMappingMu.Lock()
 	defer nodeMappingMu.Unlock()
@@ -48,7 +48,7 @@ func SaveNodeMapping(m map[string]string) error {
 	return os.WriteFile(getNodeMappingFilePath(), data, 0644)
 }
 
-// UpsertNodeMapping 更新或新增单个 tag -> nodeName 记录
+// UpsertNodeMapping updates or inserts a single tag -> nodeName record
 func UpsertNodeMapping(tag, nodeName string) {
 	m := LoadNodeMapping()
 	m[tag] = nodeName

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// WarpEndpointResult 扫描到的 WARP 端点结果
+// WarpEndpointResult scanned WARP endpoint result
 type WarpEndpointResult struct {
 	Host      string `json:"host"`
 	Port      int    `json:"port"`
@@ -21,21 +21,21 @@ type WarpEndpointResult struct {
 	Reachable bool   `json:"reachable"`
 }
 
-// WarpScanConfig 扫描配置
+// WarpScanConfig scan configuration
 type WarpScanConfig struct {
-	SamplePerRange int           // 每个 /24 采样的主机数
-	PingTimes      int           // 每个端点握手次数
-	Timeout        time.Duration // 单次握手超时
-	Concurrency    int           // 并发探测数
-	MaxCandidates  int           // 打乱后的候选上限
-	TopN           int           // 返回最快的 N 个
+	SamplePerRange int           // number of hosts sampled per /24
+	PingTimes      int           // number of handshakes per endpoint
+	Timeout        time.Duration // single handshake timeout
+	Concurrency    int           // concurrent probes
+	MaxCandidates  int           // max candidates after shuffling
+	TopN           int           // return fastest N
 }
 
-// DefaultWarpScanConfig 默认扫描配置
+// DefaultWarpScanConfig default scan configuration
 //
-// 设计依据:
-// 8 个 CIDR × 4 采样 = 32 IP, × 54 端口 = 1728 组合
-// 打乱后截断到 600, 并发 128, 每探测最多 3×1000ms → 约 14s 内完成.
+// Design rationale:
+// 8 CIDRs × 4 samples = 32 IPs, × 54 ports = 1728 combinations
+// Shuffled then truncated to 600, concurrency 128, each probe max 3×1000ms → completes within ~14s.
 func DefaultWarpScanConfig() WarpScanConfig {
 	return WarpScanConfig{
 		SamplePerRange: 4,
@@ -47,19 +47,19 @@ func DefaultWarpScanConfig() WarpScanConfig {
 	}
 }
 
-// WARP 握手响应的固定长度 (WG MessageResponse)
+// WARP handshake response fixed length (WG MessageResponse)
 const warpHandshakeResponseSize = 92
 
-// warpHandshakePacketHex 预构造的 WireGuard 握手 init 包.
+// warpHandshakePacketHex pre-built WireGuard handshake init packet.
 //
-// 来自 CloudflareWarpSpeedTest, 合法性依赖于以下事实:
-//   - 所有 CF WARP 边缘节点共享同一 peer public key
+// From CloudflareWarpSpeedTest, validity depends on the following facts:
+//   - All CF WARP edge nodes share the same peer public key
 //     "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
-//   - 包中 MAC1 只需对该 public key 有效即可被对端接受
-//   - 任意有效的 init 包都会引发 92 字节的 MessageResponse
+//   - MAC1 in the packet only needs to be valid for that public key to be accepted
+//   - Any valid init packet will trigger a 92-byte MessageResponse
 //
-// 这样无需在扫描时引入 wireguard-go 依赖,
-// 也不必用我们自己的设备私钥 (扫描目的只是探测连通性和延迟).
+// This avoids needing the wireguard-go dependency during scanning,
+// and avoids using our own device private key (scanning only tests connectivity and latency).
 const warpHandshakePacketHex = "013cbdafb4135cac96a29484d7a0175ab152dd3e59be35049beadf758b8d48af14ca65f25a168934746fe8bc8867b1c17113d71c0fac5c141ef9f35783ffa5357c9871f4a006662b83ad71245a862495376a5fe3b4f2e1f06974d748416670e5f9b086297f652e6dfbf742fbfc63c3d8aeb175a3e9b7582fbc67c77577e4c0b32b05f92900000000000000000000000000000000"
 
 var warpHandshakePacket []byte
@@ -67,13 +67,13 @@ var warpHandshakePacket []byte
 func init() {
 	p, err := hex.DecodeString(warpHandshakePacketHex)
 	if err != nil {
-		// 编译期常量, 若出错就是包损坏
+		// Compile-time constant, error would mean corrupted package
 		panic("invalid warp handshake hex: " + err.Error())
 	}
 	warpHandshakePacket = p
 }
 
-// warpIPRanges 公开的 WARP IPv4 /24 段前缀
+// warpIPRanges public WARP IPv4 /24 range prefixes
 var warpIPRanges = []string{
 	"162.159.192",
 	"162.159.193",
@@ -85,7 +85,7 @@ var warpIPRanges = []string{
 	"188.114.99",
 }
 
-// warpEndpointPorts CF WARP 已知的可用 UDP 端口 (来自 CloudflareWarpSpeedTest)
+// warpEndpointPorts CF WARP known available UDP ports (from CloudflareWarpSpeedTest)
 var warpEndpointPorts = []int{
 	500, 854, 859, 864, 878, 880, 890, 891, 894, 903,
 	908, 928, 934, 939, 942, 943, 945, 946, 955, 968,
@@ -95,12 +95,12 @@ var warpEndpointPorts = []int{
 	8319, 8742, 8854, 8886,
 }
 
-// ScanWarpEndpoints 扫描 WARP 可用端点并按丢包率和延迟排序
+// ScanWarpEndpoints scans WARP available endpoints and sorts by loss rate and latency
 //
-// 实现方式:
-// 向候选 (IP, Port) 组合发送真正的 WireGuard 握手包, 检查是否能收到
-// 92 字节的 MessageResponse (CF WARP 握手响应的固定长度).
-// 这比用 TCP/443 连通性作代理更准确, 能直接反映 UDP 路径的 RTT 和丢包.
+// Implementation:
+// Sends real WireGuard handshake packets to candidate (IP, Port) combinations, checks if
+// 92-byte MessageResponse (CF WARP handshake response fixed length) is received.
+// This is more accurate than using TCP/443 connectivity as a proxy, directly reflecting UDP path RTT and packet loss.
 func ScanWarpEndpoints(ctx context.Context, cfg WarpScanConfig) ([]WarpEndpointResult, error) {
 	if cfg.SamplePerRange <= 0 {
 		cfg.SamplePerRange = 4
@@ -123,7 +123,7 @@ func ScanWarpEndpoints(ctx context.Context, cfg WarpScanConfig) ([]WarpEndpointR
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// 每个 /24 采样若干主机号, 得到 IP 列表
+	// Sample several host numbers per /24 to get an IP list
 	ips := make([]string, 0, len(warpIPRanges)*cfg.SamplePerRange)
 	for _, prefix := range warpIPRanges {
 		sample := cfg.SamplePerRange
@@ -141,7 +141,7 @@ func ScanWarpEndpoints(ctx context.Context, cfg WarpScanConfig) ([]WarpEndpointR
 		}
 	}
 
-	// IP × Port 笛卡尔积
+	// IP x Port Cartesian product
 	type candidate struct {
 		host string
 		port int
@@ -152,7 +152,7 @@ func ScanWarpEndpoints(ctx context.Context, cfg WarpScanConfig) ([]WarpEndpointR
 			cands = append(cands, candidate{ip, p})
 		}
 	}
-	// 打乱 + 截断, 避免一次扫描耗时过长
+	// Shuffle + truncate to avoid a single scan taking too long
 	r.Shuffle(len(cands), func(i, j int) { cands[i], cands[j] = cands[j], cands[i] })
 	if len(cands) > cfg.MaxCandidates {
 		cands = cands[:cfg.MaxCandidates]
@@ -170,8 +170,8 @@ func ScanWarpEndpoints(ctx context.Context, cfg WarpScanConfig) ([]WarpEndpointR
 	sem := make(chan struct{}, cfg.Concurrency)
 	var wg sync.WaitGroup
 
-	// 使用 labeled break 正确跳出外层 for;
-	// sem 获取放进 select 以便 ctx 取消时能打断阻塞
+	// Use labeled break to correctly exit outer for;
+	// semaphore acquisition inside select so ctx cancellation can interrupt blocking
 dispatch:
 	for _, cand := range cands {
 		select {
@@ -200,7 +200,7 @@ dispatch:
 	}
 	wg.Wait()
 
-	// 排序: 先按丢包率升序, 再按平均 RTT 升序
+	// Sort: first by loss rate ascending, then by average RTT ascending
 	sort.Slice(results, func(i, j int) bool {
 		li := cfg.PingTimes - results[i].received
 		lj := cfg.PingTimes - results[j].received
@@ -231,16 +231,16 @@ dispatch:
 	}
 
 	if len(out) == 0 {
-		return nil, fmt.Errorf("未扫描到可用的 WARP 端点")
+		return nil, fmt.Errorf("no available WARP endpoints found")
 	}
 	return out, nil
 }
 
-// warpHandshakeProbe 向单个 UDP 端点发送 PingTimes 次 WG 握手包,
-// 返回收到的有效响应数和累计 RTT.
+// warpHandshakeProbe sends PingTimes WG handshake packets to a single UDP endpoint,
+// returns received valid responses count and cumulative RTT.
 //
-// 有效响应 = 长度恰好 92 字节的 MessageResponse;
-// 其它任何回包 (ICMP unreachable 触发的 Read 错误、或长度不对) 都视为丢失.
+// Valid response = MessageResponse with length exactly 92 bytes;
+// any other return packet (ICMP unreachable triggered Read error, or wrong length) is considered lost.
 func warpHandshakeProbe(ctx context.Context, host string, port int, times int, timeout time.Duration) (received int, totalRtt time.Duration) {
 	addr := net.JoinHostPort(host, strconv.Itoa(port))
 	d := net.Dialer{Timeout: timeout}
@@ -260,8 +260,8 @@ func warpHandshakeProbe(ctx context.Context, host string, port int, times int, t
 
 		start := time.Now()
 		if _, err := conn.Write(warpHandshakePacket); err != nil {
-			// 瞬时写失败(如 ENETUNREACH): 与上游 handshake() 一致,
-			// 只将本次 ping 记为丢失, 下一次 ping 仍然尝试
+			// Transient write failure (e.g. ENETUNREACH): consistent with upstream handshake(),
+			// only count this ping as lost, next ping will still attempt
 			continue
 		}
 		if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
@@ -269,7 +269,7 @@ func warpHandshakeProbe(ctx context.Context, host string, port int, times int, t
 		}
 		n, err := conn.Read(buf)
 		if err != nil {
-			// 超时或 ICMP unreachable: 记为丢失, 继续下一次
+			// Timeout or ICMP unreachable: count as lost, continue to next attempt
 			continue
 		}
 		if n != warpHandshakeResponseSize {
@@ -281,7 +281,7 @@ func warpHandshakeProbe(ctx context.Context, host string, port int, times int, t
 	return
 }
 
-// WarpEndpointPorts 返回 WARP 可用端口列表(供前端展示使用)
+// WarpEndpointPorts returns WARP available port list (for frontend display)
 func WarpEndpointPorts() []int {
 	ports := make([]int, len(warpEndpointPorts))
 	copy(ports, warpEndpointPorts)

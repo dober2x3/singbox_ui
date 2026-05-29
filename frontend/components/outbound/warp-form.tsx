@@ -36,8 +36,8 @@ const DEFAULT_ENDPOINTS = [
   { host: "162.159.195.1", port: 2408, label: "162.159.195.1:2408" },
 ]
 
-// 与后端 services/warp_scanner.go 的 warpEndpointPorts 保持一致.
-// 扫描器会尝试所有这些端口, 因此 Select 必须能展示其中任意一个.
+// Keep in sync with warpEndpointPorts in backend services/warp_scanner.go.
+// Scanner will try all these ports, so Select must be able to display any of them.
 const WARP_PORTS = [
   500, 854, 859, 864, 878, 880, 890, 891, 894, 903,
   908, 928, 934, 939, 942, 943, 945, 946, 955, 968,
@@ -79,12 +79,12 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
   const [endpoints, setEndpoints] = useState<WarpEndpoint[]>([])
 
   const loadedRef = useRef(false)
-  // 注册/应用出站的 ref 级互斥锁: setApplying 是异步 state,
-  // 两次紧挨着的点击会在第一次 setApplying(true) 刷入前同时进入 applyOutbound,
-  // 导致 CF 侧产生两个孤儿设备. ref 是同步可见的, 关上后立刻生效.
+  // Ref-level mutex for register/apply outbound: setApplying is async state,
+  // two rapid clicks could both enter applyOutbound before the first setApplying(true) flushes,
+  // causing two orphan devices on CF side. ref is synchronously visible, takes effect immediately.
   const applyingRef = useRef(false)
 
-  // 加载已缓存的 WARP 账户
+  // Load cached WARP account
   useEffect(() => {
     if (loadedRef.current) return
     loadedRef.current = true
@@ -93,7 +93,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         const acct = await warpFetch<WarpAccount>("/api/warp/account")
         setAccount(acct)
       } catch (e: any) {
-        // 静默失败
+        // Silently fail
       } finally {
         setLoading(false)
       }
@@ -101,8 +101,8 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
   }, [])
 
   async function applyOutbound(opts: { force?: boolean; license?: string }) {
-    // 同步 ref 锁: 在 state 更新刷入前就拒绝第二次调用,
-    // 避免双击/并发产生两个 CF 设备.
+    // Sync ref lock: reject 2nd call before state update flushes,
+    // prevent double-click/concurrent creation of two CF devices.
     if (applyingRef.current) return
     applyingRef.current = true
     setApplying(true)
@@ -119,7 +119,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         body: JSON.stringify(body),
       })
       setAccount(data.account)
-      // 写回 store, 使用 proxy_out tag
+      // Write back to store, using proxy_out tag
       setOutbound(0, { ...data.outbound, tag: "proxy_out" })
       toast({
         title: tc("success"),
@@ -181,8 +181,8 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
       return
     }
     setApplying(true)
-    // Step 1: 绑定 license —— 成功后立刻 toast,
-    // 避免后续 applyOutbound 失败时误导用户"license 绑定失败"
+    // Step 1: Bind license - toast immediately on success,
+    // avoid misleading "license bind failed" if subsequent applyOutbound fails
     let bound = false
     try {
       const acct = await warpFetch<WarpAccount>("/api/warp/license", {
@@ -201,8 +201,8 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
       setApplying(false)
       return
     }
-    // Step 2: 重新生成出站配置以反映最新 license 状态
-    // 若此步失败,已绑定的 license 仍有效,仅出站未同步写入
+    // Step 2: Regenerate outbound config to reflect latest license state
+    // If this fails, bound license remains valid, only outbound is not synced
     try {
       await applyOutbound({ force: false, license: license.trim() })
     } catch {
@@ -249,7 +249,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
 
   return (
     <div className="space-y-6">
-      {/* 说明 */}
+      {/* Description */}
       <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-sm text-amber-800 dark:text-amber-200">
         <div className="flex items-start gap-3">
           <Zap className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -260,7 +260,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         </div>
       </div>
 
-      {/* 账户状态 */}
+      {/* Account status */}
       <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-zinc-100 dark:border-zinc-800">
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
@@ -338,7 +338,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         )}
       </div>
 
-      {/* WARP+ 许可证 */}
+      {/* WARP+ License */}
       <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-zinc-100 dark:border-zinc-800">
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
@@ -370,7 +370,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         </div>
       </div>
 
-      {/* 端点选择 */}
+      {/* Endpoint selection */}
       <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-zinc-100 dark:border-zinc-800">
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
@@ -436,7 +436,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
               onChange={(e) => {
                 const v = parseInt(e.target.value)
                 if (isNaN(v)) { setMtu(1280); return }
-                // 钳制到合法范围, 服务端也会兜底
+                // Clamp to valid range, server will also enforce
                 setMtu(Math.max(576, Math.min(1500, v)))
               }}
               className="h-9 text-sm w-[140px]"
@@ -444,7 +444,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
             <p className="text-[11px] text-muted-foreground">{t("warpMtuHint")}</p>
           </div>
 
-          {/* 扫描 + 结果 */}
+          {/* Scan + Results */}
           <div className="pt-2 space-y-3">
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={handleScan} disabled={scanning}>
@@ -492,7 +492,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
         </div>
       </div>
 
-      {/* 应用按钮 */}
+      {/* Apply button */}
       <div className="flex items-center justify-end gap-2">
         <Button onClick={() => applyOutbound({ force: false, license: license })} disabled={applying || loading}>
           {applying ? (

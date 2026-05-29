@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * 验证端口号是否有效
- * @param port - 端口号
- * @returns 是否有效
+ * Validate whether a port number is valid
+ * @param port - Port number
+ * @returns Whether valid
  */
 export function isValidPort(port: number | string): boolean {
   const portNum = typeof port === 'string' ? parseInt(port, 10) : port
@@ -16,10 +16,10 @@ export function isValidPort(port: number | string): boolean {
 }
 
 /**
- * 安全地解析端口号
- * @param value - 输入值
- * @param defaultPort - 默认端口
- * @returns 有效的端口号
+ * Safely parse a port number
+ * @param value - Input value
+ * @param defaultPort - Default port
+ * @returns Valid port number
  */
 export function parsePort(value: string, defaultPort: number = 8080): number {
   const port = parseInt(value, 10)
@@ -27,9 +27,9 @@ export function parsePort(value: string, defaultPort: number = 8080): number {
 }
 
 /**
- * 验证 IPv4 地址格式
- * @param ip - IP 地址字符串
- * @returns 是否有效
+ * Validate IPv4 address format
+ * @param ip - IP address string
+ * @returns Whether valid
  */
 export function isValidIPv4(ip: string): boolean {
   if (!ip) return false
@@ -39,7 +39,7 @@ export function isValidIPv4(ip: string): boolean {
 
   if (!match) return false
 
-  // 检查每个段是否在 0-255 范围内
+  // Check each segment is in the 0-255 range
   for (let i = 1; i <= 4; i++) {
     const segment = parseInt(match[i], 10)
     if (segment < 0 || segment > 255) return false
@@ -49,18 +49,18 @@ export function isValidIPv4(ip: string): boolean {
 }
 
 /**
- * 验证监听地址（支持 0.0.0.0, 127.0.0.1, 或有效的 IPv4）
- * @param address - 监听地址
- * @returns 是否有效
+ * Validate listen address (supports 0.0.0.0, 127.0.0.1, or valid IPv6)
+ * @param address - Listen address
+ * @returns Whether valid
  */
 export function isValidListenAddress(address: string): boolean {
   return isValidIPv4(address) || address === '::' || address === '::1'
 }
 
 /**
- * 增强的 fetch 错误处理
- * @param response - fetch 响应对象
- * @returns 解析后的错误信息
+ * Enhanced fetch error handling
+ * @param response - Fetch response object
+ * @returns Parsed error message
  */
 export async function parseErrorResponse(response: Response): Promise<string> {
   let errorMsg = `HTTP ${response.status}: ${response.statusText}`
@@ -73,28 +73,28 @@ export async function parseErrorResponse(response: Response): Promise<string> {
     } else {
       const text = await response.text()
       if (text) {
-        errorMsg = text.substring(0, 200) // 限制错误信息长度
+        errorMsg = text.substring(0, 200) // Limit error message length
       }
     }
   } catch {
-    // 如果解析失败，使用默认错误信息
+    // If parsing fails, use default error message
   }
 
   return errorMsg
 }
 
 /**
- * 生成加密安全的随机字符串
- * @param length - 字符串长度
- * @param chars - 可用字符集
- * @returns 随机字符串
+ * Generate a cryptographically secure random string
+ * @param length - String length
+ * @param chars - Available character set
+ * @returns Random string
  */
 export function generateSecureRandomString(
   length: number,
   chars: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 ): string {
   if (typeof window === 'undefined' || !window.crypto) {
-    // 服务端渲染或不支持 crypto API 时的降级方案
+    // Fallback for server-side rendering or when crypto API is unavailable
     return Array.from({ length }, () =>
       chars.charAt(Math.floor(Math.random() * chars.length))
     ).join('')
@@ -107,34 +107,34 @@ export function generateSecureRandomString(
 }
 
 /**
- * 生成 Shadowsocks 2022 协议所需的 Base64 密钥
- * @param method - 加密方法
- * @returns Base64 编码的密钥
+ * Generate a Base64 key for the Shadowsocks 2022 protocol
+ * @param method - Encryption method
+ * @returns Base64-encoded key
  */
 export function generateSS2022Key(method: string): string {
-  // 根据加密方法确定密钥字节长度
+  // Determine key byte length based on encryption method
   let keyLength: number
   if (method === "2022-blake3-aes-128-gcm") {
-    keyLength = 16 // 128 位
+    keyLength = 16 // 128-bit
   } else if (method === "2022-blake3-aes-256-gcm" || method === "2022-blake3-chacha20-poly1305") {
-    keyLength = 32 // 256 位
+    keyLength = 32 // 256-bit
   } else {
-    // 非 2022 协议，返回普通密码
+    // Non-2022 protocol, return a plain password
     return generateSecureRandomString(16)
   }
 
-  // 生成随机字节
+  // Generate random bytes
   const array = new Uint8Array(keyLength)
   if (typeof window !== 'undefined' && window.crypto) {
     window.crypto.getRandomValues(array)
   } else {
-    // 降级方案
+    // Fallback
     for (let i = 0; i < keyLength; i++) {
       array[i] = Math.floor(Math.random() * 256)
     }
   }
 
-  // 转换为 Base64
+  // Convert to Base64
   let binary = ''
   array.forEach((byte) => {
     binary += String.fromCharCode(byte)

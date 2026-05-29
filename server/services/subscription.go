@@ -19,28 +19,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ProxyNode 代理节点信息
+// ProxyNode proxy node information
 type ProxyNode struct {
 	Name     string                 `json:"name"`
 	Protocol string                 `json:"protocol"`
 	Address  string                 `json:"address"`
 	Port     int                    `json:"port"`
 	Settings map[string]interface{} `json:"settings"`
-	Outbound map[string]interface{} `json:"outbound"` // sing-box 格式的 outbound 配置
-	// 测速相关字段
-	Latency     int64  `json:"latency,omitempty"`      // 延迟（毫秒）
-	Online      bool   `json:"online,omitempty"`       // 是否在线
-	LastProbe   string `json:"last_probe,omitempty"`   // 最后测速时间
-	SuccessRate int    `json:"success_rate,omitempty"` // 成功率（0-100）
-	SpeedKBps   float64 `json:"speed_kbps,omitempty"`  // 代理下载速度 KB/s
+	Outbound map[string]interface{} `json:"outbound"` // sing-box format outbound config
+	// Speed test related fields
+	Latency     int64  `json:"latency,omitempty"`      // latency (ms)
+	Online      bool   `json:"online,omitempty"`       // whether online
+	LastProbe   string `json:"last_probe,omitempty"`   // last probe time
+	SuccessRate int    `json:"success_rate,omitempty"` // success rate (0-100)
+	SpeedKBps   float64 `json:"speed_kbps,omitempty"`  // proxy download speed KB/s
 }
 
-// decodeBase64 解码 Base64 字符串，自动处理 padding 和 URL 安全编码
+// decodeBase64 decodes a Base64 string, auto-handles padding and URL-safe encoding
 func decodeBase64(s string) ([]byte, error) {
-	// 移除可能的空白字符
+	// Remove possible whitespace
 	s = strings.TrimSpace(s)
 
-	// 补充 padding
+	// Add padding
 	switch len(s) % 4 {
 	case 2:
 		s += "=="
@@ -48,30 +48,30 @@ func decodeBase64(s string) ([]byte, error) {
 		s += "="
 	}
 
-	// 尝试 URL 安全编码
+	// Try URL-safe encoding
 	decoded, err := base64.URLEncoding.DecodeString(s)
 	if err == nil {
 		return decoded, nil
 	}
 
-	// 尝试标准编码
+	// Try standard encoding
 	decoded, err = base64.StdEncoding.DecodeString(s)
 	if err == nil {
 		return decoded, nil
 	}
 
-	// 尝试 RawURLEncoding（无 padding）
+	// Try RawURLEncoding (no padding)
 	s = strings.TrimRight(s, "=")
 	decoded, err = base64.RawURLEncoding.DecodeString(s)
 	if err == nil {
 		return decoded, nil
 	}
 
-	// 尝试 RawStdEncoding（无 padding）
+	// Try RawStdEncoding (no padding)
 	return base64.RawStdEncoding.DecodeString(s)
 }
 
-// VMess 节点配置
+// VMess node configuration
 type VMess struct {
 	V    string `json:"v"`
 	PS   string `json:"ps"`
@@ -87,20 +87,20 @@ type VMess struct {
 	SNI  string `json:"sni"`
 }
 
-// ResolveUserAgent 解析 User-Agent，支持预定义名称和自定义值
+// ResolveUserAgent resolves User-Agent, supports predefined names and custom values
 func ResolveUserAgent(ua string) string {
 	if ua == "" {
 		return PredefinedUserAgents["default"]
 	}
-	// 先检查是否是预定义名称
+	// First check if it's a predefined name
 	if predefined, ok := PredefinedUserAgents[ua]; ok {
 		return predefined
 	}
-	// 否则当作自定义 UA 直接使用
+	// Otherwise use as custom UA directly
 	return ua
 }
 
-// FetchSubscription 获取订阅内容
+// FetchSubscription fetches subscription content
 var blockedSubscriptionPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("0.0.0.0/8"),
 	netip.MustParsePrefix("10.0.0.0/8"),
@@ -186,18 +186,18 @@ func validateSubscriptionURL(parsedURL *url.URL) error {
 }
 
 func FetchSubscription(subURL string, userAgent ...string) ([]ProxyNode, error) {
-	// 验证 URL 格式
+	// Validate URL format
 	parsedURL, err := url.Parse(subURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid subscription URL: %w", err)
 	}
 
-	// 只允许 http 和 https 协议
+	// Only allow http and https protocols
 	if err := validateSubscriptionURL(parsedURL); err != nil {
 		return nil, err
 	}
 
-	// 创建 HTTP 客户端，跳过 SSL 验证，设置超时
+	// Create HTTP client, skip SSL verification, set timeout
 	tr := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{
@@ -216,7 +216,7 @@ func FetchSubscription(subURL string, userAgent ...string) ([]ProxyNode, error) 
 		},
 	}
 
-	// 创建请求并设置 User-Agent
+	// Create request and set User-Agent
 	req, err := http.NewRequest("GET", parsedURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -227,7 +227,7 @@ func FetchSubscription(subURL string, userAgent ...string) ([]ProxyNode, error) 
 	}
 	req.Header.Set("User-Agent", ua)
 
-	// 获取订阅内容
+	// Fetch subscription content
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch subscription: %w", err)
@@ -238,29 +238,29 @@ func FetchSubscription(subURL string, userAgent ...string) ([]ProxyNode, error) 
 		return nil, fmt.Errorf("subscription returned status: %d", resp.StatusCode)
 	}
 
-	// 读取响应内容
+	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read subscription: %w", err)
 	}
 
-	// 检测是否是 Clash YAML 格式
+	// Detect if it's Clash YAML format
 	content := strings.TrimSpace(string(body))
 	if isClashYAML(content) {
 		return parseClashYAML(body)
 	}
 
-	// Base64 解码（自动处理 padding）
+	// Base64 decode (auto handle padding)
 	decoded, err := decodeBase64(content)
 	if err != nil {
-		// 如果 base64 解码失败，可能内容本身就是明文
+		// If base64 decode fails, content might be plain text
 		decoded = body
 	}
 
 	return parseProxyLines(string(decoded))
 }
 
-// parseProxyLines 解析代理链接行（vmess://、vless:// 等）
+// parseProxyLines parses proxy link lines (vmess://, vless://, etc.)
 func parseProxyLines(content string) ([]ProxyNode, error) {
 	lines := strings.Split(content, "\n")
 	var nodes []ProxyNode
@@ -271,7 +271,7 @@ func parseProxyLines(content string) ([]ProxyNode, error) {
 			continue
 		}
 
-		// 解析不同协议的节点
+		// Parse nodes of different protocols
 		if strings.HasPrefix(line, "vmess://") {
 			node, err := parseVMessNode(line)
 			if err == nil {
@@ -298,19 +298,19 @@ func parseProxyLines(content string) ([]ProxyNode, error) {
 	return nodes, nil
 }
 
-// isClashYAML 检测内容是否为 Clash YAML 格式
+// isClashYAML detects if content is Clash YAML format
 func isClashYAML(content string) bool {
-	// Clash 配置通常包含这些关键字段
+	// Clash configs typically contain these key fields
 	return strings.Contains(content, "proxies:") &&
 		(strings.Contains(content, "proxy-groups:") || strings.Contains(content, "rules:"))
 }
 
-// ClashConfig Clash YAML 配置结构
+// ClashConfig Clash YAML config structure
 type ClashConfig struct {
 	Proxies []ClashProxy `yaml:"proxies"`
 }
 
-// ClashProxy Clash 代理节点
+// ClashProxy Clash proxy node
 type ClashProxy struct {
 	Name           string `yaml:"name"`
 	Type           string `yaml:"type"`
@@ -325,15 +325,15 @@ type ClashProxy struct {
 	SkipCertVerify bool   `yaml:"skip-cert-verify"`
 	TLS            bool   `yaml:"tls"`
 	Network        string `yaml:"network"`
-	// WS 配置
+	// WS config
 	WSOpts *ClashWSOptions `yaml:"ws-opts"`
-	// GRPC 配置
+	// GRPC config
 	GRPCOpts *ClashGRPCOptions `yaml:"grpc-opts"`
 	// Flow (VLESS)
 	Flow string `yaml:"flow"`
 	// Reality
 	RealityOpts *ClashRealityOptions `yaml:"reality-opts"`
-	// Servername (Clash Meta 格式，用于 Reality SNI)
+	// Servername (Clash Meta format, used for Reality SNI)
 	Servername string `yaml:"servername"`
 	// Client Fingerprint
 	ClientFingerprint string `yaml:"client-fingerprint"`
@@ -342,24 +342,24 @@ type ClashProxy struct {
 	PluginOpts map[string]interface{} `yaml:"plugin-opts"`
 }
 
-// ClashWSOptions WebSocket 选项
+// ClashWSOptions WebSocket options
 type ClashWSOptions struct {
 	Path    string            `yaml:"path"`
 	Headers map[string]string `yaml:"headers"`
 }
 
-// ClashGRPCOptions gRPC 选项
+// ClashGRPCOptions gRPC options
 type ClashGRPCOptions struct {
 	GRPCServiceName string `yaml:"grpc-service-name"`
 }
 
-// ClashRealityOptions Reality 选项
+// ClashRealityOptions Reality options
 type ClashRealityOptions struct {
 	PublicKey string `yaml:"public-key"`
 	ShortID   string `yaml:"short-id"`
 }
 
-// parseClashYAML 解析 Clash YAML 格式订阅
+// parseClashYAML parses Clash YAML format subscription
 func parseClashYAML(data []byte) ([]ProxyNode, error) {
 	var config ClashConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
@@ -370,7 +370,7 @@ func parseClashYAML(data []byte) ([]ProxyNode, error) {
 	for _, proxy := range config.Proxies {
 		node, err := convertClashProxy(proxy)
 		if err != nil {
-			continue // 跳过不支持的节点
+			continue // skip unsupported nodes
 		}
 		nodes = append(nodes, node)
 	}
@@ -378,7 +378,7 @@ func parseClashYAML(data []byte) ([]ProxyNode, error) {
 	return nodes, nil
 }
 
-// convertClashProxy 将 Clash 代理节点转换为 sing-box ProxyNode
+// convertClashProxy converts a Clash proxy node to sing-box ProxyNode
 func convertClashProxy(proxy ClashProxy) (ProxyNode, error) {
 	switch proxy.Type {
 	case "anytls":
@@ -396,7 +396,7 @@ func convertClashProxy(proxy ClashProxy) (ProxyNode, error) {
 	}
 }
 
-// convertClashAnyTLS 转换 AnyTLS 节点
+// convertClashAnyTLS converts an AnyTLS node
 func convertClashAnyTLS(proxy ClashProxy) (ProxyNode, error) {
 	node := ProxyNode{
 		Name:     proxy.Name,
@@ -416,7 +416,7 @@ func convertClashAnyTLS(proxy ClashProxy) (ProxyNode, error) {
 		"password":    proxy.Password,
 	}
 
-	// AnyTLS 要求 TLS
+	// AnyTLS requires TLS
 	tlsConfig := map[string]interface{}{
 		"enabled": true,
 	}
@@ -433,7 +433,7 @@ func convertClashAnyTLS(proxy ClashProxy) (ProxyNode, error) {
 	return node, nil
 }
 
-// convertClashVMess 转换 VMess 节点
+// convertClashVMess converts a VMess node
 func convertClashVMess(proxy ClashProxy) (ProxyNode, error) {
 	node := ProxyNode{
 		Name:     proxy.Name,
@@ -457,7 +457,7 @@ func convertClashVMess(proxy ClashProxy) (ProxyNode, error) {
 		"alter_id":    proxy.AlterID,
 	}
 
-	// 传输层
+	// Transport layer
 	addClashTransport(proxy, node.Outbound)
 	// TLS
 	addClashTLS(proxy, node.Outbound)
@@ -465,7 +465,7 @@ func convertClashVMess(proxy ClashProxy) (ProxyNode, error) {
 	return node, nil
 }
 
-// convertClashVLESS 转换 VLESS 节点
+// convertClashVLESS converts a VLESS node
 func convertClashVLESS(proxy ClashProxy) (ProxyNode, error) {
 	node := ProxyNode{
 		Name:     proxy.Name,
@@ -490,15 +490,15 @@ func convertClashVLESS(proxy ClashProxy) (ProxyNode, error) {
 		node.Outbound["flow"] = proxy.Flow
 	}
 
-	// 传输层
+	// Transport layer
 	addClashTransport(proxy, node.Outbound)
-	// TLS（含 Reality）
+	// TLS (including Reality)
 	addClashTLS(proxy, node.Outbound)
 
 	return node, nil
 }
 
-// convertClashTrojan 转换 Trojan 节点
+// convertClashTrojan converts a Trojan node
 func convertClashTrojan(proxy ClashProxy) (ProxyNode, error) {
 	node := ProxyNode{
 		Name:     proxy.Name,
@@ -518,10 +518,10 @@ func convertClashTrojan(proxy ClashProxy) (ProxyNode, error) {
 		"password":    proxy.Password,
 	}
 
-	// 传输层
+	// Transport layer
 	addClashTransport(proxy, node.Outbound)
 
-	// Trojan 默认启用 TLS
+	// Trojan enables TLS by default
 	tlsConfig := map[string]interface{}{
 		"enabled": true,
 	}
@@ -544,7 +544,7 @@ func convertClashTrojan(proxy ClashProxy) (ProxyNode, error) {
 	return node, nil
 }
 
-// convertClashShadowsocks 转换 Shadowsocks 节点
+// convertClashShadowsocks converts a Shadowsocks node
 func convertClashShadowsocks(proxy ClashProxy) (ProxyNode, error) {
 	node := ProxyNode{
 		Name:     proxy.Name,
@@ -569,7 +569,7 @@ func convertClashShadowsocks(proxy ClashProxy) (ProxyNode, error) {
 	return node, nil
 }
 
-// addClashTransport 添加 Clash 节点的传输层配置到 sing-box outbound
+// addClashTransport adds Clash node transport config to sing-box outbound
 func addClashTransport(proxy ClashProxy, outbound map[string]interface{}) {
 	if proxy.Network == "" || proxy.Network == "tcp" {
 		return
@@ -599,7 +599,7 @@ func addClashTransport(proxy ClashProxy, outbound map[string]interface{}) {
 	outbound["transport"] = transport
 }
 
-// addClashTLS 添加 Clash 节点的 TLS 配置到 sing-box outbound
+// addClashTLS adds Clash node TLS config to sing-box outbound
 func addClashTLS(proxy ClashProxy, outbound map[string]interface{}) {
 	if !proxy.TLS && proxy.RealityOpts == nil {
 		return
@@ -641,24 +641,24 @@ func addClashTLS(proxy ClashProxy, outbound map[string]interface{}) {
 	outbound["tls"] = tlsConfig
 }
 
-// parseVMessNode 解析 VMess 节点
+// parseVMessNode parses a VMess node
 func parseVMessNode(link string) (ProxyNode, error) {
-	// 移除 vmess:// 前缀
+	// Remove vmess:// prefix
 	link = strings.TrimPrefix(link, "vmess://")
 
-	// Base64 解码（自动处理 padding）
+	// Base64 decode (auto handle padding)
 	decoded, err := decodeBase64(link)
 	if err != nil {
 		return ProxyNode{}, err
 	}
 
-	// 解析 JSON
+	// Parse JSON
 	var vmess VMess
 	if err := json.Unmarshal(decoded, &vmess); err != nil {
 		return ProxyNode{}, err
 	}
 
-	// 转换为统一格式
+	// Convert to unified format
 	node := ProxyNode{
 		Name:     vmess.PS,
 		Protocol: "vmess",
@@ -670,11 +670,11 @@ func parseVMessNode(link string) (ProxyNode, error) {
 		},
 	}
 
-	// 解析端口
+	// Parse port
 	fmt.Sscanf(vmess.Port, "%d", &node.Port)
 
-	// 构建 sing-box outbound 配置
-	// 使用唯一 tag 避免负载均衡时的冲突
+	// Build sing-box outbound config
+	// Use unique tag to avoid conflicts during load balancing
 	node.Outbound = map[string]interface{}{
 		"type":        "vmess",
 		"tag":         SanitizeTag("vmess", vmess.Add, node.Port),
@@ -685,7 +685,7 @@ func parseVMessNode(link string) (ProxyNode, error) {
 		"alter_id":    parseIntOrZero(vmess.Aid),
 	}
 
-	// 添加传输层配置
+	// Add transport layer config
 	if vmess.Net != "" && vmess.Net != "tcp" {
 		transport := map[string]interface{}{
 			"type": vmess.Net,
@@ -705,7 +705,7 @@ func parseVMessNode(link string) (ProxyNode, error) {
 		node.Outbound["transport"] = transport
 	}
 
-	// 添加 TLS 配置
+	// Add TLS config
 	if vmess.TLS == "tls" {
 		tlsConfig := map[string]interface{}{
 			"enabled": true,
@@ -721,12 +721,12 @@ func parseVMessNode(link string) (ProxyNode, error) {
 	return node, nil
 }
 
-// parseVLESSNode 解析 VLESS 节点
+// parseVLESSNode parses a VLESS node
 func parseVLESSNode(link string) (ProxyNode, error) {
-	// 移除 vless:// 前缀
+	// Remove vless:// prefix
 	link = strings.TrimPrefix(link, "vless://")
 
-	// 解析 URL
+	// Parse URL
 	parts := strings.SplitN(link, "@", 2)
 	if len(parts) != 2 {
 		return ProxyNode{}, fmt.Errorf("invalid vless link")
@@ -735,7 +735,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 	uuid := parts[0]
 	rest := parts[1]
 
-	// 解析地址和端口
+	// Parse address and port
 	addressParts := strings.SplitN(rest, "?", 2)
 	addressPort := addressParts[0]
 
@@ -748,7 +748,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 	port := 0
 	fmt.Sscanf(addrPort[1], "%d", &port)
 
-	// 解析查询参数
+	// Parse query parameters
 	query := ""
 	name := ""
 	if len(addressParts) > 1 {
@@ -774,7 +774,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 		},
 	}
 
-	// 构建 sing-box outbound 配置
+	// Build sing-box outbound config
 	node.Outbound = map[string]interface{}{
 		"type":        "vless",
 		"tag":         SanitizeTag("vless", address, port),
@@ -787,7 +787,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 		node.Outbound["flow"] = flow
 	}
 
-	// 添加传输层配置
+	// Add transport layer config
 	network := params.Get("type")
 	security := params.Get("security")
 
@@ -810,7 +810,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 		node.Outbound["transport"] = transport
 	}
 
-	// 添加 TLS 配置
+	// Add TLS config
 	if security == "tls" || security == "reality" {
 		tlsConfig := map[string]interface{}{
 			"enabled": true,
@@ -825,10 +825,10 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 				"short_id":   params.Get("sid"),
 			}
 		}
-		// 添加 uTLS 配置 (Vision flow 必需)
+		// Add uTLS config (required for Vision flow)
 		fp := params.Get("fp")
 		if fp == "" {
-			fp = "chrome" // 默认使用 chrome fingerprint
+			fp = "chrome" // default use chrome fingerprint
 		}
 		tlsConfig["utls"] = map[string]interface{}{
 			"enabled":     true,
@@ -840,12 +840,12 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 	return node, nil
 }
 
-// parseTrojanNode 解析 Trojan 节点
+// parseTrojanNode parses a Trojan node
 func parseTrojanNode(link string) (ProxyNode, error) {
-	// 移除 trojan:// 前缀
+	// Remove trojan:// prefix
 	link = strings.TrimPrefix(link, "trojan://")
 
-	// 解析 URL
+	// Parse URL
 	parts := strings.SplitN(link, "@", 2)
 	if len(parts) != 2 {
 		return ProxyNode{}, fmt.Errorf("invalid trojan link")
@@ -854,7 +854,7 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 	password := parts[0]
 	rest := parts[1]
 
-	// 解析地址和端口
+	// Parse address and port
 	addressParts := strings.SplitN(rest, "?", 2)
 	addressPort := addressParts[0]
 
@@ -867,7 +867,7 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 	port := 0
 	fmt.Sscanf(addrPort[1], "%d", &port)
 
-	// 解析查询参数
+	// Parse query parameters
 	name := ""
 	query := ""
 	if len(addressParts) > 1 {
@@ -892,7 +892,7 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 		},
 	}
 
-	// 构建 sing-box outbound 配置
+	// Build sing-box outbound config
 	node.Outbound = map[string]interface{}{
 		"type":        "trojan",
 		"tag":         SanitizeTag("trojan", address, port),
@@ -901,7 +901,7 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 		"password":    password,
 	}
 
-	// 添加传输层配置
+	// Add transport layer config
 	network := params.Get("type")
 	if network != "" && network != "tcp" {
 		transport := map[string]interface{}{
@@ -922,17 +922,17 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 		node.Outbound["transport"] = transport
 	}
 
-	// 添加 TLS 配置（Trojan 默认启用 TLS）
+	// Add TLS config (Trojan enables TLS by default)
 	tlsConfig := map[string]interface{}{
 		"enabled": true,
 	}
 	if sni := params.Get("sni"); sni != "" {
 		tlsConfig["server_name"] = sni
 	}
-	// 添加 uTLS 配置
+	// Add uTLS config
 	fp := params.Get("fp")
 	if fp == "" {
-		fp = "chrome" // 默认使用 chrome fingerprint
+		fp = "chrome" // default use chrome fingerprint
 	}
 	tlsConfig["utls"] = map[string]interface{}{
 		"enabled":     true,
@@ -943,16 +943,16 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 	return node, nil
 }
 
-// parseShadowsocksNode 解析 Shadowsocks 节点
-// 支持格式:
+// parseShadowsocksNode parses a Shadowsocks node
+// Supported formats:
 // 1. SIP002: ss://BASE64(method:password)@server:port#name
-// 2. SS2022 多用户: ss://BASE64(method:serverKey:userKey)@server:port#name
-// 3. 旧格式: ss://BASE64(method:password@server:port)#name
+// 2. SS2022 multi-user: ss://BASE64(method:serverKey:userKey)@server:port#name
+// 3. Legacy format: ss://BASE64(method:password@server:port)#name
 func parseShadowsocksNode(link string) (ProxyNode, error) {
-	// 移除 ss:// 前缀
+	// Remove ss:// prefix
 	link = strings.TrimPrefix(link, "ss://")
 
-	// 分离链接和备注（如果有 # 符号）
+	// Split link and comment (if there is a # symbol)
 	var name string
 	linkParts := strings.SplitN(link, "#", 2)
 	if len(linkParts) == 2 {
@@ -960,27 +960,27 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 		name, _ = url.QueryUnescape(linkParts[1])
 	}
 
-	// 尝试解析 SIP002 格式: method:password@server:port
-	// 或 Base64(method:password)@server:port
-	// 或 SS2022: Base64(method:serverKey:userKey)@server:port
+	// Try to parse SIP002 format: method:password@server:port
+	// or Base64(method:password)@server:port
+	// or SS2022: Base64(method:serverKey:userKey)@server:port
 	var method, password, address string
 	var port int
 
-	// 检查是否包含 @
+	// Check if it contains @
 	if strings.Contains(link, "@") {
-		// 可能是 SIP002 格式或者 userinfo@host 格式
+		// Could be SIP002 format or userinfo@host format
 		parts := strings.SplitN(link, "@", 2)
 
-		// 尝试 base64 解码第一部分（method:password 或 method:serverKey:userKey）
+		// Try to base64 decode the first part (method:password or method:serverKey:userKey)
 		userInfo, err := decodeBase64(parts[0])
 		if err != nil {
-			// 不是 base64，直接使用
+			// Not base64, use directly
 			userInfo = []byte(parts[0])
 		}
 
-		// 解析 method:password 或 method:serverKey:userKey
-		// 使用 SplitN(..., 2) 只在第一个冒号处分割
-		// 这样对于 SS2022 格式，password 会是 "serverKey:userKey"
+		// Parse method:password or method:serverKey:userKey
+		// Use SplitN(..., 2) to split only at the first colon
+		// This way for SS2022 format, password will be "serverKey:userKey"
 		userInfoStr := string(userInfo)
 		colonIdx := strings.Index(userInfoStr, ":")
 		if colonIdx == -1 {
@@ -989,7 +989,7 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 		method = userInfoStr[:colonIdx]
 		password = userInfoStr[colonIdx+1:]
 
-		// 解析 server:port
+		// Parse server:port
 		addressPort := strings.SplitN(parts[1], ":", 2)
 		if len(addressPort) != 2 {
 			return ProxyNode{}, fmt.Errorf("invalid address:port")
@@ -997,20 +997,20 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 		address = addressPort[0]
 		fmt.Sscanf(addressPort[1], "%d", &port)
 	} else {
-		// 旧格式: 整个链接是 Base64 编码的 method:password@server:port
+		// Legacy format: the entire link is Base64 encoded method:password@server:port
 		decoded, err := decodeBase64(link)
 		if err != nil {
 			return ProxyNode{}, fmt.Errorf("failed to decode ss link: %w", err)
 		}
 
-		// 解析格式: method:password@server:port
+		// Parse format: method:password@server:port
 		decodedStr := string(decoded)
 		parts := strings.SplitN(decodedStr, "@", 2)
 		if len(parts) != 2 {
 			return ProxyNode{}, fmt.Errorf("invalid ss link format")
 		}
 
-		// 解析 method:password（支持 SS2022 多用户格式）
+		// Parse method:password (supports SS2022 multi-user format)
 		colonIdx := strings.Index(parts[0], ":")
 		if colonIdx == -1 {
 			return ProxyNode{}, fmt.Errorf("invalid method:password")
@@ -1042,7 +1042,7 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 		},
 	}
 
-	// 构建 sing-box outbound 配置
+	// Build sing-box outbound config
 	node.Outbound = map[string]interface{}{
 		"type":        "shadowsocks",
 		"tag":         SanitizeTag("ss", address, port),
@@ -1055,25 +1055,25 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 	return node, nil
 }
 
-// parseIntOrZero 将字符串转换为整数，失败返回0
+// parseIntOrZero converts string to int, returns 0 on failure
 func parseIntOrZero(s string) int {
 	var result int
 	fmt.Sscanf(s, "%d", &result)
 	return result
 }
 
-// SanitizeTag 生成规范的唯一节点 tag
-// 格式: {protocol}-{address}-{port}
-// 移除特殊字符，确保 tag 在 sing-box 配置中有效
+// SanitizeTag generates a normalized unique node tag
+// Format: {protocol}-{address}-{port}
+// Removes special characters to ensure tag is valid in sing-box config
 func SanitizeTag(protocol, address string, port int) string {
-	// 替换不安全的字符
+	// Replace unsafe characters
 	safeAddress := strings.ReplaceAll(address, ".", "_")
 	safeAddress = strings.ReplaceAll(safeAddress, ":", "_")
 	safeAddress = strings.ReplaceAll(safeAddress, "-", "_")
 	return fmt.Sprintf("%s-%s-%d", protocol, safeAddress, port)
 }
 
-// 预定义 User-Agent 列表
+// Predefined User-Agent list
 var PredefinedUserAgents = map[string]string{
 	"clash-verge": "clash-verge/v2.4.0",
 	"clash-meta":  "ClashMeta/v1.18.0",
@@ -1082,55 +1082,55 @@ var PredefinedUserAgents = map[string]string{
 	"default":     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
-// SubscriptionEntry 单个订阅条目
+// SubscriptionEntry single subscription entry
 type SubscriptionEntry struct {
 	ID             string      `json:"id"`
 	Name           string      `json:"name"`
 	URL            string      `json:"url"`
-	UserAgent      string      `json:"user_agent,omitempty"`      // 请求时使用的 User-Agent
-	AutoUpdate     bool        `json:"auto_update,omitempty"`     // 是否自动更新
-	UpdateInterval int         `json:"update_interval,omitempty"` // 自动更新间隔（小时），0 表示禁用
-	LastUpdated    string      `json:"last_updated,omitempty"`    // 最后更新时间 (RFC3339)
+	UserAgent      string      `json:"user_agent,omitempty"`      // User-Agent used for requests
+	AutoUpdate     bool        `json:"auto_update,omitempty"`     // whether to auto update
+	UpdateInterval int         `json:"update_interval,omitempty"` // auto update interval (hours), 0 means disabled
+	LastUpdated    string      `json:"last_updated,omitempty"`    // last update time (RFC3339)
 	Nodes          []ProxyNode `json:"nodes"`
 }
 
-// SubscriptionData 多订阅数据（兼容旧格式）
+// SubscriptionData multi-subscription data (compatible with old format)
 type SubscriptionData struct {
-	// 旧格式字段（用于兼容）
+	// Old format fields (for compatibility)
 	URL   string      `json:"url,omitempty"`
 	Nodes []ProxyNode `json:"nodes,omitempty"`
-	// 新格式字段
+	// New format fields
 	Subscriptions []SubscriptionEntry `json:"subscriptions,omitempty"`
 }
 
-// getSubscriptionFilePath 获取订阅文件路径
-// 注意：存放在 data 目录而非 singbox 目录，避免被 sing-box -C 加载
+// getSubscriptionFilePath gets the subscription file path
+// Note: stored in data directory not singbox directory, to avoid being loaded by sing-box -C
 func getSubscriptionFilePath() string {
 	baseDir := os.Getenv("DATA_DIR")
 	if baseDir == "" {
-		// 默认使用当前工作目录
+		// Default to current working directory
 		baseDir, _ = os.Getwd()
 	}
 	return filepath.Join(baseDir, "subscription.json")
 }
 
-// SaveSubscriptions 保存多订阅数据到文件
+// SaveSubscriptions saves multi-subscription data to file
 func SaveSubscriptions(data SubscriptionData) error {
 	subscriptionFile := getSubscriptionFilePath()
 
-	// 确保目录存在
+	// Ensure directory exists
 	dir := filepath.Dir(subscriptionFile)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// 序列化为 JSON
+	// Serialize to JSON
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal subscription data: %w", err)
 	}
 
-	// 写入文件
+	// Write to file
 	if err := os.WriteFile(subscriptionFile, jsonData, 0644); err != nil {
 		return fmt.Errorf("failed to write subscription file: %w", err)
 	}
@@ -1138,41 +1138,41 @@ func SaveSubscriptions(data SubscriptionData) error {
 	return nil
 }
 
-// LoadSubscriptions 从文件加载多订阅数据
+// LoadSubscriptions loads multi-subscription data from file
 func LoadSubscriptions() (*SubscriptionData, error) {
 	subscriptionFile := getSubscriptionFilePath()
 
-	// 检查文件是否存在
+	// Check if file exists
 	if _, err := os.Stat(subscriptionFile); os.IsNotExist(err) {
 		return &SubscriptionData{Subscriptions: []SubscriptionEntry{}}, nil
 	}
 
-	// 读取文件
+	// Read file
 	data, err := os.ReadFile(subscriptionFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read subscription file: %w", err)
 	}
 
-	// 反序列化
+	// Deserialize
 	var subData SubscriptionData
 	if err := json.Unmarshal(data, &subData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal subscription data: %w", err)
 	}
 
-	// 兼容旧格式：如果有旧的 URL 字段但没有 subscriptions，迁移数据
+	// Compatible with old format: if there's old URL field but no subscriptions, migrate data
 	if subData.URL != "" && len(subData.Subscriptions) == 0 {
 		subData.Subscriptions = []SubscriptionEntry{
 			{
 				ID:    generateSubscriptionID(),
-				Name:  "默认订阅",
+				Name:  "Default Subscription",
 				URL:   subData.URL,
 				Nodes: subData.Nodes,
 			},
 		}
-		// 清空旧字段
+		// Clear old fields
 		subData.URL = ""
 		subData.Nodes = nil
-		// 保存迁移后的数据
+		// Save migrated data
 		SaveSubscriptions(subData)
 	}
 
@@ -1183,19 +1183,19 @@ func LoadSubscriptions() (*SubscriptionData, error) {
 	return &subData, nil
 }
 
-// generateSubscriptionID 生成订阅ID
+// generateSubscriptionID generates a subscription ID
 func generateSubscriptionID() string {
 	return fmt.Sprintf("sub_%d", time.Now().UnixNano())
 }
 
-// AddSubscription 添加订阅
+// AddSubscription adds a subscription
 func AddSubscription(name, subURL, userAgent string) (*SubscriptionEntry, error) {
 	data, err := LoadSubscriptions()
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取并解析订阅节点
+	// Fetch and parse subscription nodes
 	nodes, err := FetchSubscription(subURL, userAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch subscription: %w", err)
@@ -1219,7 +1219,7 @@ func AddSubscription(name, subURL, userAgent string) (*SubscriptionEntry, error)
 	return &entry, nil
 }
 
-// UpdateSubscription 更新订阅（刷新节点）
+// UpdateSubscription updates a subscription (refreshes nodes)
 func UpdateSubscription(id string) (*SubscriptionEntry, error) {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -1228,7 +1228,7 @@ func UpdateSubscription(id string) (*SubscriptionEntry, error) {
 
 	for i, sub := range data.Subscriptions {
 		if sub.ID == id {
-			// 重新获取节点（使用存储的 User-Agent）
+			// Re-fetch nodes (using stored User-Agent)
 			nodes, err := FetchSubscription(sub.URL, sub.UserAgent)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch subscription: %w", err)
@@ -1247,7 +1247,7 @@ func UpdateSubscription(id string) (*SubscriptionEntry, error) {
 	return nil, fmt.Errorf("subscription not found: %s", id)
 }
 
-// UpdateSubscriptionSettings 更新订阅的自动更新设置
+// UpdateSubscriptionSettings updates subscription auto-update settings
 func UpdateSubscriptionSettings(id string, autoUpdate bool, updateInterval int) (*SubscriptionEntry, error) {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -1268,7 +1268,7 @@ func UpdateSubscriptionSettings(id string, autoUpdate bool, updateInterval int) 
 	return nil, fmt.Errorf("subscription not found: %s", id)
 }
 
-// DeleteSubscription 删除订阅
+// DeleteSubscription deletes a subscription
 func DeleteSubscription(id string) error {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -1285,7 +1285,7 @@ func DeleteSubscription(id string) error {
 	return fmt.Errorf("subscription not found: %s", id)
 }
 
-// GetAllNodes 获取所有订阅的所有节点
+// GetAllNodes gets all nodes from all subscriptions
 func GetAllNodes() ([]ProxyNode, error) {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -1300,7 +1300,7 @@ func GetAllNodes() ([]ProxyNode, error) {
 	return allNodes, nil
 }
 
-// RefreshAllSubscriptions 刷新所有订阅
+// RefreshAllSubscriptions refreshes all subscriptions
 func RefreshAllSubscriptions() (*SubscriptionData, error) {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -1310,7 +1310,7 @@ func RefreshAllSubscriptions() (*SubscriptionData, error) {
 	for i, sub := range data.Subscriptions {
 		nodes, err := FetchSubscription(sub.URL, sub.UserAgent)
 		if err != nil {
-			// 记录错误但继续处理其他订阅
+			// Log error but continue processing other subscriptions
 			continue
 		}
 		data.Subscriptions[i].Nodes = nodes
@@ -1323,7 +1323,7 @@ func RefreshAllSubscriptions() (*SubscriptionData, error) {
 	return data, nil
 }
 
-// ProbeResultUpdate 测速结果更新
+// ProbeResultUpdate probe result update
 type ProbeResultUpdate struct {
 	Tag         string `json:"tag"`
 	Latency     int64  `json:"latency"`
@@ -1332,24 +1332,24 @@ type ProbeResultUpdate struct {
 	SuccessRate int    `json:"success_rate"`
 }
 
-// UpdateProbeResults 更新节点测速结果到订阅文件
+// UpdateProbeResults updates node probe results to subscription file
 func UpdateProbeResults(results []ProbeResultUpdate) error {
 	data, err := LoadSubscriptions()
 	if err != nil {
 		return err
 	}
 
-	// 构建 tag -> result 映射
+	// Build tag -> result mapping
 	resultMap := make(map[string]ProbeResultUpdate)
 	for _, r := range results {
 		resultMap[r.Tag] = r
 	}
 
-	// 更新每个订阅中的节点测速结果
+	// Update probe results for nodes in each subscription
 	for i := range data.Subscriptions {
 		for j := range data.Subscriptions[i].Nodes {
 			node := &data.Subscriptions[i].Nodes[j]
-			// 获取节点的 tag
+			// Get node tag
 			tag := ""
 			if node.Outbound != nil {
 				if t, ok := node.Outbound["tag"].(string); ok {
@@ -1360,7 +1360,7 @@ func UpdateProbeResults(results []ProbeResultUpdate) error {
 				tag = SanitizeTag(node.Protocol, node.Address, node.Port)
 			}
 
-			// 更新测速结果
+			// Update probe results
 			if result, exists := resultMap[tag]; exists {
 				node.Latency = result.Latency
 				node.Online = result.Online
@@ -1373,7 +1373,7 @@ func UpdateProbeResults(results []ProbeResultUpdate) error {
 	return SaveSubscriptions(*data)
 }
 
-// SpeedTestUpdate 代理测速结果更新
+// SpeedTestUpdate proxy speed test result update
 type SpeedTestUpdate struct {
 	Tag       string  `json:"tag"`
 	Latency   int64   `json:"latency"`
@@ -1382,7 +1382,7 @@ type SpeedTestUpdate struct {
 	LastProbe string  `json:"last_probe"`
 }
 
-// UpdateSpeedTestResults 写入代理测速结果到订阅文件（含速度）
+// UpdateSpeedTestResults writes proxy speed test results to subscription file (with speed)
 func UpdateSpeedTestResults(results []SpeedTestUpdate) error {
 	data, err := LoadSubscriptions()
 	if err != nil {

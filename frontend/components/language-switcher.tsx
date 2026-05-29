@@ -15,7 +15,7 @@ export function LanguageSwitcher() {
       className="gap-1.5"
     >
       <Globe className="h-4 w-4" />
-      <span className="text-xs">{locale === "zh" ? "EN" : "中文"}</span>
+      <span className="text-xs">{locale === "zh" ? "EN" : "ZH"}</span>
     </Button>
   )
 }

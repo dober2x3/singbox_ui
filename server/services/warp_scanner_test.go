@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-// 启动一个本地 UDP 监听, 按指定策略回复握手包.
-// replySize > 0: 回一个 replySize 字节的响应 (用于模拟 92 字节合法响应或错误尺寸)
-// replySize == 0: 不回复 (模拟超时)
-// replySize < 0: 只在部分 ping 上回复, |replySize| 为回复的那一次序号 (1-based)
+// Start a local UDP listener, reply to handshake packets according to the specified strategy.
+// replySize > 0: send a replySize-byte response (to simulate 92-byte valid response or wrong size)
+// replySize == 0: do not reply (simulate timeout)
+// replySize < 0: only reply on some pings, |replySize| is the sequence number (1-based) to reply on
 //
-// 返回监听地址和关闭函数.
+// Returns listener address and close function.
 func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 	t.Helper()
 	addr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
@@ -36,7 +36,7 @@ func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 				return
 			}
 			count++
-			// 确认收到的是合法的 WARP 握手包 (148 字节)
+			// Confirm it's a valid WARP handshake packet (148 bytes)
 			if n != len(warpHandshakePacket) {
 				continue
 			}
@@ -45,9 +45,9 @@ func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 			case replySize > 0:
 				_, _ = conn.WriteToUDP(make([]byte, replySize), src)
 			case replySize == 0:
-				// 不回复
+				// Do not reply
 			case replySize < 0:
-				// 只在第 |replySize| 次 ping 上回复 92 字节
+				// Only reply with 92 bytes on the |replySize|-th ping
 				if count == -replySize {
 					_, _ = conn.WriteToUDP(make([]byte, warpHandshakeResponseSize), src)
 				}
@@ -61,7 +61,7 @@ func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 	}
 }
 
-// 验证: 当对端始终回复 92 字节时, probe 应该全部成功
+// Verify: when the peer always replies with 92 bytes, probe should all succeed
 func TestWarpHandshakeProbe_AllSuccess(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, warpHandshakeResponseSize)
 	defer stop()
@@ -71,7 +71,7 @@ func TestWarpHandshakeProbe_AllSuccess(t *testing.T) {
 	if _, err := net.ResolveUDPAddr("udp", addr); err != nil {
 		t.Fatal(err)
 	}
-	// 简单手写端口解析
+	// Simple manual port parsing
 	for _, c := range portStr {
 		port = port*10 + int(c-'0')
 	}
@@ -81,13 +81,13 @@ func TestWarpHandshakeProbe_AllSuccess(t *testing.T) {
 	if recv != 3 {
 		t.Errorf("expected 3 received, got %d", recv)
 	}
-	// 本地回环下 RTT 可能为纳秒级, 甚至低于时钟分辨率而得到 0, 只断言非负
+	// Under loopback, RTT could be nanoseconds or even 0 due to clock resolution, only assert non-negative
 	if totalRtt < 0 {
 		t.Errorf("expected totalRtt >= 0, got %v", totalRtt)
 	}
 }
 
-// 验证: 当对端不回复时, probe 应该全部失败, 但不 panic
+// Verify: when the peer does not reply, probe should all fail but not panic
 func TestWarpHandshakeProbe_Timeout(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, 0)
 	defer stop()
@@ -106,15 +106,15 @@ func TestWarpHandshakeProbe_Timeout(t *testing.T) {
 	if recv != 0 {
 		t.Errorf("expected 0 received on timeout, got %d", recv)
 	}
-	// 2 次 ping × 200ms ≈ 400ms (加一点调度余量)
+	// 2 pings × 200ms ≈ 400ms (plus some scheduling margin)
 	if elapsed > 1500*time.Millisecond {
 		t.Errorf("probe took too long: %v", elapsed)
 	}
 }
 
-// 验证: 当对端回复长度错误时, 不计为成功
+// Verify: when the peer replies with wrong size, it is not counted as success
 func TestWarpHandshakeProbe_WrongSize(t *testing.T) {
-	addr, stop := startFakeWarpUDP(t, 50) // 错误大小
+	addr, stop := startFakeWarpUDP(t, 50) // Wrong size
 	defer stop()
 
 	host, portStr, _ := net.SplitHostPort(addr)
@@ -130,9 +130,9 @@ func TestWarpHandshakeProbe_WrongSize(t *testing.T) {
 	}
 }
 
-// 验证: 混合情况 - 只在第 2 次 ping 回复时, 应收到 1 个响应
+// Verify: mixed case - only reply on the 2nd ping, should receive 1 response
 func TestWarpHandshakeProbe_PartialSuccess(t *testing.T) {
-	addr, stop := startFakeWarpUDP(t, -2) // 仅第 2 次回复
+	addr, stop := startFakeWarpUDP(t, -2) // Only reply on 2nd ping
 	defer stop()
 
 	host, portStr, _ := net.SplitHostPort(addr)
@@ -151,7 +151,7 @@ func TestWarpHandshakeProbe_PartialSuccess(t *testing.T) {
 	}
 }
 
-// 验证: ctx 取消时 probe 提前退出
+// Verify: probe exits early when ctx is cancelled
 func TestWarpHandshakeProbe_ContextCancel(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, 0)
 	defer stop()
@@ -169,8 +169,8 @@ func TestWarpHandshakeProbe_ContextCancel(t *testing.T) {
 	warpHandshakeProbe(ctx, host, port, 10, 500*time.Millisecond)
 	elapsed := time.Since(start)
 
-	// ctx 50ms 取消, 单次 Read deadline 500ms. 即使当前 Read 已阻塞,
-	// 最长也就 500ms + 少量调度. 不应该跑满 10 × 500 = 5000ms.
+	// ctx cancelled at 50ms, single Read deadline 500ms. Even if Read is blocked,
+	// max wait is 500ms + some scheduling. Should not run full 10 × 500 = 5000ms.
 	if elapsed > 1500*time.Millisecond {
 		t.Errorf("probe did not honor ctx cancel: %v", elapsed)
 	}

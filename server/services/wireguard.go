@@ -15,20 +15,20 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-// WireGuardKeyPair WireGuard 密钥对
+// WireGuardKeyPair WireGuard key pair
 type WireGuardKeyPair struct {
 	PrivateKey string `json:"privateKey"`
 	PublicKey  string `json:"publicKey"`
 }
 
-// KeyCacheEntry 密钥缓存条目
+// KeyCacheEntry key cache entry
 type KeyCacheEntry struct {
 	IP         string `json:"ip"`
 	PublicKey  string `json:"publicKey"`
 	PrivateKey string `json:"privateKey"`
 }
 
-// KeyCacheResponse 密钥缓存响应（包含IP和密钥对）
+// KeyCacheResponse key cache response (contains IP and key pair)
 type KeyCacheResponse struct {
 	IP         string `json:"ip"`
 	PrivateKey string `json:"privateKey"`
@@ -39,21 +39,21 @@ func getKeysCacheFilePath() string {
 	return filepath.Join(singboxDir, "wireguard_keys_cache.txt")
 }
 
-// GenerateWireGuardKeysWithCache 生成带缓存的 WireGuard 密钥对
-// ip: 必须指定的完整IP地址，如 "10.10.0.5"
+// GenerateWireGuardKeysWithCache generates a WireGuard key pair with cache
+// ip: must be a complete IP address, e.g. "10.10.0.5"
 func GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
-	// IP 是必须的
+	// IP is required
 	if ip == "" {
 		return nil, fmt.Errorf("IP address is required")
 	}
 
-	// 读取现有缓存
+	// Read existing cache
 	cache, err := loadKeysCache()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load keys cache: %w", err)
 	}
 
-	// 检查IP是否已存在，如果存在则直接返回缓存的密钥
+	// Check if IP already exists, return cached keys if so
 	for _, entry := range cache {
 		if entry.IP == ip {
 			return &KeyCacheResponse{
@@ -66,7 +66,7 @@ func GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
 
 	targetIP := ip
 
-	// 生成新的密钥对
+	// Generate new key pair
 	privateKey, err := generatePrivateKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate private key: %w", err)
@@ -77,17 +77,17 @@ func GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
 		return nil, fmt.Errorf("failed to generate public key: %w", err)
 	}
 
-	// 创建新的缓存条目
+	// Create new cache entry
 	entry := KeyCacheEntry{
 		IP:         targetIP,
 		PublicKey:  publicKey,
 		PrivateKey: privateKey,
 	}
 
-	// 添加到缓存
+	// Add to cache
 	cache = append(cache, entry)
 
-	// 保存缓存
+	// Save cache
 	if err := saveKeysCache(cache); err != nil {
 		return nil, fmt.Errorf("failed to save keys cache: %w", err)
 	}
@@ -99,27 +99,27 @@ func GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
 	}, nil
 }
 
-// loadKeysCache 加载密钥缓存
+// loadKeysCache loads the key cache
 func loadKeysCache() ([]KeyCacheEntry, error) {
 	keysCacheFile := getKeysCacheFilePath()
-	// 确保数据目录存在
+	// Ensure data directory exists
 	dataDir := filepath.Dir(keysCacheFile)
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return nil, err
 	}
 
-	// 如果文件不存在，返回空缓存
+	// If file does not exist, return empty cache
 	if _, err := os.Stat(keysCacheFile); os.IsNotExist(err) {
 		return []KeyCacheEntry{}, nil
 	}
 
-	// 读取文件
+	// Read file
 	data, err := os.ReadFile(keysCacheFile)
 	if err != nil {
 		return nil, err
 	}
 
-	// 解析每一行: IP 公钥 私钥
+	// Parse each line: IP public_key private_key
 	var cache []KeyCacheEntry
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
@@ -143,33 +143,33 @@ func loadKeysCache() ([]KeyCacheEntry, error) {
 	return cache, nil
 }
 
-// saveKeysCache 保存密钥缓存
+// saveKeysCache saves the key cache
 func saveKeysCache(cache []KeyCacheEntry) error {
 	keysCacheFile := getKeysCacheFilePath()
-	// 确保数据目录存在
+	// Ensure data directory exists
 	dataDir := filepath.Dir(keysCacheFile)
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return err
 	}
 
-	// 构建文件内容
+	// Build file content
 	var lines []string
 	for _, entry := range cache {
 		line := fmt.Sprintf("%s %s %s", entry.IP, entry.PublicKey, entry.PrivateKey)
 		lines = append(lines, line)
 	}
 
-	// 写入文件
+	// Write file
 	content := strings.Join(lines, "\n") + "\n"
 	return os.WriteFile(keysCacheFile, []byte(content), 0644)
 }
 
-// GetKeysCache 获取密钥缓存列表
+// GetKeysCache gets the key cache list
 func GetKeysCache() ([]KeyCacheEntry, error) {
 	return loadKeysCache()
 }
 
-// generatePrivateKey 生成 WireGuard 私钥
+// generatePrivateKey generates a WireGuard private key
 func generatePrivateKey() (string, error) {
 	var privateKey [32]byte
 	_, err := rand.Read(privateKey[:])
@@ -177,8 +177,8 @@ func generatePrivateKey() (string, error) {
 		return "", err
 	}
 
-	// WireGuard 要求对私钥进行特定的位操作
-	// 这些操作确保密钥符合 Curve25519 的要求
+	// WireGuard requires specific bit manipulation on the private key
+	// These operations ensure the key meets Curve25519 requirements
 	privateKey[0] &= 248
 	privateKey[31] &= 127
 	privateKey[31] |= 64
@@ -186,7 +186,7 @@ func generatePrivateKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(privateKey[:]), nil
 }
 
-// generatePublicKey 从私钥生成公钥
+// generatePublicKey generates a public key from a private key
 func generatePublicKey(privateKeyStr string) (string, error) {
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyStr)
 	if err != nil {
@@ -200,7 +200,7 @@ func generatePublicKey(privateKeyStr string) (string, error) {
 	var privateKeyArray [32]byte
 	copy(privateKeyArray[:], privateKey)
 
-	// 使用 Curve25519 生成公钥
+	// Use Curve25519 to generate public key
 	publicKey, err := curve25519.X25519(privateKeyArray[:], curve25519.Basepoint)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate public key: %w", err)
@@ -209,12 +209,12 @@ func generatePublicKey(privateKeyStr string) (string, error) {
 	return base64.StdEncoding.EncodeToString(publicKey), nil
 }
 
-// GeneratePublicKeyFromPrivate 从私钥生成公钥（公开函数）
+// GeneratePublicKeyFromPrivate generates a public key from a private key (public function)
 func GeneratePublicKeyFromPrivate(privateKeyStr string) (string, error) {
 	return generatePublicKey(privateKeyStr)
 }
 
-// SaveClientConfig 保存客户端配置到文件
+// SaveClientConfig saves client config to file
 func SaveClientConfig(configData []byte) error {
 	if err := os.MkdirAll(singboxDir, 0755); err != nil {
 		return fmt.Errorf("failed to create wireguard directory: %w", err)
@@ -228,7 +228,7 @@ func SaveClientConfig(configData []byte) error {
 	return nil
 }
 
-// GetClientConfig 从文件读取客户端配置
+// GetClientConfig reads client config from file
 func GetClientConfig() ([]byte, error) {
 	configPath := filepath.Join(singboxDir, "client-config.json")
 
@@ -244,13 +244,13 @@ func GetClientConfig() ([]byte, error) {
 	return data, nil
 }
 
-// SaveClientConfigFile 保存客户端配置文件（支持多客户端）
+// SaveClientConfigFile saves client config file (supports multi-client)
 func SaveClientConfigFile(clientIndex int, configContent string) error {
 	if err := os.MkdirAll(singboxDir, 0755); err != nil {
 		return fmt.Errorf("failed to create wireguard directory: %w", err)
 	}
 
-	// 保存 .conf 文件
+	// Save .conf file
 	confPath := filepath.Join(singboxDir, fmt.Sprintf("client%d.conf", clientIndex))
 	if err := os.WriteFile(confPath, []byte(configContent), 0644); err != nil {
 		return fmt.Errorf("failed to save client config file: %w", err)
@@ -259,20 +259,20 @@ func SaveClientConfigFile(clientIndex int, configContent string) error {
 	return nil
 }
 
-// ClientConfigFile 客户端配置文件信息
+// ClientConfigFile client config file information
 type ClientConfigFile struct {
 	Name    string `json:"name"`
 	Content string `json:"content"`
 }
 
-// ListClientConfigFiles 列出所有客户端配置文件
+// ListClientConfigFiles lists all client config files
 func ListClientConfigFiles() ([]ClientConfigFile, error) {
-	// 检查目录是否存在
+	// Check if directory exists
 	if _, err := os.Stat(singboxDir); os.IsNotExist(err) {
 		return []ClientConfigFile{}, nil
 	}
 
-	// 读取目录中的所有文件
+	// Read all files in directory
 	files, err := os.ReadDir(singboxDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read wireguard directory: %w", err)
@@ -280,12 +280,12 @@ func ListClientConfigFiles() ([]ClientConfigFile, error) {
 
 	configs := []ClientConfigFile{}
 	for _, file := range files {
-		// 只处理 .conf 文件
+		// Only process .conf files
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".conf" {
 			confPath := filepath.Join(singboxDir, file.Name())
 			content, err := os.ReadFile(confPath)
 			if err != nil {
-				continue // 跳过无法读取的文件
+				continue // skip unreadable files
 			}
 
 			configs = append(configs, ClientConfigFile{
@@ -298,13 +298,13 @@ func ListClientConfigFiles() ([]ClientConfigFile, error) {
 	return configs, nil
 }
 
-// isValidIP 验证 IP 地址格式（支持 IPv4 和 IPv6）
+// isValidIP validates IP address format (supports IPv4 and IPv6)
 func isValidIP(ip string) bool {
 	parsedIP := net.ParseIP(ip)
 	return parsedIP != nil
 }
 
-// fetchIPFromSource 从指定源获取公网 IP
+// fetchIPFromSource fetches public IP from a specified source
 func fetchIPFromSource(url string, timeout time.Duration) (string, error) {
 	client := &http.Client{
 		Timeout: timeout,
@@ -327,7 +327,7 @@ func fetchIPFromSource(url string, timeout time.Duration) (string, error) {
 
 	ip := strings.TrimSpace(string(body))
 
-	// 验证 IP 格式
+	// Validate IP format
 	if !isValidIP(ip) {
 		return "", fmt.Errorf("invalid IP format: %s", ip)
 	}
@@ -335,9 +335,9 @@ func fetchIPFromSource(url string, timeout time.Duration) (string, error) {
 	return ip, nil
 }
 
-// GetPublicIP 获取服务器公网 IP 地址（支持多源和故障转移）
+// GetPublicIP gets the server's public IP address (supports multi-source and failover)
 func GetPublicIP() (string, error) {
-	// 多个 IP 获取源（按优先级排序）
+	// Multiple IP sources (sorted by priority)
 	sources := []string{
 		"https://api.ipify.org",
 		"https://ifconfig.me",
@@ -348,7 +348,7 @@ func GetPublicIP() (string, error) {
 	timeout := 5 * time.Second
 	var lastErr error
 
-	// 尝试从每个源获取 IP，直到成功
+	// Try each source until successful
 	for _, source := range sources {
 		ip, err := fetchIPFromSource(source, timeout)
 		if err != nil {
@@ -356,11 +356,11 @@ func GetPublicIP() (string, error) {
 			continue
 		}
 
-		// 成功获取并验证 IP
+		// Successfully obtained and validated IP
 		return ip, nil
 	}
 
-	// 所有源都失败
+	// All sources failed
 	if lastErr != nil {
 		return "", fmt.Errorf("failed to get public IP from all sources: %w", lastErr)
 	}

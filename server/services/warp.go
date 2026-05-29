@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// Cloudflare WARP API 常量
+// Cloudflare WARP API constants
 const (
 	warpAPIBase     = "https://api.cloudflareclient.com"
 	warpAPIVersion  = "v0a2158"
@@ -25,38 +25,38 @@ const (
 	warpDefaultPort = 2408
 )
 
-// WarpInterfaceAddr WARP 下发的客户端地址
+// WarpInterfaceAddr WARP assigned client address
 type WarpInterfaceAddr struct {
 	V4 string `json:"v4"`
 	V6 string `json:"v6"`
 }
 
-// WarpPeerEndpoint WARP 对端地址信息
+// WarpPeerEndpoint WARP peer endpoint info
 type WarpPeerEndpoint struct {
 	Host string `json:"host"`
 	V4   string `json:"v4"`
 	V6   string `json:"v6"`
 }
 
-// WarpPeer WARP 对端配置
+// WarpPeer WARP peer config
 type WarpPeer struct {
 	PublicKey string           `json:"public_key"`
 	Endpoint  WarpPeerEndpoint `json:"endpoint"`
 }
 
-// WarpInterface 本地接口配置
+// WarpInterface local interface config
 type WarpInterface struct {
 	Addresses WarpInterfaceAddr `json:"addresses"`
 }
 
-// WarpConfig 设备下发的 WG 配置
+// WarpConfig device WG config
 type WarpConfig struct {
 	ClientID  string        `json:"client_id"`
 	Interface WarpInterface `json:"interface"`
 	Peers     []WarpPeer    `json:"peers"`
 }
 
-// WarpAccount 账户信息
+// WarpAccount account info
 type WarpAccount struct {
 	ID                string `json:"id"`
 	License           string `json:"license"`
@@ -67,7 +67,7 @@ type WarpAccount struct {
 	ReferralRenewalEn int64  `json:"referral_renewal_countdown"`
 }
 
-// WarpRegisterResponse /reg 返回体
+// WarpRegisterResponse /reg response body
 type WarpRegisterResponse struct {
 	ID      string      `json:"id"`
 	Token   string      `json:"token"`
@@ -75,7 +75,7 @@ type WarpRegisterResponse struct {
 	Config  WarpConfig  `json:"config"`
 }
 
-// WarpRecord 本地持久化的 WARP 设备记录
+// WarpRecord locally persisted WARP device record
 type WarpRecord struct {
 	PrivateKey string               `json:"private_key"`
 	PublicKey  string               `json:"public_key"`
@@ -88,7 +88,7 @@ func warpRecordPath() string {
 	return filepath.Join(singboxDir, "warp-account.json")
 }
 
-// LoadWarpRecord 读取已缓存的 WARP 记录（不存在则返回 nil, nil）
+// LoadWarpRecord reads cached WARP record (returns nil, nil if not found)
 func LoadWarpRecord() (*WarpRecord, error) {
 	path := warpRecordPath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -105,9 +105,9 @@ func LoadWarpRecord() (*WarpRecord, error) {
 	return &rec, nil
 }
 
-// SaveWarpRecord 保存 WARP 记录
-// 文件权限 0600: 内含 WireGuard 私钥与 Cloudflare Bearer Token, 必须只读于进程所有者
-// 原子写入: 写入临时文件后 rename, 避免进程崩溃导致半写文件破坏已有记录
+// SaveWarpRecord saves WARP record
+// File permission 0600: contains WireGuard private key and Cloudflare Bearer Token, must be read-only by process owner
+// Atomic write: write to temp file then rename, to avoid half-written files from crashes destroying existing records
 func SaveWarpRecord(rec *WarpRecord) error {
 	if err := os.MkdirAll(singboxDir, 0755); err != nil {
 		return err
@@ -121,18 +121,18 @@ func SaveWarpRecord(rec *WarpRecord) error {
 	if err := os.WriteFile(tmp, data, 0600); err != nil {
 		return err
 	}
-	// 兜底 chmod, 部分文件系统/umask 可能放宽初始权限
+	// Fallback chmod, some filesystems/umask may relax initial permissions
 	_ = os.Chmod(tmp, 0600)
 	if err := os.Rename(tmp, path); err != nil {
 		_ = os.Remove(tmp)
 		return err
 	}
-	// Rename 后再次 chmod, 保证目标文件权限始终 0600
+	// Chmod again after rename to ensure target file permissions are always 0600
 	_ = os.Chmod(path, 0600)
 	return nil
 }
 
-// DeleteWarpRecord 删除本地 WARP 记录
+// DeleteWarpRecord deletes local WARP record
 func DeleteWarpRecord() error {
 	path := warpRecordPath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -141,12 +141,12 @@ func DeleteWarpRecord() error {
 	return os.Remove(path)
 }
 
-// warpHTTPClient 统一的 HTTP 客户端
+// warpHTTPClient unified HTTP client
 func warpHTTPClient() *http.Client {
 	return &http.Client{Timeout: 30 * time.Second}
 }
 
-// randomHexStr 返回 n 字节随机十六进制串（去除 secret 用途）
+// randomHexStr returns n-byte random hex string (for secrets)
 func randomHexStr(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
@@ -155,15 +155,15 @@ func randomHexStr(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// RegisterWarpDevice 通过 Cloudflare API 注册新的 WARP 设备
+// RegisterWarpDevice registers a new WARP device via Cloudflare API
 func RegisterWarpDevice() (*WarpRecord, error) {
 	privKey, err := generatePrivateKey()
 	if err != nil {
-		return nil, fmt.Errorf("生成私钥失败: %w", err)
+		return nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 	pubKey, err := generatePublicKey(privKey)
 	if err != nil {
-		return nil, fmt.Errorf("生成公钥失败: %w", err)
+		return nil, fmt.Errorf("failed to generate public key: %w", err)
 	}
 
 	serial, err := randomHexStr(8)
@@ -196,7 +196,7 @@ func RegisterWarpDevice() (*WarpRecord, error) {
 
 	resp, err := warpHTTPClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("WARP 注册请求失败: %w", err)
+		return nil, fmt.Errorf("WARP registration request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -205,15 +205,15 @@ func RegisterWarpDevice() (*WarpRecord, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("WARP 注册失败 HTTP %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("WARP registration failed HTTP %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	var regResp WarpRegisterResponse
 	if err := json.Unmarshal(respBody, &regResp); err != nil {
-		return nil, fmt.Errorf("解析 WARP 响应失败: %w", err)
+		return nil, fmt.Errorf("failed to parse WARP response: %w", err)
 	}
 	if len(regResp.Config.Peers) == 0 {
-		return nil, fmt.Errorf("WARP 响应缺少 peer 配置")
+		return nil, fmt.Errorf("WARP response missing peer config")
 	}
 
 	now := time.Now().Format(time.RFC3339)
@@ -225,24 +225,24 @@ func RegisterWarpDevice() (*WarpRecord, error) {
 		UpdatedAt:  now,
 	}
 	if err := SaveWarpRecord(rec); err != nil {
-		return nil, fmt.Errorf("保存 WARP 记录失败: %w", err)
+		return nil, fmt.Errorf("failed to save WARP record: %w", err)
 	}
 	return rec, nil
 }
 
-// BindWarpLicense 为已注册的 WARP 设备绑定 WARP+ 许可证
+// BindWarpLicense binds WARP+ license to a registered WARP device
 func BindWarpLicense(rec *WarpRecord, license string) (*WarpRecord, error) {
 	if rec == nil {
-		return nil, fmt.Errorf("请先注册 WARP 设备")
+		return nil, fmt.Errorf("please register a WARP device first")
 	}
 	if license == "" {
-		return nil, fmt.Errorf("license 不能为空")
+		return nil, fmt.Errorf("license cannot be empty")
 	}
 	if rec.Device.Token == "" || rec.Device.ID == "" {
-		return nil, fmt.Errorf("当前 WARP 记录缺少 token 或设备 ID")
+		return nil, fmt.Errorf("current WARP record missing token or device ID")
 	}
 
-	// Step 1: PUT /reg/{id}/account — 更新 license
+	// Step 1: PUT /reg/{id}/account — update license
 	body, err := json.Marshal(map[string]string{"license": license})
 	if err != nil {
 		return nil, err
@@ -259,24 +259,24 @@ func BindWarpLicense(rec *WarpRecord, license string) (*WarpRecord, error) {
 
 	resp, err := warpHTTPClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("绑定 license 请求失败: %w", err)
+		return nil, fmt.Errorf("license binding request failed: %w", err)
 	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("读取 license 响应失败: %w", err)
+		return nil, fmt.Errorf("failed to read license response: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("绑定 license 失败 HTTP %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("license binding failed HTTP %d: %s", resp.StatusCode, string(respBody))
 	}
 	var acct WarpAccount
 	if err := json.Unmarshal(respBody, &acct); err != nil {
-		return nil, fmt.Errorf("解析 license 响应失败: %w", err)
+		return nil, fmt.Errorf("failed to parse license response: %w", err)
 	}
 
-	// 字段级合并: CF 的 PUT /account 在不同 API 版本里偶尔返回 partial Account,
-	// 若直接整体替换, 可能把历史字段(premium_data / referral_count 等)清零.
-	// 策略: plan 相关字段以 PUT 响应为准; 数值统计字段仅在响应非零时覆盖.
+	// Field-level merge: CF's PUT /account in different API versions occasionally returns partial Account,
+	// if we replace entirely, historical fields (premium_data / referral_count etc.) could be zeroed.
+	// Strategy: plan-related fields use PUT response; numerical stats fields only overwrite when non-zero.
 	rec.Device.Account.License = acct.License
 	rec.Device.Account.AccountType = acct.AccountType
 	rec.Device.Account.WarpPlus = acct.WarpPlus
@@ -293,18 +293,18 @@ func BindWarpLicense(rec *WarpRecord, license string) (*WarpRecord, error) {
 		rec.Device.Account.ReferralRenewalEn = acct.ReferralRenewalEn
 	}
 
-	// Step 2: GET /reg/{id} — 某些 license 绑定后需要刷新设备信息
-	// 刷新成功时作为权威状态覆盖 Account, 失败则保留上面的字段级合并结果
+	// Step 2: GET /reg/{id} — some license bindings need to refresh device info
+	// On successful refresh, use it as authoritative state to overwrite Account; otherwise keep the field-level merge result
 	_ = refreshWarpDevice(rec)
 
 	rec.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := SaveWarpRecord(rec); err != nil {
-		return nil, fmt.Errorf("保存 WARP 记录失败: %w", err)
+		return nil, fmt.Errorf("failed to save WARP record: %w", err)
 	}
 	return rec, nil
 }
 
-// refreshWarpDevice 拉取最新的设备信息并更新 config/account
+// refreshWarpDevice fetches latest device info and updates config/account
 func refreshWarpDevice(rec *WarpRecord) error {
 	url := fmt.Sprintf("%s/%s/reg/%s", warpAPIBase, warpAPIVersion, rec.Device.ID)
 	req, err := http.NewRequest("GET", url, nil)
@@ -330,20 +330,20 @@ func refreshWarpDevice(rec *WarpRecord) error {
 	if err := json.Unmarshal(data, &latest); err != nil {
 		return err
 	}
-	// 防御: 只在 latest 拿到完整设备信息时才覆盖旧记录,
-	// 否则保留旧数据避免部分响应破坏已持久化的配置
+	// Defense: only overwrite old record when latest has complete device info,
+	// otherwise keep old data to avoid partial responses breaking persisted config
 	if latest.ID == "" || len(latest.Config.Peers) == 0 {
 		return fmt.Errorf("refresh returned incomplete record")
 	}
-	// token 不在 GET /reg 的返回中,需要保留
+	// token is not in GET /reg response, need to preserve it
 	token := rec.Device.Token
 	rec.Device = latest
 	rec.Device.Token = token
 	return nil
 }
 
-// decodeWarpClientID 尝试多种 base64 编码解析 client_id
-// CF API 可能返回不带 padding 的 base64,也可能是 URL-safe 变体
+// decodeWarpClientID tries multiple base64 encodings to parse client_id
+// CF API may return base64 without padding, or URL-safe variants
 func decodeWarpClientID(cid string) ([]byte, error) {
 	if cid == "" {
 		return nil, fmt.Errorf("empty client_id")
@@ -362,22 +362,22 @@ func decodeWarpClientID(cid string) ([]byte, error) {
 	return nil, fmt.Errorf("client_id is not valid base64")
 }
 
-// BuildWarpOutbound 将 WARP 记录转换为 sing-box wireguard 出站配置
+// BuildWarpOutbound converts WARP record to sing-box wireguard outbound config
 func BuildWarpOutbound(rec *WarpRecord, endpointHost string, endpointPort int, mtu int) (map[string]interface{}, error) {
 	if rec == nil {
-		return nil, fmt.Errorf("WARP 记录为空")
+		return nil, fmt.Errorf("WARP record is nil")
 	}
 	if len(rec.Device.Config.Peers) == 0 {
-		return nil, fmt.Errorf("WARP 记录缺少 peer 配置")
+		return nil, fmt.Errorf("WARP record missing peer config")
 	}
 
-	// 解析 client_id → reserved 三字节
-	// client_id 非空但解码失败时,返回错误而非静默构造不完整出站
+	// Parse client_id → reserved three bytes
+	// When client_id is non-empty but decode fails, return error instead of silently constructing incomplete outbound
 	var reserved []int
 	if rec.Device.Config.ClientID != "" {
 		raw, err := decodeWarpClientID(rec.Device.Config.ClientID)
 		if err != nil {
-			return nil, fmt.Errorf("解析 WARP client_id 失败: %w", err)
+			return nil, fmt.Errorf("failed to parse WARP client_id: %w", err)
 		}
 		reserved = []int{int(raw[0]), int(raw[1]), int(raw[2])}
 	}
@@ -410,7 +410,7 @@ func BuildWarpOutbound(rec *WarpRecord, endpointHost string, endpointPort int, m
 		addresses = append(addresses, v6)
 	}
 	if len(addresses) == 0 {
-		return nil, fmt.Errorf("WARP 记录缺少客户端地址")
+		return nil, fmt.Errorf("WARP record missing client address")
 	}
 
 	peer := rec.Device.Config.Peers[0]

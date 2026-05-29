@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// 代理测速：串行启动临时 sing-box 容器，通过 SOCKS/HTTP 代理测试节点延迟与下载速度
+// Proxy speed test: serially start temporary sing-box containers, test node latency and download speed via SOCKS/HTTP proxy
 
 const (
 	speedTestLatencyURL  = "http://www.gstatic.com/generate_204"
@@ -23,7 +23,7 @@ const (
 	speedTestDuration    = 10 * time.Second
 )
 
-// SpeedTestResult 单节点测速结果
+// SpeedTestResult single node speed test result
 type SpeedTestResult struct {
 	Tag       string  `json:"tag"`
 	Name      string  `json:"name"`
@@ -34,7 +34,7 @@ type SpeedTestResult struct {
 	TestedAt  string  `json:"tested_at,omitempty"`
 }
 
-// SpeedTestState 全局测速状态
+// SpeedTestState global speed test state
 type SpeedTestState struct {
 	Running   bool                        `json:"running"`
 	Total     int                         `json:"total"`
@@ -50,7 +50,7 @@ var (
 	speedTestCancel context.CancelFunc
 )
 
-// GetSpeedTestState 返回状态快照
+// GetSpeedTestState returns a state snapshot
 func GetSpeedTestState() *SpeedTestState {
 	speedTestMu.Lock()
 	defer speedTestMu.Unlock()
@@ -63,7 +63,7 @@ func GetSpeedTestState() *SpeedTestState {
 	return &cp
 }
 
-// StopSpeedTest 取消正在运行的测速
+// StopSpeedTest cancels a running speed test
 func StopSpeedTest() {
 	speedTestMu.Lock()
 	defer speedTestMu.Unlock()
@@ -72,7 +72,7 @@ func StopSpeedTest() {
 	}
 }
 
-// StartSpeedTest 启动一次串行测速（所有订阅节点）
+// StartSpeedTest starts a serial speed test (all subscription nodes)
 func StartSpeedTest() error {
 	speedTestMu.Lock()
 	if speedTestState.Running {
@@ -89,7 +89,7 @@ func StartSpeedTest() error {
 		return fmt.Errorf("no nodes")
 	}
 
-	// 释放上一轮残留的 cancel（若存在）
+	// Release leftover cancel from previous round (if any)
 	if speedTestCancel != nil {
 		speedTestCancel()
 		speedTestCancel = nil
@@ -129,21 +129,21 @@ func runSpeedTest(ctx context.Context, cancel context.CancelFunc, nodes []ProxyN
 		if r := recover(); r != nil {
 			log.Printf("[speedtest] PANIC: %v", r)
 		}
-		// 确保最后清理临时容器
+		// Ensure temporary container is cleaned up at the end
 		if ds := GetDockerService(); ds != nil {
 			_ = ds.StopSpeedTestContainer()
 		}
 		speedTestMu.Lock()
 		speedTestState.Running = false
 		speedTestState.Current = ""
-		// 释放本轮自己的 cancel（若全局仍指向它）
+		// Release this round's own cancel (if global still points to it)
 		if speedTestCancel != nil {
-			// 调用 cancel 释放 context 关联资源（幂等）
+			// Call cancel to release context-associated resources (idempotent)
 			cancel()
 			speedTestCancel = nil
 		}
-		// 只持久化已完成的节点（ok/failed），避免把被取消的 pending/testing 节点
-		// 写成 online=false + latency=0，从而覆盖之前的有效数据
+		// Only persist completed nodes (ok/failed), avoid writing cancelled pending/testing nodes
+		// as online=false + latency=0, which would overwrite previous valid data
 		updates := make([]SpeedTestUpdate, 0, len(speedTestState.Results))
 		for _, r := range speedTestState.Results {
 			if r.Status != "ok" && r.Status != "failed" {
@@ -204,7 +204,7 @@ func runSpeedTest(ctx context.Context, cancel context.CancelFunc, nodes []ProxyN
 	}
 }
 
-// testOneNode 返回: latencyMs, speedKBps, downloadErrMsg (非致命), fatalErr
+// testOneNode returns: latencyMs, speedKBps, downloadErrMsg (non-fatal), fatalErr
 func testOneNode(ctx context.Context, node ProxyNode, tag string) (int64, float64, string, error) {
 	if node.Outbound == nil {
 		return 0, 0, "", fmt.Errorf("missing outbound")
@@ -249,7 +249,7 @@ func testOneNode(ctx context.Context, node ProxyNode, tag string) (int64, float6
 	proxyURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 	client := newProxyClient(proxyURL, 10*time.Second)
 
-	// 延迟：3 次取最小
+	// Latency: take minimum of 3 attempts
 	var minLatency int64 = -1
 	for i := 0; i < 3; i++ {
 		select {
@@ -274,7 +274,7 @@ func testOneNode(ctx context.Context, node ProxyNode, tag string) (int64, float6
 		return 0, 0, "", fmt.Errorf("latency probe failed")
 	}
 
-	// 下载吞吐：限时 10 秒。下载失败视为非致命：保留延迟数据，speed=0，并记录原因
+	// Download throughput: 10 second limit. Download failure is non-fatal: keep latency data, speed=0, log reason
 	dlClient := newProxyClient(proxyURL, speedTestDuration+5*time.Second)
 	dlCtx, dlCancel := context.WithTimeout(ctx, speedTestDuration)
 	defer dlCancel()
@@ -341,7 +341,7 @@ func buildSpeedTestConfig(node ProxyNode, tag string, port int) map[string]inter
 	}
 	outbound["tag"] = tag
 
-	// 全局代理模式：DNS 和所有流量都走代理节点
+	// Global proxy mode: DNS and all traffic go through the proxy node
 	return map[string]interface{}{
 		"log": map[string]interface{}{"level": "warn"},
 		"dns": map[string]interface{}{

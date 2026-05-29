@@ -1,6 +1,6 @@
 // Shared types for inbound protocol form components
 
-// sing-box 格式的用户类型
+// sing-box format user types
 export interface VLESSUser {
   uuid: string
   name?: string
@@ -44,7 +44,7 @@ export interface AnyTLSUser {
   password: string
 }
 
-// 本地 UI 使用的 WireGuard Peer 类型
+// WireGuard Peer type used by local UI
 export interface LocalPeer {
   publicKey: string
   privateKey?: string

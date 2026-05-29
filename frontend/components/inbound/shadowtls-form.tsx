@@ -63,11 +63,11 @@ function buildShadowtlsInbound(f: ShadowtlsFlat): any {
       ...(f.handshake_detour ? { detour: f.handshake_detour } : {}),
     },
   }
-  // v2: 使用顶层 password
+  // v2: uses top-level password
   if (f.version === 2 && f.password) {
     previewConfig.password = f.password
   }
-  // v3: 使用 users 数组和 strict_mode
+  // v3: uses users array and strict_mode
   if (f.version >= 3) {
     const shadowtlsUsersPreview = f.users
       .filter((u) => u.password)

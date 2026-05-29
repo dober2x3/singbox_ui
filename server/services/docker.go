@@ -19,25 +19,25 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-// Docker 容器配置常量
+// Docker container config constants
 const (
 	SingBoxContainerName   = "sing-box"
-	SingBoxContainerPrefix = "sing-box-" // 用于多配置容器命名
+	SingBoxContainerPrefix = "sing-box-" // used for multi-config container naming
 	SingBoxVersion         = "v1.13.5"
 	SingBoxImageName       = "ghcr.io/sagernet/sing-box:" + SingBoxVersion
-	SingBoxImageTarPath    = "/root/singbox-image.tar" // CI 预拉取的镜像 tar 文件路径
+	SingBoxImageTarPath    = "/root/singbox-image.tar" // CI pre-pulled image tar path
 	ContainerConfigDir     = "/etc/sing-box"
 	ContainerDataDir       = "/var/lib/sing-box"
 )
 
 
-// DockerService Docker 服务封装
+// DockerService Docker service wrapper
 type DockerService struct {
 	cli *client.Client
 	ctx context.Context
 }
 
-// NewDockerService 创建 Docker 服务实例
+// NewDockerService creates a Docker service instance
 func NewDockerService() (*DockerService, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -50,7 +50,7 @@ func NewDockerService() (*DockerService, error) {
 	}, nil
 }
 
-// Close 关闭 Docker 客户端
+// Close closes the Docker client
 func (d *DockerService) Close() error {
 	if d.cli != nil {
 		return d.cli.Close()
@@ -58,13 +58,13 @@ func (d *DockerService) Close() error {
 	return nil
 }
 
-// getHostDataDir 获取宿主机数据目录路径（通过 HOST_DATA_DIR 环境变量）
+// getHostDataDir gets the host data directory path (via HOST_DATA_DIR env var)
 func getHostDataDir() string {
 	return os.Getenv("HOST_DATA_DIR")
 }
 
-// resolveHostConfigDir 将容器内路径解析为宿主机路径
-// 用于 Docker-in-Docker 场景下创建 sing-box 容器时的卷挂载
+// resolveHostConfigDir resolves container-internal path to host path
+// Used for volume mounts when creating sing-box container in Docker-in-Docker scenarios
 func resolveHostConfigDir(containerPath string) (string, error) {
 	hostDir := getHostDataDir()
 	if hostDir == "" {
@@ -76,7 +76,7 @@ func resolveHostConfigDir(containerPath string) (string, error) {
 		containerDataDir = "/home/data"
 	}
 
-	// 将容器内路径 /home/data/xxx 替换为 宿主机路径/xxx
+	// Replace container path /home/data/xxx with host path/xxx
 	rel, err := filepath.Rel(containerDataDir, containerPath)
 	if err != nil || strings.HasPrefix(rel, "..") {
 		return "", fmt.Errorf("path %s is not under DATA_DIR %s", containerPath, containerDataDir)
@@ -84,11 +84,11 @@ func resolveHostConfigDir(containerPath string) (string, error) {
 	return filepath.Join(hostDir, rel), nil
 }
 
-// EnsureImage 确保镜像存在：优先从内嵌 tar 加载，否则从远程拉取
+// EnsureImage ensures the image exists: prefer loading from embedded tar, otherwise pull from remote
 func (d *DockerService) EnsureImage() error {
 	log.Printf("Checking if image %s exists...", SingBoxImageName)
 
-	// 检查镜像是否已存在
+	// Check if image already exists
 	images, err := d.cli.ImageList(d.ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", SingBoxImageName)),
 	})
@@ -101,14 +101,14 @@ func (d *DockerService) EnsureImage() error {
 		return nil
 	}
 
-	// 尝试从内嵌 tar 文件加载镜像
+	// Try to load from embedded tar file
 	if err := d.loadImageFromFile(); err == nil {
 		return nil
 	} else {
 		log.Printf("No embedded image or load failed: %v, falling back to pull", err)
 	}
 
-	// 从远程拉取镜像
+	// Pull from remote
 	log.Printf("Pulling image %s...", SingBoxImageName)
 	reader, err := d.cli.ImagePull(d.ctx, SingBoxImageName, types.ImagePullOptions{})
 	if err != nil {
@@ -116,7 +116,7 @@ func (d *DockerService) EnsureImage() error {
 	}
 	defer reader.Close()
 
-	// 等待拉取完成
+	// Wait for pull to complete
 	_, err = io.Copy(io.Discard, reader)
 	if err != nil {
 		return fmt.Errorf("failed to read pull response: %w", err)
@@ -126,7 +126,7 @@ func (d *DockerService) EnsureImage() error {
 	return nil
 }
 
-// loadImageFromFile 从内嵌的 tar 文件加载 Docker 镜像
+// loadImageFromFile loads Docker image from embedded tar file
 func (d *DockerService) loadImageFromFile() error {
 	tarPath := SingBoxImageTarPath
 	if _, err := os.Stat(tarPath); os.IsNotExist(err) {
@@ -147,14 +147,14 @@ func (d *DockerService) loadImageFromFile() error {
 	defer resp.Body.Close()
 	io.Copy(io.Discard, resp.Body)
 
-	// tar 内的 tag 可能与期望不同（CI 使用临时 tag），需要重新 tag
-	// 查找刚加载的镜像并确保 SingBoxImageName tag 存在
+	// Tag inside tar may differ from expected (CI uses temp tag), need to re-tag
+	// Find the just-loaded image and ensure SingBoxImageName tag exists
 	images, err := d.cli.ImageList(d.ctx, types.ImageListOptions{})
 	if err == nil {
 		for _, img := range images {
 			for _, tag := range img.RepoTags {
 				if strings.HasPrefix(tag, "singbox:") {
-					// CI 产生的临时 tag，重新标记为正式名称
+					// CI-generated temp tag, re-tag to official name
 					if err := d.cli.ImageTag(d.ctx, img.ID, SingBoxImageName); err != nil {
 						log.Printf("Warning: failed to re-tag image: %v", err)
 					} else {
@@ -166,7 +166,7 @@ func (d *DockerService) loadImageFromFile() error {
 		}
 	}
 
-	// 验证镜像已正确加载
+	// Verify image loaded correctly
 	verifyImages, err := d.cli.ImageList(d.ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", SingBoxImageName)),
 	})
@@ -174,7 +174,7 @@ func (d *DockerService) loadImageFromFile() error {
 		return fmt.Errorf("image loaded but not found under expected tag %s", SingBoxImageName)
 	}
 
-	// 加载成功后删除 tar 文件释放磁盘空间
+	// Delete tar file after successful load to free disk space
 	if err := os.Remove(tarPath); err != nil {
 		log.Printf("Warning: failed to remove image tar %s: %v", tarPath, err)
 	}
@@ -183,39 +183,39 @@ func (d *DockerService) loadImageFromFile() error {
 	return nil
 }
 
-// CreateAndStartContainer 创建并启动 sing-box 容器
+// CreateAndStartContainer creates and starts a sing-box container
 func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, error) {
-	// 先尝试删除可能存在的同名容器
+	// First try to remove any container with the same name
 	_ = d.RemoveContainer()
 
-	// 将容器内路径解析为宿主机路径（Docker-in-Docker 场景）
+	// Resolve container-internal path to host path (Docker-in-Docker scenario)
 	hostSingboxDir, err := resolveHostConfigDir(hostConfigDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve host config dir: %w", err)
 	}
 	log.Printf("Mounting host directory %s to container /etc/sing-box", hostSingboxDir)
 
-	// 确保 ACME 数据目录存在（使用容器内部路径）
+	// Ensure ACME data directory exists (using container-internal path)
 	internalAcmeDir := filepath.Join(hostConfigDir, "acme")
 	if err := os.MkdirAll(internalAcmeDir, 0755); err != nil {
 		log.Printf("Warning: failed to create ACME directory %s: %v", internalAcmeDir, err)
 	}
 	hostAcmeDir := hostSingboxDir + "/acme"
 
-	// 容器配置
-	// sing-box 镜像使用 sing-box 作为入口点
-	// 命令格式: -D /var/lib/sing-box -C /etc/sing-box/ run
+	// Container config
+	// sing-box image uses sing-box as entrypoint
+	// Command format: -D /var/lib/sing-box -C /etc/sing-box/ run
 	config := &container.Config{
 		Image: SingBoxImageName,
 		Cmd:   []string{"-D", ContainerDataDir, "-C", ContainerConfigDir + "/", "run"},
 	}
 
-	// 主机配置
+	// Host config
 	hostConfig := &container.HostConfig{
-		// 使用 host 网络模式
+		// Use host network mode
 		NetworkMode: "host",
 
-		// 配置文件挂载
+		// Config file mounts
 		Mounts: []mount.Mount{
 			{
 				Type:     mount.TypeBind,
@@ -224,7 +224,7 @@ func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, e
 				ReadOnly: true,
 			},
 			{
-				// ACME 数据目录（用于自动证书申请）
+				// ACME data directory (for automatic certificate requests)
 				Type:     mount.TypeBind,
 				Source:   hostAcmeDir,
 				Target:   "/var/lib/sing-box/acme",
@@ -232,22 +232,22 @@ func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, e
 			},
 		},
 
-		// 添加 NET_ADMIN 能力（sing-box 需要）
+		// Add NET_ADMIN capability (required by sing-box)
 		CapAdd: []string{"NET_ADMIN"},
 
-		// 重启策略
+		// Restart policy
 		RestartPolicy: container.RestartPolicy{
 			Name: "unless-stopped",
 		},
 
-		// 资源限制
+		// Resource limits
 		Resources: container.Resources{
 			Memory:   512 * 1024 * 1024, // 512MB
 			NanoCPUs: 1000000000,        // 1 CPU
 		},
 	}
 
-	// 创建容器
+	// Create container
 	resp, err := d.cli.ContainerCreate(
 		d.ctx,
 		config,
@@ -260,9 +260,9 @@ func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, e
 		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 
-	// 启动容器
+	// Start container
 	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		// 如果启动失败，删除容器
+		// If start fails, remove container
 		_ = d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -271,9 +271,9 @@ func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, e
 	return resp.ID, nil
 }
 
-// StopContainer 停止 sing-box 容器
+// StopContainer stops the sing-box container
 func (d *DockerService) StopContainer() error {
-	timeout := 10 // 10 秒超时
+	timeout := 10 // 10 second timeout
 	stopOptions := container.StopOptions{
 		Timeout: &timeout,
 	}
@@ -286,12 +286,12 @@ func (d *DockerService) StopContainer() error {
 	return nil
 }
 
-// RemoveContainer 删除 sing-box 容器
+// RemoveContainer removes the sing-box container
 func (d *DockerService) RemoveContainer() error {
 	if err := d.cli.ContainerRemove(d.ctx, SingBoxContainerName, types.ContainerRemoveOptions{
 		Force: true,
 	}); err != nil {
-		// 忽略容器不存在的错误
+		// Ignore if container does not exist
 		if !strings.Contains(err.Error(), "No such container") {
 			return fmt.Errorf("failed to remove container: %w", err)
 		}
@@ -301,7 +301,7 @@ func (d *DockerService) RemoveContainer() error {
 	return nil
 }
 
-// GetContainerStatus 获取容器状态
+// GetContainerStatus gets the container status
 func (d *DockerService) GetContainerStatus() (running bool, containerID string, err error) {
 	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
 		All:     true,
@@ -319,7 +319,7 @@ func (d *DockerService) GetContainerStatus() (running bool, containerID string, 
 	return c.State == "running", c.ID, nil
 }
 
-// GetContainerLogs 获取容器日志
+// GetContainerLogs gets the container logs
 func (d *DockerService) GetContainerLogs(tail string) (string, error) {
 	if tail == "" {
 		tail = "100"
@@ -338,14 +338,14 @@ func (d *DockerService) GetContainerLogs(tail string) (string, error) {
 	}
 	defer reader.Close()
 
-	// 使用 stdcopy 分离 stdout 和 stderr
+	// Use stdcopy to separate stdout and stderr
 	var stdout, stderr strings.Builder
 	_, err = stdcopy.StdCopy(&stdout, &stderr, reader)
 	if err != nil {
 		return "", fmt.Errorf("failed to read logs: %w", err)
 	}
 
-	// 合并输出
+	// Merge output
 	logs := stdout.String()
 	if stderr.Len() > 0 {
 		logs += "\n--- STDERR ---\n" + stderr.String()
@@ -354,7 +354,7 @@ func (d *DockerService) GetContainerLogs(tail string) (string, error) {
 	return logs, nil
 }
 
-// GetSingBoxVersion 创建临时容器执行 `sing-box version` 获取版本号
+// GetSingBoxVersion creates a temp container to run `sing-box version`
 func (d *DockerService) GetSingBoxVersion() (string, error) {
 	resp, err := d.cli.ContainerCreate(d.ctx, &container.Config{
 		Image: SingBoxImageName,
@@ -369,7 +369,7 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 		return "", fmt.Errorf("failed to start temp container: %w", err)
 	}
 
-	// 等待容器退出
+	// Wait for container to exit
 	statusCh, errCh := d.cli.ContainerWait(d.ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
@@ -381,7 +381,7 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 		return "", fmt.Errorf("timeout waiting for version")
 	}
 
-	// 从容器日志读取输出（容器已退出，一次性读取）
+	// Read output from container logs (container already exited, read all at once)
 	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		return "", fmt.Errorf("failed to read logs: %w", err)
@@ -394,7 +394,7 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 		return "", fmt.Errorf("failed to parse logs: %w", err)
 	}
 
-	// 只取第一行：sing-box version x.x.x
+	// Only take first line: sing-box version x.x.x
 	output := strings.TrimSpace(stdout.String())
 	if i := strings.IndexByte(output, '\n'); i != -1 {
 		output = output[:i]
@@ -402,7 +402,7 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 	return strings.TrimSpace(output), nil
 }
 
-// CheckNamedConfig 使用临时容器验证命名配置是否正确
+// CheckNamedConfig validates the named config using a temporary container
 func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string) (bool, string, error) {
 	hostSingboxDir, err := resolveHostConfigDir(hostConfigDir)
 	if err != nil {
@@ -431,7 +431,7 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 		return false, "", fmt.Errorf("failed to start check container: %w", err)
 	}
 
-	// 等待容器退出
+	// Wait for container to exit
 	statusCh, errCh := d.cli.ContainerWait(d.ctx, resp.ID, container.WaitConditionNotRunning)
 	var exitCode int64
 	select {
@@ -448,7 +448,7 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 		return false, "", fmt.Errorf("timeout waiting for config check")
 	}
 
-	// 读取输出
+	// Read output
 	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -466,7 +466,7 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 		output = strings.TrimSpace(stdout.String())
 	}
 
-	// 去除 ANSI 转义码
+	// Remove ANSI escape codes
 	output = stripAnsi(output)
 
 	if exitCode != 0 {
@@ -475,10 +475,10 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 	return true, output, nil
 }
 
-// SpeedTestContainerName 临时测速容器名称
+// SpeedTestContainerName temporary speed test container name
 const SpeedTestContainerName = "sing-box-speedtest"
 
-// StartSpeedTestContainer 启动用于代理测速的临时容器
+// StartSpeedTestContainer starts a temporary container for proxy speed testing
 func (d *DockerService) StartSpeedTestContainer(hostConfigDir string) error {
 	_ = d.StopSpeedTestContainer()
 
@@ -504,8 +504,8 @@ func (d *DockerService) StartSpeedTestContainer(hostConfigDir string) error {
 		CapAdd: []string{"NET_ADMIN"},
 	}
 
-	// ContainerRemove 返回后 Docker daemon 可能还没完全释放容器名，
-	// 重试以避免 "container name already in use" 的竞态
+	// After ContainerRemove returns, Docker daemon may not have released the container name yet,
+	// retry to avoid "container name already in use" race condition
 	var resp container.CreateResponse
 	for attempt := 0; attempt < 5; attempt++ {
 		resp, err = d.cli.ContainerCreate(d.ctx, createCfg, hostCfg, nil, nil, SpeedTestContainerName)
@@ -529,7 +529,7 @@ func (d *DockerService) StartSpeedTestContainer(hostConfigDir string) error {
 	return nil
 }
 
-// GetSpeedTestContainerLogs 获取测速容器日志（用于诊断启动失败）
+// GetSpeedTestContainerLogs gets speed test container logs (for diagnosing startup failures)
 func (d *DockerService) GetSpeedTestContainerLogs() string {
 	reader, err := d.cli.ContainerLogs(d.ctx, SpeedTestContainerName, types.ContainerLogsOptions{
 		ShowStdout: true,
@@ -549,7 +549,7 @@ func (d *DockerService) GetSpeedTestContainerLogs() string {
 	return stripAnsi(out)
 }
 
-// StopSpeedTestContainer 停止并删除测速容器
+// StopSpeedTestContainer stops and removes the speed test container
 func (d *DockerService) StopSpeedTestContainer() error {
 	if err := d.cli.ContainerRemove(d.ctx, SpeedTestContainerName, types.ContainerRemoveOptions{
 		Force: true,
@@ -559,13 +559,13 @@ func (d *DockerService) StopSpeedTestContainer() error {
 	return nil
 }
 
-// stripAnsi 去除字符串中的 ANSI 转义序列
+// stripAnsi removes ANSI escape sequences from a string
 func stripAnsi(s string) string {
 	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return re.ReplaceAllString(s, "")
 }
 
-// execInContainer 在运行中的容器内执行命令
+// execInContainer executes a command in a running container
 func (d *DockerService) execInContainer(cmd ...string) (string, error) {
 	execConfig := types.ExecConfig{
 		Cmd:          cmd,
@@ -598,16 +598,16 @@ func (d *DockerService) execInContainer(cmd ...string) (string, error) {
 	return output, nil
 }
 
-// GetNamedContainerName 获取命名配置的容器名称
+// GetNamedContainerName gets the container name for a named config
 func GetNamedContainerName(configName string) string {
 	return SingBoxContainerPrefix + configName
 }
 
-// CreateAndStartNamedContainer 创建并启动命名的 sing-box 容器
+// CreateAndStartNamedContainer creates and starts a named sing-box container
 func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConfigDir string) (string, error) {
 	containerName := GetNamedContainerName(configName)
 
-	// 先尝试删除可能存在的同名容器
+	// First try to remove any container with the same name
 	_ = d.RemoveNamedContainer(configName)
 
 	hostSingboxDir, err := resolveHostConfigDir(hostConfigDir)
@@ -616,20 +616,20 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 	}
 	log.Printf("Creating named container %s, mounting %s to /etc/sing-box", containerName, hostSingboxDir)
 
-	// 确保 ACME 数据目录存在（使用容器内部路径）
+	// Ensure ACME data directory exists (using container-internal path)
 	internalAcmeDir := filepath.Join(hostConfigDir, "acme")
 	if err := os.MkdirAll(internalAcmeDir, 0755); err != nil {
 		log.Printf("Warning: failed to create ACME directory %s: %v", internalAcmeDir, err)
 	}
 	hostAcmeDir := hostSingboxDir + "/acme"
 
-	// 容器配置
+	// Container config
 	config := &container.Config{
 		Image: SingBoxImageName,
 		Cmd:   []string{"-D", ContainerDataDir, "-C", ContainerConfigDir + "/", "run"},
 	}
 
-	// 主机配置
+	// Host config
 	hostConfig := &container.HostConfig{
 		NetworkMode: "host",
 		Mounts: []mount.Mount{
@@ -640,7 +640,7 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 				ReadOnly: true,
 			},
 			{
-				// ACME 数据目录（用于自动证书申请）
+				// ACME data directory (for automatic certificate requests)
 				Type:     mount.TypeBind,
 				Source:   hostAcmeDir,
 				Target:   "/var/lib/sing-box/acme",
@@ -657,7 +657,7 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 		},
 	}
 
-	// 创建容器
+	// Create container
 	resp, err := d.cli.ContainerCreate(
 		d.ctx,
 		config,
@@ -670,7 +670,7 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 
-	// 启动容器
+	// Start container
 	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		_ = d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
 		return "", fmt.Errorf("failed to start container: %w", err)
@@ -680,7 +680,7 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 	return resp.ID, nil
 }
 
-// StopNamedContainer 停止命名的 sing-box 容器
+// StopNamedContainer stops a named sing-box container
 func (d *DockerService) StopNamedContainer(configName string) error {
 	containerName := GetNamedContainerName(configName)
 	timeout := 10
@@ -698,7 +698,7 @@ func (d *DockerService) StopNamedContainer(configName string) error {
 	return nil
 }
 
-// RemoveNamedContainer 删除命名的 sing-box 容器
+// RemoveNamedContainer removes a named sing-box container
 func (d *DockerService) RemoveNamedContainer(configName string) error {
 	containerName := GetNamedContainerName(configName)
 	if err := d.cli.ContainerRemove(d.ctx, containerName, types.ContainerRemoveOptions{
@@ -713,7 +713,7 @@ func (d *DockerService) RemoveNamedContainer(configName string) error {
 	return nil
 }
 
-// GetNamedContainerStatus 获取命名容器状态
+// GetNamedContainerStatus gets the named container status
 func (d *DockerService) GetNamedContainerStatus(configName string) (running bool, containerID string, err error) {
 	containerName := GetNamedContainerName(configName)
 	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
@@ -723,7 +723,7 @@ func (d *DockerService) GetNamedContainerStatus(configName string) (running bool
 		return false, "", fmt.Errorf("failed to list containers: %w", err)
 	}
 
-	// 手动过滤容器名称，因为 Docker API 的 name filter 是子字符串匹配
+	// Manually filter container names because Docker API's name filter is substring matching
 	for _, c := range containers {
 		for _, name := range c.Names {
 			if name == "/"+containerName {
@@ -735,7 +735,7 @@ func (d *DockerService) GetNamedContainerStatus(configName string) (running bool
 	return false, "", nil
 }
 
-// GetNamedContainerLogs 获取命名容器日志
+// GetNamedContainerLogs gets the named container logs
 func (d *DockerService) GetNamedContainerLogs(configName string, tail string) (string, error) {
 	containerName := GetNamedContainerName(configName)
 	if tail == "" {
@@ -769,7 +769,7 @@ func (d *DockerService) GetNamedContainerLogs(configName string, tail string) (s
 	return logs, nil
 }
 
-// ListAllSingboxContainers 列出所有 sing-box 容器
+// ListAllSingboxContainers lists all sing-box containers
 func (d *DockerService) ListAllSingboxContainers() ([]ContainerInfo, error) {
 	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
 		All:     true,
@@ -798,7 +798,7 @@ func (d *DockerService) ListAllSingboxContainers() ([]ContainerInfo, error) {
 	return result, nil
 }
 
-// ContainerInfo 容器信息
+// ContainerInfo container information
 type ContainerInfo struct {
 	Name        string `json:"name"`
 	ContainerID string `json:"container_id"`

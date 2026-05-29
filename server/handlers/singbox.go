@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// validNamePattern 合法的实例名称：字母、数字、下划线、连字符
+// validNamePattern valid instance name: letters, digits, underscore, hyphen
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z_-]{1,9}$`)
 
-// validateName 校验实例名称：2-10位英文字母
+// validateName validate instance name: 2-10 English letters
 func validateName(c *gin.Context) (string, bool) {
 	name := c.Param("name")
 	if name == "" || !validNamePattern.MatchString(name) {
@@ -25,7 +25,7 @@ func validateName(c *gin.Context) (string, bool) {
 	return name, true
 }
 
-// GetSingboxVersion 获取 sing-box 版本
+// GetSingboxVersion get sing-box version
 func GetSingboxVersion(c *gin.Context) {
 	version, err := services.GetSingBoxVersion()
 	if err != nil {
@@ -41,9 +41,9 @@ func GetSingboxVersion(c *gin.Context) {
 	})
 }
 
-// RunSingbox 运行 sing-box 容器
+// RunSingbox run sing-box container
 func RunSingbox(c *gin.Context) {
-	// 不再需要请求参数，配置文件使用默认路径
+	// request parameters no longer needed, config file uses default path
 
 	containerID, err := services.RunSingboxContainer()
 	if err != nil {
@@ -60,7 +60,7 @@ func RunSingbox(c *gin.Context) {
 	})
 }
 
-// SaveConfig 保存配置文件
+// SaveConfig save config file
 func SaveConfig(c *gin.Context) {
 	configData, err := c.GetRawData()
 	if err != nil {
@@ -86,7 +86,7 @@ func SaveConfig(c *gin.Context) {
 	})
 }
 
-// GetConfig 获取配置文件
+// GetConfig get config file
 func GetConfig(c *gin.Context) {
 	data, err := services.GetConfig()
 	if err != nil {
@@ -100,9 +100,9 @@ func GetConfig(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
-// StopSingbox 停止 sing-box 容器
+// StopSingbox stop sing-box container
 func StopSingbox(c *gin.Context) {
-	// 不再需要 PID 参数
+	// PID parameter no longer needed
 
 	if err := services.StopSingboxContainer(); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -117,7 +117,7 @@ func StopSingbox(c *gin.Context) {
 	})
 }
 
-// GetSingboxLogs 获取 sing-box 日志
+// GetSingboxLogs get sing-box logs
 func GetSingboxLogs(c *gin.Context) {
 	logs := services.GetContainerLogs()
 	c.JSON(http.StatusOK, gin.H{
@@ -125,9 +125,9 @@ func GetSingboxLogs(c *gin.Context) {
 	})
 }
 
-// CheckSingboxStatus 检查 sing-box 容器是否正在运行
+// CheckSingboxStatus check if sing-box container is running
 func CheckSingboxStatus(c *gin.Context) {
-	// 不再需要 PID 参数
+	// PID parameter no longer needed
 
 	running, containerID := services.CheckContainerRunning()
 
@@ -137,7 +137,7 @@ func CheckSingboxStatus(c *gin.Context) {
 	})
 }
 
-// EnsureImage 确保 sing-box 镜像存在
+// EnsureImage ensure sing-box image exists
 func EnsureImage(c *gin.Context) {
 	if err := services.EnsureSingboxImage(); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -152,9 +152,9 @@ func EnsureImage(c *gin.Context) {
 	})
 }
 
-// ========== 多配置多容器 API ==========
+// ========== Multi-config multi-container API ==========
 
-// ListNamedConfigs 列出所有命名配置及其容器状态
+// ListNamedConfigs list all named configs and their container status
 func ListNamedConfigs(c *gin.Context) {
 	configs, err := services.ListNamedConfigs()
 	if err != nil {
@@ -170,7 +170,7 @@ func ListNamedConfigs(c *gin.Context) {
 	})
 }
 
-// CheckNamedConfig 验证命名配置是否正确
+// CheckNamedConfig validate named config
 func CheckNamedConfig(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -192,7 +192,7 @@ func CheckNamedConfig(c *gin.Context) {
 	})
 }
 
-// SaveNamedConfigWithContainer 保存配置到命名目录并验证（用于多容器场景）
+// SaveNamedConfigWithContainer save config to named directory and validate (for multi-container scenario)
 func SaveNamedConfigWithContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -208,7 +208,7 @@ func SaveNamedConfigWithContainer(c *gin.Context) {
 		return
 	}
 
-	// 先保存配置文件
+	// save config file first
 	if err := services.SaveNamedConfigWithDir(name, configData); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Error:   "Failed to save config",
@@ -217,10 +217,10 @@ func SaveNamedConfigWithContainer(c *gin.Context) {
 		return
 	}
 
-	// 保存后验证配置
+	// validate config after saving
 	valid, output, err := services.CheckNamedConfig(name)
 	if err != nil {
-		// 验证失败不影响保存，但返回警告
+		// validation failure does not affect saving, but returns a warning
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Config saved but validation unavailable",
 			"name":    name,
@@ -246,7 +246,7 @@ func SaveNamedConfigWithContainer(c *gin.Context) {
 	})
 }
 
-// LoadNamedConfigFromContainer 从命名目录加载配置
+// LoadNamedConfigFromContainer load config from named directory
 func LoadNamedConfigFromContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -265,7 +265,7 @@ func LoadNamedConfigFromContainer(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
-// DeleteNamedConfigWithContainer 删除命名配置及其容器
+// DeleteNamedConfigWithContainer delete named config and its container
 func DeleteNamedConfigWithContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -286,7 +286,7 @@ func DeleteNamedConfigWithContainer(c *gin.Context) {
 	})
 }
 
-// RunNamedContainer 启动命名配置的容器
+// RunNamedContainer start container for named config
 func RunNamedContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -310,7 +310,7 @@ func RunNamedContainer(c *gin.Context) {
 	})
 }
 
-// StopNamedContainer 停止命名配置的容器
+// StopNamedContainer stop container for named config
 func StopNamedContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -331,7 +331,7 @@ func StopNamedContainer(c *gin.Context) {
 	})
 }
 
-// GetNamedContainerStatus 获取命名容器状态
+// GetNamedContainerStatus get named container status
 func GetNamedContainerStatus(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -347,7 +347,7 @@ func GetNamedContainerStatus(c *gin.Context) {
 	})
 }
 
-// GetNamedContainerLogs 获取命名容器日志
+// GetNamedContainerLogs get named container logs
 func GetNamedContainerLogs(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -361,7 +361,7 @@ func GetNamedContainerLogs(c *gin.Context) {
 	})
 }
 
-// ListAllContainers 列出所有 sing-box 容器
+// ListAllContainers list all sing-box containers
 func ListAllContainers(c *gin.Context) {
 	containers, err := services.ListAllContainers()
 	if err != nil {

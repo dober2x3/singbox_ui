@@ -15,41 +15,41 @@ import (
 var distFS embed.FS
 
 func main() {
-	// 初始化 sing-box 环境
+	// initialize sing-box environment
 	if err := Initialize(); err != nil {
 		log.Printf("Warning: Failed to initialize sing-box environment: %v", err)
 		log.Println("Some features may not work properly")
 	}
 
-	// 设置 Gin 模式
+	// set Gin mode
 	gin.SetMode(gin.ReleaseMode)
 
-	// 创建 Gin 路由
+	// create Gin router
 	r := gin.Default()
 
-	// 添加 CORS 中间件
+	// add CORS middleware
 	r.Use(corsMiddleware())
 
-	// API 路由组 - 仅提供工具类API
+	// API route group - provides tool APIs only
 	api := r.Group("/api")
 	{
-		// WireGuard 密钥生成工具和多客户端管理
+		// WireGuard key generation tool and multi-client management
 		wg := api.Group("/wireguard")
 		{
-			// 密钥生成
+			// key generation
 			wg.POST("/keygen", handlers.GenerateWireGuardKeys)
 			wg.POST("/pubkey", handlers.GetPublicKeyFromPrivate)
 			wg.GET("/keys-cache", handlers.GetKeysCache)
 			wg.GET("/public-ip", handlers.GetPublicIP)
 
-			// 客户端配置
+			// client config
 			wg.GET("/client-config", handlers.GetClientConfig)
 			wg.POST("/client-config", handlers.SaveClientConfig)
 			wg.POST("/save-client-file", handlers.SaveClientConfigFile)
 			wg.GET("/client-files", handlers.ListClientConfigFiles)
 		}
 
-		// sing-box 管理工具 (Docker 容器模式)
+		// sing-box management tool (Docker container mode)
 		singbox := api.Group("/singbox")
 		{
 			singbox.GET("/version", handlers.GetSingboxVersion)
@@ -61,7 +61,7 @@ func main() {
 			singbox.GET("/status", handlers.CheckSingboxStatus)
 			singbox.POST("/ensure-image", handlers.EnsureImage)
 
-			// 证书管理
+			// certificate management
 			singbox.POST("/certificate", handlers.GenerateSelfSignedCert)
 			singbox.GET("/certificate", handlers.GetCertificateInfo)
 			singbox.POST("/certificate/upload", handlers.UploadCertificate)
@@ -69,7 +69,7 @@ func main() {
 			singbox.POST("/reality/public-key", handlers.DeriveRealityPublicKey)
 			singbox.POST("/reality/check-tls", handlers.CheckTLS13Support)
 
-			// 多配置多容器管理
+			// multi-config multi-container management
 			singbox.GET("/instances", handlers.ListNamedConfigs)
 			singbox.POST("/instances/:name/config", handlers.SaveNamedConfigWithContainer)
 			singbox.GET("/instances/:name/config", handlers.LoadNamedConfigFromContainer)
@@ -82,20 +82,20 @@ func main() {
 			singbox.GET("/containers", handlers.ListAllContainers)
 		}
 
-		// 订阅管理
+		// subscription management
 		sub := api.Group("/subscription")
 		{
-			sub.GET("", handlers.GetSubscriptions)          // 获取所有订阅
-			sub.POST("", handlers.AddSubscription)          // 添加订阅
-			sub.POST("/:id/refresh", handlers.RefreshSubscription)         // 刷新单个订阅
-			sub.PATCH("/:id/settings", handlers.UpdateSubscriptionSettings) // 更新自动更新设置
-			sub.DELETE("/:id", handlers.DeleteSubscription)                 // 删除订阅
-			sub.POST("/refresh-all", handlers.RefreshAllSubscriptions) // 刷新所有订阅
-			sub.GET("/nodes", handlers.GetAllNodes)         // 获取所有节点
-			sub.GET("/user-agents", handlers.GetUserAgents) // 获取预定义 UA 列表
+		sub.GET("", handlers.GetSubscriptions)          // get all subscriptions
+		sub.POST("", handlers.AddSubscription)          // add subscription
+		sub.POST("/:id/refresh", handlers.RefreshSubscription)         // refresh single subscription
+		sub.PATCH("/:id/settings", handlers.UpdateSubscriptionSettings) // update auto-update settings
+		sub.DELETE("/:id", handlers.DeleteSubscription)                 // delete subscription
+		sub.POST("/refresh-all", handlers.RefreshAllSubscriptions) // refresh all subscriptions
+		sub.GET("/nodes", handlers.GetAllNodes)         // get all nodes
+		sub.GET("/user-agents", handlers.GetUserAgents) // get predefined UA list
 		}
 
-		// 节点探测器
+		// node prober
 		prober := api.Group("/prober")
 		{
 			prober.GET("/status", handlers.GetProberStatus)
@@ -113,7 +113,7 @@ func main() {
 			prober.POST("/save", handlers.SaveProbeResultsToSubscription)
 		}
 
-		// 代理测速：启动临时 sing-box 实例通过 SOCKS/HTTP 代理测试节点
+		// proxy speed test: start temporary sing-box instance to test nodes via SOCKS/HTTP proxy
 		speedtest := api.Group("/speedtest")
 		{
 			speedtest.POST("/start", handlers.StartSpeedTest)
@@ -121,7 +121,7 @@ func main() {
 			speedtest.POST("/stop", handlers.StopSpeedTest)
 		}
 
-		// Cloudflare WARP：自动注册、WARP+ 许可证绑定、端点扫描
+		// Cloudflare WARP: auto-register, WARP+ license binding, endpoint scan
 		warp := api.Group("/warp")
 		{
 			warp.GET("/account", handlers.GetWarpAccount)
@@ -133,13 +133,13 @@ func main() {
 
 	}
 
-	// 健康检查
+	// health check
 	r.GET("/health", handlers.HealthCheck)
 
-	// 静态文件服务 - 提供前端页面
+	// static file server - serve frontend pages
 	setupStaticFiles(r)
 
-	// 启动服务器（支持通过 LISTEN_ADDR 环境变量配置）
+	// start server (configurable via LISTEN_ADDR env var)
 	listenAddr := os.Getenv("LISTEN_ADDR")
 	if listenAddr == "" {
 		listenAddr = "127.0.0.1:7000"
@@ -150,36 +150,36 @@ func main() {
 	}
 }
 
-// setupStaticFiles 配置静态文件服务
+// setupStaticFiles configure static file serving
 func setupStaticFiles(r *gin.Engine) {
-	// 获取嵌入的文件系统
+	// get embedded file system
 	staticFS, err := fs.Sub(distFS, "dist")
 	if err != nil {
 		log.Printf("Warning: Failed to load embedded frontend files: %v", err)
 		return
 	}
 
-	// 创建 HTTP 文件服务器
+	// create HTTP file server
 	fileServer := http.FileServer(http.FS(staticFS))
 
-	// 服务静态文件
+	// serve static files
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
 
-		// 如果路径以 /api 开头,说明是 API 请求但路由不存在
+		// if path starts with /api, it's an API request but the route doesn't exist
 		if len(path) >= 4 && path[:4] == "/api" {
 			c.JSON(404, gin.H{"error": "API endpoint not found"})
 			return
 		}
 
-		// 尝试服务静态文件
+		// try to serve static file
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 
 	log.Println("Static frontend files loaded from embedded dist directory")
 }
 
-// corsMiddleware CORS 中间件
+// corsMiddleware CORS middleware
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")

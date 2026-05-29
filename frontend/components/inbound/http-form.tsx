@@ -24,8 +24,8 @@ interface HttpFlat {
 
 function deriveFlat(initialConfig: any): HttpFlat {
   const c = initialConfig?.type === "http" ? initialConfig : null
-  // 通过 users 字段是否存在（而非是否有有效记录）来判定 auth 模式，
-  // 这样"选了密码认证但尚未填写凭据"的中间态也能持久化
+  // Determine auth mode by whether the users field exists (rather than whether there are valid records),
+  // so the intermediate state of "password auth selected but credentials not yet filled" can also be persisted
   const hasUsersField = Array.isArray(c?.users)
   const loadedUsers = (c?.users || []).map((u: any) => ({
     username: u.username || u.Username || "",
@@ -52,11 +52,11 @@ function buildHttpInbound(f: HttpFlat): any {
     listen_port: f.listen_port,
   }
   if (f.auth === "password") {
-    // 始终写入 users 数组（即使为空或不完整），保持"密码认证"选择的持久化；
-    // 这样:
-    //   1. 重新派生 flat 时 Array.isArray(users)=true → auth 保持 password
-    //   2. 用户正在输入的用户名/密码不会因 filter 丢失
-    //   3. 若用户在未填凭据就启动 sing-box，容器会拒启动而非静默成为无认证代理
+    // Always write the users array (even if empty/incomplete) to persist the "password auth" selection;
+    // This way:
+    //   1. On re-derive flat, Array.isArray(users)=true → auth stays password
+    //   2. User-entered usernames/passwords are not lost due to filtering
+    //   3. If user starts sing-box without credentials, container refuses to start instead of silently becoming an unauthenticated proxy
     previewConfig.users = f.users.map((u) => ({ username: u.username, password: u.password }))
   }
   if (f.tls_enabled) {
@@ -124,7 +124,7 @@ export function HttpForm({ initialConfig, setInbound, clearEndpoints, onError, c
         </div>
       </div>
 
-      {/* 认证配置 */}
+      {/* Auth configuration */}
       <div className="space-y-2">
         <Label>{t("authMode")}</Label>
         <select
@@ -210,7 +210,7 @@ export function HttpForm({ initialConfig, setInbound, clearEndpoints, onError, c
         </div>
       )}
 
-      {/* TLS 配置 */}
+      {/* TLS Configuration */}
       <div className="space-y-2 border-t pt-4">
         <div className="flex items-center gap-2">
           <input

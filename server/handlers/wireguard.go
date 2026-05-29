@@ -8,20 +8,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GenerateWireGuardKeys 生成 WireGuard 密钥对
-// @Summary 生成 WireGuard 密钥对
-// @Description 生成一对 WireGuard 私钥和公钥，必须指定IP地址
+// GenerateWireGuardKeys generate WireGuard key pair
+// @Summary Generate WireGuard key pair
+// @Description Generate a WireGuard private and public key pair, IP address must be specified
 // @Tags WireGuard
 // @Accept json
 // @Produce json
-// @Param request body object{ip:string} true "请求参数，必须包含IP地址"
+// @Param request body object{ip:string} true "Request params, must include IP address"
 // @Success 200 {object} services.KeyCacheResponse
-// @Failure 400 {object} ErrorResponse "未指定IP地址"
-// @Failure 500 {object} ErrorResponse "IP已存在或生成失败"
+// @Failure 400 {object} ErrorResponse "IP address not specified"
+// @Failure 500 {object} ErrorResponse "IP already exists or generation failed"
 // @Router /api/wireguard/keygen [post]
 func GenerateWireGuardKeys(c *gin.Context) {
 	var request struct {
-		IP string `json:"ip"` // 必须指定的完整IP，如 "10.10.0.5"
+		IP string `json:"ip"` // full IP must be specified, e.g. "10.10.0.5"
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil || request.IP == "" {
@@ -40,7 +40,7 @@ func GenerateWireGuardKeys(c *gin.Context) {
 		return
 	}
 
-	// 使用缓存生成密钥对
+	// generate key pair using cache
 	result, err := services.GenerateWireGuardKeysWithCache(request.IP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -53,13 +53,13 @@ func GenerateWireGuardKeys(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// ErrorResponse 错误响应
+// ErrorResponse error response
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
 }
 
-// SaveClientConfig 保存客户端配置
+// SaveClientConfig save client config
 func SaveClientConfig(c *gin.Context) {
 	configData, err := c.GetRawData()
 	if err != nil {
@@ -84,7 +84,7 @@ func SaveClientConfig(c *gin.Context) {
 	})
 }
 
-// GetClientConfig 获取客户端配置
+// GetClientConfig get client config
 func GetClientConfig(c *gin.Context) {
 	data, err := services.GetClientConfig()
 	if err != nil {
@@ -98,7 +98,7 @@ func GetClientConfig(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
-// GetPublicKeyFromPrivate 从私钥计算公钥
+// GetPublicKeyFromPrivate derive public key from private key
 func GetPublicKeyFromPrivate(c *gin.Context) {
 	var request struct {
 		PrivateKey string `json:"privateKey"`
@@ -126,7 +126,7 @@ func GetPublicKeyFromPrivate(c *gin.Context) {
 	})
 }
 
-// SaveClientConfigFile 保存客户端配置文件
+// SaveClientConfigFile save client config file
 func SaveClientConfigFile(c *gin.Context) {
 	var request struct {
 		ClientIndex   int    `json:"clientIndex"`
@@ -155,7 +155,7 @@ func SaveClientConfigFile(c *gin.Context) {
 	})
 }
 
-// ListClientConfigFiles 列出所有客户端配置文件
+// ListClientConfigFiles list all client config files
 func ListClientConfigFiles(c *gin.Context) {
 	configs, err := services.ListClientConfigFiles()
 	if err != nil {
@@ -169,7 +169,7 @@ func ListClientConfigFiles(c *gin.Context) {
 	c.JSON(http.StatusOK, configs)
 }
 
-// HealthCheck 健康检查
+// HealthCheck health check
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
@@ -177,7 +177,7 @@ func HealthCheck(c *gin.Context) {
 	})
 }
 
-// GetKeysCache 获取密钥缓存列表
+// GetKeysCache get keys cache list
 func GetKeysCache(c *gin.Context) {
 	cache, err := services.GetKeysCache()
 	if err != nil {
@@ -191,7 +191,7 @@ func GetKeysCache(c *gin.Context) {
 	c.JSON(http.StatusOK, cache)
 }
 
-// GetPublicIP 获取服务器公网 IP 地址
+// GetPublicIP get server public IP address
 func GetPublicIP(c *gin.Context) {
 	ip, err := services.GetPublicIP()
 	if err != nil {

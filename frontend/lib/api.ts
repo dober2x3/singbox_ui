@@ -1,9 +1,9 @@
-// API 基础 URL - 使用相对路径
-// 开发模式: Next.js rewrites 代理到后端
-// 生产模式: 前后端同端口运行
+// API base URL - use relative paths
+// Dev mode: Next.js rewrites proxy to backend
+// Production: frontend and backend run on the same port
 const API_BASE_URL = '';
 
-// API 客户端类
+// API client class
 class ApiClient {
   private baseUrl: string;
 
@@ -11,7 +11,7 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  // 通用请求方法
+  // Generic request method
   private async request<T>(
     endpoint: string,
     options?: RequestInit
@@ -41,13 +41,13 @@ class ApiClient {
     }
   }
 
-  // 生成 WireGuard 密钥对
+  // Generate WireGuard key pair
   async generateWireGuardKeys(): Promise<{ privateKey: string; publicKey: string }> {
     return this.request('/api/wireguard/keygen', {
       method: 'POST',
     });
   }
-  // 生成自签名证书（到实例目录）
+  // Generate self-signed certificate (in instance directory)
   async generateSelfSignedCert(instance: string, domain: string, validDays: number = 365): Promise<CertificateInfo> {
     return this.request('/api/singbox/certificate', {
       method: 'POST',
@@ -55,14 +55,14 @@ class ApiClient {
     });
   }
 
-  // 生成 Reality x25519 密钥对
+  // Generate Reality x25519 key pair
   async generateRealityKeypair(): Promise<{ private_key: string; public_key: string }> {
     return this.request('/api/singbox/reality/keypair', {
       method: 'POST',
     });
   }
 
-  // 从 Reality 私钥派生公钥
+  // Derive public key from Reality private key
   async deriveRealityPublicKey(privateKey: string): Promise<{ public_key: string }> {
     return this.request('/api/singbox/reality/public-key', {
       method: 'POST',
@@ -70,7 +70,7 @@ class ApiClient {
     });
   }
 
-  // 检测域名是否支持 TLS 1.3
+  // Check if domain supports TLS 1.3
   async checkTls13Support(server: string, port: number = 443): Promise<{ supported: boolean; tls_version: string; error?: string }> {
     return this.request('/api/singbox/reality/check-tls', {
       method: 'POST',
@@ -78,14 +78,14 @@ class ApiClient {
     });
   }
 
-  // 获取证书信息
+  // Get certificate info
   async getCertificateInfo(instance: string): Promise<CertificateInfo & { exists: boolean }> {
     return this.request(`/api/singbox/certificate?instance=${encodeURIComponent(instance)}`, {
       method: 'GET',
     });
   }
 
-  // 上传证书文件
+  // Upload certificate files
   async uploadCertificate(instance: string, certFile: File, keyFile: File): Promise<CertificateInfo> {
     const formData = new FormData();
     formData.append('instance', instance);
@@ -106,16 +106,16 @@ class ApiClient {
     return await response.json();
   }
 
-  // ========== 多配置多容器 API ==========
+  // ========== Multi-instance multi-container API ==========
 
-  // 列出所有命名配置及其容器状态
+  // List all named configs with their container status
   async listInstances(): Promise<{ configs: InstanceInfo[] }> {
     return this.request('/api/singbox/instances', {
       method: 'GET',
     });
   }
 
-  // 保存配置到命名实例
+  // Save config to named instance
   async saveInstanceConfig(instanceName: string, config: any): Promise<{ message: string; name: string; valid?: boolean; warning?: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/config`, {
       method: 'POST',
@@ -123,56 +123,56 @@ class ApiClient {
     });
   }
 
-  // 验证命名实例的配置
+  // Validate named instance config
   async checkInstanceConfig(instanceName: string): Promise<{ valid: boolean; message: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/check`, {
       method: 'POST',
     });
   }
 
-  // 加载命名实例的配置
+  // Load named instance config
   async loadInstanceConfig(instanceName: string): Promise<any> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/config`, {
       method: 'GET',
     });
   }
 
-  // 删除命名实例
+  // Delete named instance
   async deleteInstance(instanceName: string): Promise<{ message: string; name: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}`, {
       method: 'DELETE',
     });
   }
 
-  // 启动命名实例容器
+  // Start named instance container
   async runInstance(instanceName: string): Promise<{ message: string; name: string; containerId: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/run`, {
       method: 'POST',
     });
   }
 
-  // 停止命名实例容器
+  // Stop named instance container
   async stopInstance(instanceName: string): Promise<{ message: string; name: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/stop`, {
       method: 'POST',
     });
   }
 
-  // 获取命名实例状态
+  // Get named instance status
   async getInstanceStatus(instanceName: string): Promise<{ name: string; running: boolean; containerId: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/status`, {
       method: 'GET',
     });
   }
 
-  // 获取命名实例日志
+  // Get named instance logs
   async getInstanceLogs(instanceName: string): Promise<{ name: string; logs: string }> {
     return this.request(`/api/singbox/instances/${encodeURIComponent(instanceName)}/logs`, {
       method: 'GET',
     });
   }
 
-  // 列出所有容器
+  // List all containers
   async listContainers(): Promise<{ containers: ContainerStatus[] }> {
     return this.request('/api/singbox/containers', {
       method: 'GET',
@@ -181,49 +181,49 @@ class ApiClient {
 
   // ========== Prober API ==========
 
-  // 同步订阅节点到测速服务
+  // Sync subscription nodes to prober service
   async syncProberNodes(): Promise<{ message: string; nodeCount: number }> {
     return this.request('/api/prober/sync', {
       method: 'POST',
     });
   }
 
-  // 获取所有测速结果
+  // Get all probe results
   async getProberResults(): Promise<{ count: number; results: ProbeResult[] }> {
     return this.request('/api/prober/results', {
       method: 'GET',
     });
   }
 
-  // 获取测速服务状态
+  // Get prober service status
   async getProberStatus(): Promise<ProberStats> {
     return this.request('/api/prober/status', {
       method: 'GET',
     });
   }
 
-  // 启动测速服务
+  // Start prober service
   async startProber(): Promise<{ message: string }> {
     return this.request('/api/prober/start', {
       method: 'POST',
     });
   }
 
-  // 停止测速服务
+  // Stop prober service
   async stopProber(): Promise<{ message: string }> {
     return this.request('/api/prober/stop', {
       method: 'POST',
     });
   }
 
-  // 保存测速结果到订阅文件
+  // Save probe results to subscription file
   async saveProberResults(): Promise<{ message: string; count: number }> {
     return this.request('/api/prober/save', {
       method: 'POST',
     });
   }
 
-  // ========== 代理测速 API（启动临时 sing-box 实例通过 SOCKS 代理测试） ==========
+  // ========== Proxy speed test API (starts temporary sing-box instance testing through SOCKS proxy) ==========
 
   async startSpeedTest(): Promise<{ message: string }> {
     return this.request('/api/speedtest/start', { method: 'POST' });
@@ -253,10 +253,10 @@ class ApiClient {
   }
 }
 
-// 导出 API 客户端实例
+// Export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// 类型定义
+// Type definitions
 
 export interface CertificateInfo {
   cert_path: string;

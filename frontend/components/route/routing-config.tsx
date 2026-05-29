@@ -98,7 +98,7 @@ export function RoutingConfig({ showCard = true, availableOutbounds = EMPTY_OUTB
         setEnablePrivateIpDirect(true); classified = true
       }
 
-      // Detect simple domain/IP rules (支持 domain, domain_suffix, domain_keyword, domain_regex)
+      // Detect simple domain/IP rules (supports domain, domain_suffix, domain_keyword, domain_regex)
       if (!classified) {
         const hasDomains = (rule.domain_suffix?.length || 0) > 0 || (rule.domain?.length || 0) > 0 ||
           (rule.domain_keyword?.length || 0) > 0 || (rule.domain_regex?.length || 0) > 0

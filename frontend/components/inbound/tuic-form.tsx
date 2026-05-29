@@ -302,7 +302,7 @@ export function TuicForm({
         ))}
       </div>
 
-      {/* TLS 配置 (TUIC 必须启用 TLS) */}
+      {/* TLS Configuration (TUIC requires TLS) */}
       <div className="space-y-2 border-t pt-4">
         <div className="flex items-center justify-between">
           <Label>{t("tuicTlsLabel")}</Label>

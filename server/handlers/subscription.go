@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetSubscriptions 获取所有订阅
+// GetSubscriptions get all subscriptions
 func GetSubscriptions(c *gin.Context) {
 	subData, err := services.LoadSubscriptions()
 	if err != nil {
@@ -18,7 +18,7 @@ func GetSubscriptions(c *gin.Context) {
 		return
 	}
 
-	// 计算总节点数
+	// calculate total node count
 	totalNodes := 0
 	for _, sub := range subData.Subscriptions {
 		totalNodes += len(sub.Nodes)
@@ -31,7 +31,7 @@ func GetSubscriptions(c *gin.Context) {
 	})
 }
 
-// AddSubscription 添加订阅
+// AddSubscription add subscription
 func AddSubscription(c *gin.Context) {
 	var request struct {
 		Name      string `json:"name" binding:"required"`
@@ -63,7 +63,7 @@ func AddSubscription(c *gin.Context) {
 	})
 }
 
-// RefreshSubscription 刷新单个订阅
+// RefreshSubscription refresh single subscription
 func RefreshSubscription(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -90,7 +90,7 @@ func RefreshSubscription(c *gin.Context) {
 	})
 }
 
-// DeleteSubscription 删除订阅
+// DeleteSubscription delete subscription
 func DeleteSubscription(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -114,7 +114,7 @@ func DeleteSubscription(c *gin.Context) {
 	})
 }
 
-// RefreshAllSubscriptions 刷新所有订阅
+// RefreshAllSubscriptions refresh all subscriptions
 func RefreshAllSubscriptions(c *gin.Context) {
 	data, err := services.RefreshAllSubscriptions()
 	if err != nil {
@@ -138,7 +138,7 @@ func RefreshAllSubscriptions(c *gin.Context) {
 	})
 }
 
-// GetUserAgents 获取预定义 User-Agent 列表
+// GetUserAgents get predefined User-Agent list
 func GetUserAgents(c *gin.Context) {
 	type UAOption struct {
 		Key   string `json:"key"`
@@ -147,7 +147,7 @@ func GetUserAgents(c *gin.Context) {
 	}
 
 	options := []UAOption{
-		{Key: "default", Label: "默认浏览器", Value: services.PredefinedUserAgents["default"]},
+		{Key: "default", Label: "Default Browser", Value: services.PredefinedUserAgents["default"]},
 		{Key: "clash-verge", Label: "Clash Verge", Value: services.PredefinedUserAgents["clash-verge"]},
 		{Key: "clash-meta", Label: "Clash Meta", Value: services.PredefinedUserAgents["clash-meta"]},
 		{Key: "v2rayn", Label: "v2rayN", Value: services.PredefinedUserAgents["v2rayn"]},
@@ -159,7 +159,7 @@ func GetUserAgents(c *gin.Context) {
 	})
 }
 
-// UpdateSubscriptionSettings 更新订阅自动更新设置
+// UpdateSubscriptionSettings update subscription auto-update settings
 func UpdateSubscriptionSettings(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -188,7 +188,7 @@ func UpdateSubscriptionSettings(c *gin.Context) {
 	})
 }
 
-// GetAllNodes 获取所有节点
+// GetAllNodes get all nodes
 func GetAllNodes(c *gin.Context) {
 	nodes, err := services.GetAllNodes()
 	if err != nil {

@@ -1437,7 +1437,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
     } catch (error) {
       set({
         isLoading: false,
-        error: error instanceof Error ? error.message : "加载配置失败"
+        error: error instanceof Error ? error.message : "Failed to load config"
       })
       return false
     }
@@ -1446,7 +1446,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
   saveInstanceConfig: async () => {
     const { currentInstance } = get()
     if (!currentInstance) {
-      return { success: false, error: "未选择实例" }
+      return { success: false, error: "No instance selected" }
     }
     set({ isSaving: true, error: null })
     try {
@@ -1473,7 +1473,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
         return { success: false, error: data.message }
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "保存配置失败"
+      const errorMsg = error instanceof Error ? error.message : "Failed to save config"
       set({ isSaving: false, error: errorMsg })
       return { success: false, error: errorMsg }
     }
@@ -1550,7 +1550,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
     } catch (error) {
       set({
         isLoading: false,
-        error: error instanceof Error ? error.message : "加载配置失败"
+        error: error instanceof Error ? error.message : "Failed to load config"
       })
       return false
     }
@@ -1582,7 +1582,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
         return { success: false, error: errorData.message }
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "保存配置失败"
+      const errorMsg = error instanceof Error ? error.message : "Failed to save config"
       set({ isSaving: false, error: errorMsg })
       return { success: false, error: errorMsg }
     }
@@ -1657,14 +1657,14 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
       }
     }
 
-    // sing-box 1.11.0 起弃用 wireguard 作为 outbound, 1.13.0 彻底移除。
-    // UI 各处（WireGuard / WARP tab, 订阅解析等）仍以 setOutbound(0, ...) 的形式
-    // 写入, 这里在序列化阶段统一迁移到 endpoints[], 以避免
-    //   `outbounds[0].address: json: unknown field "address"` 这类 FATAL 错误。
-    // 规则:
-    //   1. outbounds 中所有 type==="wireguard" 的条目抽出
-    //   2. 按 tag 合并到 config.endpoints (相同 tag → 替换, 新 tag → 追加)
-    //   3. outbounds 中仅保留非 wireguard 条目
+    // sing-box 1.11.0 deprecated wireguard as an outbound, removed entirely in 1.13.0.
+    // Various parts of the UI (WireGuard / WARP tab, subscription parsing, etc.) still
+    // write via setOutbound(0, ...). We migrate them to endpoints[] at serialization
+    // to avoid fatal errors like `outbounds[0].address: json: unknown field "address"`.
+    // Rules:
+    //   1. Extract all entries with type==="wireguard" from outbounds
+    //   2. Merge into config.endpoints by tag (same tag → replace, new tag → append)
+    //   3. Keep only non-wireguard entries in outbounds
     const wgFromOutbounds = outbounds.filter((o) => o.type === "wireguard")
     outbounds = outbounds.filter((o) => o.type !== "wireguard")
 
@@ -1714,15 +1714,15 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
     }
 
     // Check if there's a proxy outbound or an outbound-role endpoint.
-    // endpoint 与 outbound 共享 tag 命名空间, route.final 可引用两者, 但 WG endpoint
-    // 在 config.endpoints 里代表"入站 VPN 服务器"角色 (WireguardForm 写入, tag 通常
-    // 是 wireguard-ep, 纯等待 peer 连入), 这类 endpoint 不应被误算成代理出站；
-    // 只有从 outbounds[] 迁移过来的 WG endpoint (wgFromOutbounds) 才是代理出站角色。
+    // endpoint and outbound share the tag namespace; route.final can reference both, but a WG endpoint
+    // in config.endpoints represents an "inbound VPN server" role (written by WireguardForm, tag is
+    // usually wireguard-ep, simply waiting for peers to connect). Such endpoints should not be counted
+    // as proxy outbounds. Only WG endpoints migrated from outbounds[] (wgFromOutbounds) are proxy outbounds.
     //
-    // 之前这里没做区分, 纯 WG 入站场景会让 hasProxyOutbound 误判为 true, 跳过了
-    // proxy_out fallback, 而后续 L1783 分支仍然硬编码 route.final: "proxy_out" 与
-    // dns.servers[0].detour: "proxy_out", 最终 sing-box 启动报
-    //   "default outbound not found: proxy_out" 而无法启动。
+    // Previously there was no distinction here; a pure WG inbound scenario would cause hasProxyOutbound
+    // to incorrectly be true, skipping the proxy_out fallback, while the later branch still hardcoded
+    // route.final: "proxy_out" and dns.servers[0].detour: "proxy_out", causing sing-box to fail with
+    //   "default outbound not found: proxy_out" on startup.
     const wgOutboundTags = new Set(
       wgFromOutbounds.map((o) => o.tag).filter((t): t is string => typeof t === "string" && t.length > 0)
     )
@@ -1730,9 +1730,9 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
       o.type !== "direct" && o.type !== "block" && o.type !== "dns"
     ) || (fullConfig.endpoints || []).some((ep) => {
       if (ep.type === "direct" || ep.type === "block" || ep.type === "dns") return false
-      // WG endpoint: 只有从 outbounds 迁移过来的才算代理出站
+      // WG endpoint: only those migrated from outbounds count as proxy outbounds
       if (ep.type === "wireguard") return !!ep.tag && wgOutboundTags.has(ep.tag)
-      // 其他 endpoint 类型 (未来扩展) 默认按代理出站处理
+      // Other endpoint types (future extensions) default to proxy outbound handling
       return true
     })
     const hasProxyOutTag = outbounds.some((o) => o.tag === "proxy_out") ||
@@ -1787,14 +1787,14 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
 
     // Proxy outbound (non-balancer): override DNS and route with minimal global-proxy config
     //
-    // DNS 设计:
-    //   - remote_dns 通过 proxy_out 出站, 承担用户流量 DNS, 防污染/泄漏
-    //   - local_resolver 不设 detour, sing-box 1.13 默认即走 direct
-    //     (显式 detour 到一条空 direct 出站会被 1.13 拒绝启动, 错误:
+    // DNS design:
+    //   - remote_dns goes through proxy_out, handles user traffic DNS, prevents pollution/leakage
+    //   - local_resolver has no detour; sing-box 1.13 defaults to direct
+    //     (explicit detour to an empty direct outbound is rejected by 1.13 with:
     //      "detour to an empty direct outbound makes no sense")
-    //   - default_domain_resolver 指向 local_resolver, 让路由规则中的域名解析
-    //     在代理通道未就绪时也能完成 (WG peer 若是域名需要在握手前解析)
-    //   - dns.final 仍是 remote_dns: 用户正常上网时域名通过 WARP 解析
+    //   - default_domain_resolver points to local_resolver, so route rule domain resolution
+    //     can complete before the proxy tunnel is ready (WG peer domain needs resolution before handshake)
+    //   - dns.final is still remote_dns: user traffic domains resolve through WARP during normal use
     if (!balancerState.enabled) {
       fullConfig.dns = {
         servers: [
@@ -1813,9 +1813,9 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
     }
 
     // Balancer mode: build urltest outbound and route from existing config.
-    // 含 endpoints[] 的 tag 是因为 WireGuard/WARP 已从 outbounds 迁到 endpoints
-    // (见 getFullConfig 开头的迁移逻辑), 二者共享 tag 命名空间;
-    // 若这里只取 outbounds, 路由规则中指向 WG/WARP 的 tag 会被误过滤.
+    // endpoints[] tags are included because WireGuard/WARP have been migrated from outbounds to endpoints
+    // (see the migration logic at the start of getFullConfig); both share the tag namespace;
+    // if we only took outbounds here, route rules targeting WG/WARP tags would be incorrectly filtered out.
     const validOutboundTags = new Set<string>([
       ...outbounds.map((o) => o.tag),
       ...mergedEndpoints.map((ep) => ep.tag).filter((t): t is string => typeof t === "string" && t.length > 0),

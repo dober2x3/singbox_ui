@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// schedulerMu 防止调度器自身重入，以及与 HTTP handler 的并发冲突
+// schedulerMu prevents scheduler reentrancy and concurrent conflicts with HTTP handlers
 var schedulerMu sync.Mutex
 
-// proxyOutboundTypes 已知代理出站类型白名单（排除系统类型）
+// proxyOutboundTypes known proxy outbound type whitelist (excluding system types)
 var proxyOutboundTypes = map[string]bool{
 	"vless":        true,
 	"vmess":        true,
@@ -27,7 +27,7 @@ var proxyOutboundTypes = map[string]bool{
 	"naive":        true,
 }
 
-// StartAutoUpdateScheduler 启动订阅自动更新调度器（后台 goroutine，每分钟检查一次）
+// StartAutoUpdateScheduler starts the subscription auto-update scheduler (background goroutine, checks every minute)
 func StartAutoUpdateScheduler() {
 	go func() {
 		defer func() {
@@ -44,7 +44,7 @@ func StartAutoUpdateScheduler() {
 	log.Println("Auto-update scheduler started")
 }
 
-// safeCheckAndAutoUpdate 带 recover 的单次检查，防止单次 panic 杀死 goroutine
+// safeCheckAndAutoUpdate single check with recover, prevents a single panic from killing the goroutine
 func safeCheckAndAutoUpdate() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -54,7 +54,7 @@ func safeCheckAndAutoUpdate() {
 	checkAndAutoUpdateSubscriptions()
 }
 
-// checkAndAutoUpdateSubscriptions 检查并自动更新到期的订阅
+// checkAndAutoUpdateSubscriptions checks and auto-updates expired subscriptions
 func checkAndAutoUpdateSubscriptions() {
 	data, err := LoadSubscriptions()
 	if err != nil {
@@ -71,7 +71,7 @@ func checkAndAutoUpdateSubscriptions() {
 		if sub.LastUpdated != "" {
 			lastUpdated, err := time.Parse(time.RFC3339, sub.LastUpdated)
 			if err != nil {
-				// 格式损坏，记录错误并跳过本次更新，避免无限重试
+				// Malformed format, log error and skip this update to avoid infinite retries
 				log.Printf("[scheduler] Failed to parse LastUpdated for %s (%q): %v — skipping", sub.Name, sub.LastUpdated, err)
 				needUpdate = false
 			} else {
@@ -101,9 +101,9 @@ func checkAndAutoUpdateSubscriptions() {
 	}
 }
 
-// applySubscriptionToRunningContainers 将订阅节点更新应用到正在运行的容器
+// applySubscriptionToRunningContainers applies subscription node updates to running containers
 func applySubscriptionToRunningContainers(nodes []ProxyNode) {
-	// 构建 name -> node 映射（备用匹配）
+	// Build name -> node mapping (fallback match)
 	nodeByName := make(map[string]ProxyNode, len(nodes))
 	for _, n := range nodes {
 		if n.Name != "" {
@@ -111,17 +111,17 @@ func applySubscriptionToRunningContainers(nodes []ProxyNode) {
 		}
 	}
 
-	// 加载 tag -> nodeName 旁路映射
+	// Load tag -> nodeName bypass mapping
 	tagToName := LoadNodeMapping()
 
-	// 1. 默认容器 (singboxDir/config.json)
+	// 1. Default container (singboxDir/config.json)
 	applyToDefaultContainer(tagToName, nodeByName)
 
-	// 2. 所有命名实例 (singboxDir/configs/*/config.json)
+	// 2. All named instances (singboxDir/configs/*/config.json)
 	applyToNamedContainers(tagToName, nodeByName)
 }
 
-// applyToDefaultContainer 更新默认容器配置
+// applyToDefaultContainer updates default container config
 func applyToDefaultContainer(tagToName map[string]string, nodeByName map[string]ProxyNode) {
 	configData, err := GetConfig()
 	if err != nil {
@@ -143,7 +143,7 @@ func applyToDefaultContainer(tagToName map[string]string, nodeByName map[string]
 	)
 }
 
-// applyToNamedContainers 更新所有命名实例配置
+// applyToNamedContainers updates all named instance configs
 func applyToNamedContainers(tagToName map[string]string, nodeByName map[string]ProxyNode) {
 	configs, err := ListNamedConfigs()
 	if err != nil {
@@ -179,7 +179,7 @@ func applyToNamedContainers(tagToName map[string]string, nodeByName map[string]P
 	}
 }
 
-// restartWithNewConfig 保存新配置并重启容器，失败时回滚旧配置
+// restartWithNewConfig saves new config and restarts container, rolls back on failure
 func restartWithNewConfig(
 	newConfig, oldConfig []byte,
 	saveFn func([]byte) error,
@@ -211,12 +211,12 @@ func restartWithNewConfig(
 
 	if err := runFn(); err != nil {
 		log.Printf("[scheduler] CRITICAL: Failed to restart %s: %v — rolling back config", label, err)
-		// 回滚旧配置
+		// Roll back old config
 		if rbErr := saveFn(oldConfig); rbErr != nil {
 			log.Printf("[scheduler] CRITICAL: Rollback also failed for %s: %v", label, rbErr)
 			return
 		}
-		// 尝试用旧配置重启
+		// Try to restart with old config
 		if err2 := runFn(); err2 != nil {
 			log.Printf("[scheduler] CRITICAL: Rollback restart also failed for %s: %v — service is down", label, err2)
 		} else {
@@ -228,8 +228,8 @@ func restartWithNewConfig(
 	log.Printf("[scheduler] %s restarted with updated node config", label)
 }
 
-// injectNodeIntoConfig 在 config JSON 中找到匹配的 outbound 并增量更新节点数据
-// 匹配优先级：1) tag->name 映射 + nodeByName  2) 无法匹配则跳过
+// injectNodeIntoConfig finds matching outbound in config JSON and incrementally updates node data
+// Match priority: 1) tag->name mapping + nodeByName  2) skip if no match
 func injectNodeIntoConfig(configData []byte, tagToName map[string]string, nodeByName map[string]ProxyNode) ([]byte, bool) {
 	var cfg map[string]interface{}
 	if err := json.Unmarshal(configData, &cfg); err != nil {
@@ -252,7 +252,7 @@ func injectNodeIntoConfig(configData []byte, tagToName map[string]string, nodeBy
 			continue
 		}
 		obType, _ := obMap["type"].(string)
-		// 白名单：只处理已知代理类型
+		// Whitelist: only process known proxy types
 		if !proxyOutboundTypes[obType] {
 			continue
 		}
@@ -261,7 +261,7 @@ func injectNodeIntoConfig(configData []byte, tagToName map[string]string, nodeBy
 			continue
 		}
 
-		// 通过 tag->name 映射找到节点名，再从 nodeByName 找到新节点
+		// Find node name via tag->name mapping, then find new node from nodeByName
 		nodeName, hasMapped := tagToName[tag]
 		if !hasMapped {
 			continue
@@ -271,16 +271,16 @@ func injectNodeIntoConfig(configData []byte, tagToName map[string]string, nodeBy
 			continue
 		}
 
-		// 增量覆盖：在原 outbound 基础上覆盖连接相关字段，保留用户自定义字段
+		// Incremental overwrite: overwrite connection-related fields on top of original outbound, preserve user custom fields
 		newOb := make(map[string]interface{})
 		for k, v := range obMap {
 			newOb[k] = v
 		}
-		// 覆盖节点核心连接字段
+		// Overwrite core node connection fields
 		for k, v := range node.Outbound {
 			newOb[k] = v
 		}
-		// 强制保留原 tag（路由规则引用的是原 tag）
+		// Force keep original tag (route rules reference the original tag)
 		newOb["tag"] = tag
 
 		outbounds[i] = newOb

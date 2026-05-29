@@ -201,7 +201,7 @@ export function AnytlsForm({
         <p className="text-xs text-muted-foreground">{t("anytlsPaddingSchemeHint")}</p>
       </div>
 
-      {/* TLS 配置 */}
+      {/* TLS Configuration */}
       <div className="space-y-2 border-t pt-4">
         <div className="flex items-center justify-between">
           <Label>{t("tlsCertConfig")}</Label>

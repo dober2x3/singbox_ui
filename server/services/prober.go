@@ -16,32 +16,32 @@ import (
 	"time"
 )
 
-// ProbeResult 单个节点的探测结果
+// ProbeResult probe result for a single node
 type ProbeResult struct {
 	NodeTag     string    `json:"nodeTag"`
 	Protocol    string    `json:"protocol"`
 	Address     string    `json:"address"`
 	Port        int       `json:"port"`
-	Latency     int64     `json:"latency"`     // 延迟 (毫秒), -1 表示超时/失败
+	Latency     int64     `json:"latency"`     // latency (ms), -1 means timeout/failure
 	Status      string    `json:"status"`      // "online" | "offline" | "timeout" | "unknown"
-	LastProbe   time.Time `json:"lastProbe"`   // 最后探测时间
-	FailCount   int       `json:"failCount"`   // 连续失败次数
-	SuccessRate float64   `json:"successRate"` // 成功率 (0-100)
+	LastProbe   time.Time `json:"lastProbe"`   // last probe time
+	FailCount   int       `json:"failCount"`   // consecutive failure count
+	SuccessRate float64   `json:"successRate"` // success rate (0-100)
 }
 
-// ProberConfig 探测器配置
+// ProberConfig prober configuration
 type ProberConfig struct {
-	ProbeInterval   time.Duration `json:"probeInterval"`   // 探测间隔
-	ProbeTimeout    time.Duration `json:"probeTimeout"`    // 单次探测超时
-	MaxRetries      int           `json:"maxRetries"`      // 最大重试次数
-	MaxConcurrent   int           `json:"maxConcurrent"`   // 最大并发探测数
-	ProbeURL        string        `json:"probeURL"`        // HTTP 探测 URL
-	HistorySize     int           `json:"historySize"`     // 历史记录大小 (用于计算成功率)
-	EnableTCPProbe  bool          `json:"enableTCPProbe"`  // 启用 TCP 探测
-	EnableHTTPProbe bool          `json:"enableHTTPProbe"` // 启用 HTTP 探测
+	ProbeInterval   time.Duration `json:"probeInterval"`   // probe interval
+	ProbeTimeout    time.Duration `json:"probeTimeout"`    // single probe timeout
+	MaxRetries      int           `json:"maxRetries"`      // max retry count
+	MaxConcurrent   int           `json:"maxConcurrent"`   // max concurrent probes
+	ProbeURL        string        `json:"probeURL"`        // HTTP probe URL
+	HistorySize     int           `json:"historySize"`     // history size (for calculating success rate)
+	EnableTCPProbe  bool          `json:"enableTCPProbe"`  // enable TCP probe
+	EnableHTTPProbe bool          `json:"enableHTTPProbe"` // enable HTTP probe
 }
 
-// ProbeNode 待探测节点信息
+// ProbeNode node to be probed
 type ProbeNode struct {
 	Tag      string `json:"tag"`
 	Protocol string `json:"protocol"`
@@ -49,15 +49,15 @@ type ProbeNode struct {
 	Port     int    `json:"port"`
 }
 
-// nodeHistory 节点历史记录 (用于计算成功率) - 线程安全
+// nodeHistory node history (for calculating success rate) - thread safe
 type nodeHistory struct {
 	mu      sync.Mutex
-	results []bool // true = 成功, false = 失败
-	index   int    // 环形缓冲区索引
-	size    int    // 历史记录大小
+	results []bool // true = success, false = failure
+	index   int    // ring buffer index
+	size    int    // history size
 }
 
-// update 更新历史记录并返回成功率
+// update updates history and returns success rate
 func (h *nodeHistory) update(success bool) float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -65,7 +65,7 @@ func (h *nodeHistory) update(success bool) float64 {
 	h.results[h.index] = success
 	h.index = (h.index + 1) % h.size
 
-	// 计算成功率
+	// Calculate success rate
 	successCount := 0
 	for _, r := range h.results {
 		if r {
@@ -75,23 +75,23 @@ func (h *nodeHistory) update(success bool) float64 {
 	return float64(successCount) / float64(h.size) * 100
 }
 
-// Prober 异步高频探测器
+// Prober async high-frequency prober
 type Prober struct {
 	config     ProberConfig
 	nodes      sync.Map // map[string]ProbeNode
 	results    sync.Map // map[string]*ProbeResult
 	history    sync.Map // map[string]*nodeHistory
-	running    int32    // 使用原子操作，0=停止, 1=运行
+	running    int32    // atomic ops, 0=stopped, 1=running
 	stopChan   chan struct{}
 	wg         sync.WaitGroup
-	mu         sync.Mutex // 保护 stopChan 的创建和关闭
+	mu         sync.Mutex // protects stopChan creation and closing
 	httpClient *http.Client
-	semaphore  chan struct{} // 并发控制信号量
+	semaphore  chan struct{} // concurrency control semaphore
 	ctx        context.Context
 	cancel     context.CancelFunc
 }
 
-// DefaultProberConfig 默认探测器配置
+// DefaultProberConfig default prober configuration
 func DefaultProberConfig() ProberConfig {
 	return ProberConfig{
 		ProbeInterval:   30 * time.Second,
@@ -101,17 +101,17 @@ func DefaultProberConfig() ProberConfig {
 		ProbeURL:        "http://www.google.com/generate_204",
 		HistorySize:     10,
 		EnableTCPProbe:  true,
-		EnableHTTPProbe: false, // 默认只做 TCP 探测，HTTP 探测可选
+		EnableHTTPProbe: false, // default only TCP probe, HTTP probe is optional
 	}
 }
 
-// 全局探测器实例
+// Global prober instance
 var (
 	globalProber *Prober
 	proberMutex  sync.RWMutex
 )
 
-// NewProber 创建新的探测器实例
+// NewProber creates a new prober instance
 func NewProber(config ProberConfig) *Prober {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &Prober{
@@ -139,7 +139,7 @@ func NewProber(config ProberConfig) *Prober {
 	return p
 }
 
-// InitProber 初始化全局探测器
+// InitProber initializes the global prober
 func InitProber() error {
 	proberMutex.Lock()
 	defer proberMutex.Unlock()
@@ -150,7 +150,7 @@ func InitProber() error {
 
 	config := DefaultProberConfig()
 
-	// 从环境变量读取配置
+	// Read config from environment variables
 	if interval := os.Getenv("PROBER_INTERVAL"); interval != "" {
 		if d, err := time.ParseDuration(interval); err == nil {
 			config.ProbeInterval = d
@@ -167,22 +167,22 @@ func InitProber() error {
 	return nil
 }
 
-// GetProber 获取全局探测器实例
+// GetProber gets the global prober instance
 func GetProber() *Prober {
 	proberMutex.RLock()
 	defer proberMutex.RUnlock()
 	return globalProber
 }
 
-// Start 启动探测器
+// Start starts the prober
 func (p *Prober) Start() {
-	// 使用原子操作检查和设置运行状态
+	// Use atomic operation to check and set running state
 	if !atomic.CompareAndSwapInt32(&p.running, 0, 1) {
-		return // 已经在运行
+		return // already running
 	}
 
 	p.mu.Lock()
-	// 重新创建 context 和 stopChan
+	// Recreate context and stopChan
 	p.ctx, p.cancel = context.WithCancel(context.Background())
 	p.stopChan = make(chan struct{})
 	p.mu.Unlock()
@@ -193,26 +193,26 @@ func (p *Prober) Start() {
 	go p.probeLoop()
 }
 
-// Stop 停止探测器
+// Stop stops the prober
 func (p *Prober) Stop() {
-	// 使用原子操作检查和设置运行状态
+	// Use atomic operation to check and set running state
 	if !atomic.CompareAndSwapInt32(&p.running, 1, 0) {
-		return // 已经停止
+		return // already stopped
 	}
 
 	p.mu.Lock()
-	// 取消 context
+	// Cancel context
 	if p.cancel != nil {
 		p.cancel()
 	}
-	// 关闭 stopChan
+	// Close stopChan
 	close(p.stopChan)
 	p.mu.Unlock()
 
-	// 等待探测循环结束
+	// Wait for probe loop to finish
 	p.wg.Wait()
 
-	// 关闭 HTTP 客户端的空闲连接
+	// Close HTTP client idle connections
 	if transport, ok := p.httpClient.Transport.(*http.Transport); ok {
 		transport.CloseIdleConnections()
 	}
@@ -220,16 +220,16 @@ func (p *Prober) Stop() {
 	log.Println("Prober stopped")
 }
 
-// IsRunning 检查探测器是否在运行
+// IsRunning checks if the prober is running
 func (p *Prober) IsRunning() bool {
 	return atomic.LoadInt32(&p.running) == 1
 }
 
-// AddNode 添加待探测节点
+// AddNode adds a node to probe
 func (p *Prober) AddNode(node ProbeNode) {
 	p.nodes.Store(node.Tag, node)
 
-	// 初始化结果
+	// Initialize result
 	result := &ProbeResult{
 		NodeTag:   node.Tag,
 		Protocol:  node.Protocol,
@@ -241,7 +241,7 @@ func (p *Prober) AddNode(node ProbeNode) {
 	}
 	p.results.Store(node.Tag, result)
 
-	// 初始化历史记录
+	// Initialize history
 	history := &nodeHistory{
 		results: make([]bool, p.config.HistorySize),
 		index:   0,
@@ -252,7 +252,7 @@ func (p *Prober) AddNode(node ProbeNode) {
 	log.Printf("Prober: added node %s (%s://%s:%d)", node.Tag, node.Protocol, node.Address, node.Port)
 }
 
-// RemoveNode 移除节点
+// RemoveNode removes a node
 func (p *Prober) RemoveNode(tag string) {
 	p.nodes.Delete(tag)
 	p.results.Delete(tag)
@@ -260,7 +260,7 @@ func (p *Prober) RemoveNode(tag string) {
 	log.Printf("Prober: removed node %s", tag)
 }
 
-// ClearNodes 清空所有节点
+// ClearNodes clears all nodes
 func (p *Prober) ClearNodes() {
 	p.nodes.Range(func(key, value interface{}) bool {
 		p.nodes.Delete(key)
@@ -277,7 +277,7 @@ func (p *Prober) ClearNodes() {
 	log.Println("Prober: cleared all nodes")
 }
 
-// UpdateNodes 批量更新节点 (替换所有现有节点)
+// UpdateNodes batch update nodes (replaces all existing nodes)
 func (p *Prober) UpdateNodes(nodes []ProbeNode) {
 	p.ClearNodes()
 	for _, node := range nodes {
@@ -286,11 +286,11 @@ func (p *Prober) UpdateNodes(nodes []ProbeNode) {
 	log.Printf("Prober: updated with %d nodes", len(nodes))
 }
 
-// GetResult 获取单个节点的探测结果 (返回副本以避免竞态)
+// GetResult gets a single node's probe result (returns copy to avoid race)
 func (p *Prober) GetResult(tag string) *ProbeResult {
 	if result, ok := p.results.Load(tag); ok {
 		r := result.(*ProbeResult)
-		// 返回副本
+		// Return a copy
 		return &ProbeResult{
 			NodeTag:     r.NodeTag,
 			Protocol:    r.Protocol,
@@ -306,12 +306,12 @@ func (p *Prober) GetResult(tag string) *ProbeResult {
 	return nil
 }
 
-// GetAllResults 获取所有节点的探测结果
+// GetAllResults gets all nodes' probe results
 func (p *Prober) GetAllResults() map[string]*ProbeResult {
 	results := make(map[string]*ProbeResult)
 	p.results.Range(func(key, value interface{}) bool {
 		r := value.(*ProbeResult)
-		// 返回副本
+		// Return a copy
 		results[key.(string)] = &ProbeResult{
 			NodeTag:     r.NodeTag,
 			Protocol:    r.Protocol,
@@ -328,14 +328,14 @@ func (p *Prober) GetAllResults() map[string]*ProbeResult {
 	return results
 }
 
-// GetBestNode 获取延迟最低的在线节点
+// GetBestNode gets the lowest latency online node
 func (p *Prober) GetBestNode() *ProbeResult {
 	var best *ProbeResult
 	p.results.Range(func(key, value interface{}) bool {
 		result := value.(*ProbeResult)
 		if result.Status == "online" && result.Latency > 0 {
 			if best == nil || result.Latency < best.Latency {
-				// 复制结果
+				// Copy result
 				best = &ProbeResult{
 					NodeTag:     result.NodeTag,
 					Protocol:    result.Protocol,
@@ -354,13 +354,13 @@ func (p *Prober) GetBestNode() *ProbeResult {
 	return best
 }
 
-// GetOnlineNodes 获取所有在线节点
+// GetOnlineNodes gets all online nodes
 func (p *Prober) GetOnlineNodes() []*ProbeResult {
 	var online []*ProbeResult
 	p.results.Range(func(key, value interface{}) bool {
 		result := value.(*ProbeResult)
 		if result.Status == "online" {
-			// 返回副本
+			// Return a copy
 			online = append(online, &ProbeResult{
 				NodeTag:     result.NodeTag,
 				Protocol:    result.Protocol,
@@ -378,11 +378,11 @@ func (p *Prober) GetOnlineNodes() []*ProbeResult {
 	return online
 }
 
-// probeLoop 探测循环
+// probeLoop probe loop
 func (p *Prober) probeLoop() {
 	defer p.wg.Done()
 
-	// 立即执行一次探测
+	// Execute probe immediately once
 	p.probeAllNodes()
 
 	ticker := time.NewTicker(p.config.ProbeInterval)
@@ -400,12 +400,12 @@ func (p *Prober) probeLoop() {
 	}
 }
 
-// probeAllNodes 并发探测所有节点
+// probeAllNodes concurrently probes all nodes
 func (p *Prober) probeAllNodes() {
 	var wg sync.WaitGroup
 
 	p.nodes.Range(func(key, value interface{}) bool {
-		// 检查是否已停止
+		// Check if stopped
 		if !p.IsRunning() {
 			return false
 		}
@@ -416,14 +416,14 @@ func (p *Prober) probeAllNodes() {
 		go func(n ProbeNode) {
 			defer wg.Done()
 
-			// 使用 context 进行超时控制和取消
+			// Use context for timeout control and cancellation
 			select {
 			case p.semaphore <- struct{}{}:
-				// 获取到信号量
+				// Acquired semaphore
 				defer func() { <-p.semaphore }()
 				p.probeNode(n)
 			case <-p.ctx.Done():
-				// 探测器已停止
+				// Prober stopped
 				return
 			}
 		}(node)
@@ -434,19 +434,19 @@ func (p *Prober) probeAllNodes() {
 	wg.Wait()
 }
 
-// probeNode 探测单个节点 (带重试)
+// probeNode probes a single node (with retry)
 func (p *Prober) probeNode(node ProbeNode) {
 	var latency int64 = -1
 	var success bool
 
 	for retry := 0; retry <= p.config.MaxRetries; retry++ {
-		// 检查是否已停止
+		// Check if stopped
 		if !p.IsRunning() {
 			return
 		}
 
 		if retry > 0 {
-			// 使用可取消的 sleep
+			// Use cancellable sleep
 			select {
 			case <-time.After(time.Duration(retry*500) * time.Millisecond):
 			case <-p.ctx.Done():
@@ -470,15 +470,15 @@ func (p *Prober) probeNode(node ProbeNode) {
 		}
 	}
 
-	// 更新结果
+	// Update result
 	p.updateResult(node.Tag, latency, success)
 }
 
-// tcpProbe TCP 连接探测 (支持 context 取消)
+// tcpProbe TCP connection probe (supports context cancellation)
 func (p *Prober) tcpProbe(address string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", address, port)
 
-	// 使用带 context 的 Dialer
+	// Use context-aware Dialer
 	dialer := &net.Dialer{
 		Timeout: p.config.ProbeTimeout,
 	}
@@ -491,7 +491,7 @@ func (p *Prober) tcpProbe(address string, port int) bool {
 	return true
 }
 
-// httpProbe HTTP 探测
+// httpProbe HTTP probe
 func (p *Prober) httpProbe() bool {
 	ctx, cancel := context.WithTimeout(p.ctx, p.config.ProbeTimeout)
 	defer cancel()
@@ -507,14 +507,14 @@ func (p *Prober) httpProbe() bool {
 	}
 	defer resp.Body.Close()
 
-	// 读取并丢弃响应体，确保连接可被复用
+	// Read and discard response body, ensure connection can be reused
 	io.Copy(io.Discard, resp.Body)
 
-	// 200 或 204 都算成功
+	// 200 or 204 are both considered success
 	return resp.StatusCode == 200 || resp.StatusCode == 204
 }
 
-// updateResult 更新探测结果
+// updateResult updates probe result
 func (p *Prober) updateResult(tag string, latency int64, success bool) {
 	resultVal, ok := p.results.Load(tag)
 	if !ok {
@@ -522,18 +522,18 @@ func (p *Prober) updateResult(tag string, latency int64, success bool) {
 	}
 	result := resultVal.(*ProbeResult)
 
-	// 获取历史记录
+	// Get history
 	historyVal, ok := p.history.Load(tag)
 	if !ok {
-		// 节点可能已被删除
+		// Node may have been deleted
 		return
 	}
 	history := historyVal.(*nodeHistory)
 
-	// 线程安全地更新历史记录并获取成功率
+	// Thread-safe update history and get success rate
 	successRate := history.update(success)
 
-	// 创建新的结果对象 (避免直接修改)
+	// Create new result object (avoid direct modification)
 	newResult := &ProbeResult{
 		NodeTag:     result.NodeTag,
 		Protocol:    result.Protocol,
@@ -559,7 +559,7 @@ func (p *Prober) updateResult(tag string, latency int64, success bool) {
 	p.results.Store(tag, newResult)
 }
 
-// GetStats 获取探测器统计信息
+// GetStats gets prober statistics
 func (p *Prober) GetStats() map[string]interface{} {
 	var totalNodes, onlineNodes, offlineNodes, timeoutNodes int
 
@@ -592,7 +592,7 @@ func (p *Prober) GetStats() map[string]interface{} {
 	}
 }
 
-// SaveNodesToFile 保存节点配置到文件
+// SaveNodesToFile saves node config to file
 func (p *Prober) SaveNodesToFile() error {
 	var nodes []ProbeNode
 	p.nodes.Range(func(key, value interface{}) bool {
@@ -609,14 +609,14 @@ func (p *Prober) SaveNodesToFile() error {
 	return os.WriteFile(filePath, data, 0644)
 }
 
-// LoadNodesFromFile 从文件加载节点配置
+// LoadNodesFromFile loads node config from file
 func (p *Prober) LoadNodesFromFile() error {
 	filePath := filepath.Join(singboxDir, "prober_nodes.json")
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // 文件不存在不是错误
+			return nil // file not existing is not an error
 		}
 		return err
 	}
@@ -630,7 +630,7 @@ func (p *Prober) LoadNodesFromFile() error {
 	return nil
 }
 
-// StopProber 停止全局探测器
+// StopProber stops the global prober
 func StopProber() {
 	proberMutex.Lock()
 	defer proberMutex.Unlock()

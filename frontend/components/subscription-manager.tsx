@@ -12,10 +12,10 @@ import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api"
 import { useTranslation } from "@/lib/i18n"
 
-// 测速轮询配置
-const PROBE_POLL_MAX_ATTEMPTS = 15   // 最大轮询次数
-const PROBE_POLL_INTERVAL_MS = 1000  // 轮询间隔（毫秒）
-const PROBE_INITIAL_WAIT_MS = 2000   // 初始等待时间（毫秒）
+// Probe polling configuration
+const PROBE_POLL_MAX_ATTEMPTS = 15   // Max polling attempts
+const PROBE_POLL_INTERVAL_MS = 1000  // Polling interval (ms)
+const PROBE_INITIAL_WAIT_MS = 2000   // Initial wait time (ms)
 
 const UA_OPTIONS_KEYS = [
   { key: "default", labelKey: "defaultBrowser" },
@@ -32,7 +32,7 @@ interface ProxyNode {
   port: number
   settings: Record<string, any>
   outbound: Record<string, any>
-  // 测速相关字段
+  // Probe-related fields
   latency?: number
   online?: boolean
   last_probe?: string
@@ -94,16 +94,16 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
-  // 用 ref 追踪最新回调，避免 useEffect 依赖变化导致的问题
+  // Use ref to track latest callback, avoiding issues from useEffect dependency changes
   const onNodesLoadedRef = useRef(onNodesLoaded)
   onNodesLoadedRef.current = onNodesLoaded
 
-  // 初始化时加载订阅
+  // Load subscriptions on init
   useEffect(() => {
     loadSubscriptions()
   }, [])
 
-  // 当订阅变化时，通知父组件所有节点
+  // Notify parent of all nodes when subscriptions change
   useEffect(() => {
     const allNodes = subscriptions.flatMap(sub => sub.nodes || [])
     onNodesLoadedRef.current?.(allNodes)
@@ -116,7 +116,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
         const data = await response.json()
         setSubscriptions(data.subscriptions || [])
         if (data.subscriptions?.length > 0) {
-          // 默认展开第一个订阅
+          // Expand first subscription by default
           setExpandedSubs(new Set([data.subscriptions[0].id]))
         }
       }
@@ -286,7 +286,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     })
   }
 
-  // 手动测速
+  // Manual probe
   const probeNodes = async () => {
     if (subscriptions.length === 0) {
       toast({
@@ -299,17 +299,17 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
 
     setProbing(true)
     try {
-      // 同步节点到测速服务并启动测速
+      // Sync nodes to probe service and start probing
       const result = await apiClient.syncProberNodes()
       toast({
         title: t("probeStarted"),
         description: t("probeStartedDesc", { count: result.nodeCount }),
       })
 
-      // 轮询等待测速完成
+      // Poll until probing completes
       const pollStatus = async (attempts = 0): Promise<void> => {
         if (attempts >= PROBE_POLL_MAX_ATTEMPTS) {
-          // 超过 15 次（约 15 秒）仍未完成，强制保存当前结果
+          // After 15 attempts (~15s) without completion, force-save current results
           await apiClient.saveProberResults()
           await loadSubscriptions()
           setProbing(false)
@@ -322,7 +322,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
 
         try {
           const status = await apiClient.getProberStatus()
-          // 如果 prober 不在运行或已完成一轮探测，保存结果
+          // If prober is not running or has completed a round, save results
           if (!status.running || status.totalNodes === status.onlineNodes + status.offlineNodes + status.timeoutNodes) {
             await apiClient.saveProberResults()
             await loadSubscriptions()
@@ -334,15 +334,15 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
             return
           }
         } catch {
-          // 忽略状态检查错误，继续轮询
+          // Ignore status check errors, continue polling
         }
 
-        // 等待后继续轮询
+        // Wait then continue polling
         await new Promise(resolve => setTimeout(resolve, PROBE_POLL_INTERVAL_MS))
         return pollStatus(attempts + 1)
       }
 
-      // 等待初始探测完成后开始轮询
+      // Wait for initial probe to complete before polling
       await new Promise(resolve => setTimeout(resolve, PROBE_INITIAL_WAIT_MS))
       await pollStatus()
     } catch (error) {
@@ -355,7 +355,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
-  // 代理测速：启动临时 sing-box 实例通过 SOCKS 代理逐个测试节点延迟与下载速度
+  // Proxy speed test: start temp sing-box instance to test node latency & speed via SOCKS proxy
   const runSpeedTest = async () => {
     if (subscriptions.length === 0) {
       toast({ title: t("noNodesForProbe"), description: t("noNodesForProbeHint"), variant: "destructive" })
@@ -367,7 +367,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
       await apiClient.startSpeedTest()
       toast({ title: t("speedTestStarted"), description: t("speedTestStartedDesc") })
 
-      // 循环轮询直到后端上报 running=false；连续失败 20 次后强制退出
+      // Poll until backend reports running=false; force exit after 20 consecutive failures
       await new Promise((r) => setTimeout(r, 1000))
       let consecutiveErrors = 0
       const MAX_POLL_ERRORS = 20
@@ -403,7 +403,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     try {
       await apiClient.stopSpeedTest()
     } catch {
-      // 忽略错误——后台 goroutine 结束后下一轮轮询会自然收尾并 reset UI state
+      // Ignore error - next poll will naturally complete and reset UI state after goroutine finishes
     }
   }
 
@@ -420,7 +420,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
 
   return (
     <div className="space-y-4">
-      {/* 顶部操作栏 */}
+      {/* Top action bar */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {t("summaryText", { subCount: subscriptions.length, nodeCount: totalNodes })}
@@ -483,7 +483,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
         </div>
       </div>
 
-      {/* 添加新订阅 */}
+      {/* Add new subscription */}
       {addingNew && (
         <Card>
           <CardHeader className="pb-3">
@@ -557,7 +557,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
         </Card>
       )}
 
-      {/* 订阅列表 */}
+      {/* Subscription list */}
       {subscriptions.length === 0 && !addingNew ? (
         <div className="text-center py-8 text-muted-foreground">
           <p>{t("noSubscriptions")}</p>
@@ -567,7 +567,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
         <div className="space-y-2">
           {subscriptions.map((sub) => (
             <Card key={sub.id} className="overflow-hidden">
-              {/* 订阅头部 */}
+              {/* Subscription header */}
               <div
                 className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50"
                 onClick={() => toggleExpand(sub.id)}
@@ -594,7 +594,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
                   )}
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  {/* 自动更新设置 */}
+                  {/* Auto-update settings */}
                   <div className="flex items-center gap-1.5 border rounded px-2 py-1">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <Checkbox

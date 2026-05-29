@@ -373,7 +373,7 @@ export function Hysteria2Form({
         />
         <p className="text-xs text-muted-foreground">{t("alpnHint")}</p>
       </div>
-      {/* 混淆 (Obfuscation) */}
+      {/* Obfuscation */}
       <div className="space-y-2">
         <Label>{t("hy2Obfs")}</Label>
         <select
