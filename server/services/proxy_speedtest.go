@@ -239,7 +239,11 @@ func testOneNode(ctx context.Context, node ProxyNode, tag string) (int64, float6
 	if err := ds.StartSpeedTestContainer(dir); err != nil {
 		return 0, 0, "", fmt.Errorf("container start: %w", err)
 	}
-	defer ds.StopSpeedTestContainer()
+	defer func() {
+		if err := ds.StopSpeedTestContainer(); err != nil {
+			log.Printf("Warning: failed to stop speed test container: %v", err)
+		}
+	}()
 
 	if err := waitProxyReady(ctx, port, 10*time.Second); err != nil {
 		logs := ds.GetSpeedTestContainerLogs()

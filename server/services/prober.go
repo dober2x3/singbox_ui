@@ -508,7 +508,7 @@ func (p *Prober) httpProbe() bool {
 	defer resp.Body.Close()
 
 	// Read and discard response body, ensure connection can be reused
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	// 200 or 204 are both considered success
 	return resp.StatusCode == 200 || resp.StatusCode == 204

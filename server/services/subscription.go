@@ -300,9 +300,29 @@ func parseProxyLines(content string) ([]ProxyNode, error) {
 
 // isClashYAML detects if content is Clash YAML format
 func isClashYAML(content string) bool {
-	// Clash configs typically contain these key fields
-	return strings.Contains(content, "proxies:") &&
-		(strings.Contains(content, "proxy-groups:") || strings.Contains(content, "rules:"))
+	if !strings.Contains(content, "proxies:") {
+		return false
+	}
+
+	// Standard full Clash configs have proxy-groups or rules
+	if strings.Contains(content, "proxy-groups:") || strings.Contains(content, "rules:") {
+		return true
+	}
+
+	// Clash/Mihomo-specific top-level keys commonly found in proxy-list-only configs
+	if strings.Contains(content, "mixed-port:") || strings.Contains(content, "allow-lan:") {
+		return true
+	}
+
+	// Final check: try actual YAML parse to confirm it's a valid Clash proxy list
+	var config struct {
+		Proxies []interface{} `yaml:"proxies"`
+	}
+	if err := yaml.Unmarshal([]byte(content), &config); err == nil && len(config.Proxies) > 0 {
+		return true
+	}
+
+	return false
 }
 
 // ClashConfig Clash YAML config structure
@@ -671,7 +691,7 @@ func parseVMessNode(link string) (ProxyNode, error) {
 	}
 
 	// Parse port
-	fmt.Sscanf(vmess.Port, "%d", &node.Port)
+	_, _ = fmt.Sscanf(vmess.Port, "%d", &node.Port)
 
 	// Build sing-box outbound config
 	// Use unique tag to avoid conflicts during load balancing
@@ -746,7 +766,7 @@ func parseVLESSNode(link string) (ProxyNode, error) {
 
 	address := addrPort[0]
 	port := 0
-	fmt.Sscanf(addrPort[1], "%d", &port)
+	_, _ = fmt.Sscanf(addrPort[1], "%d", &port)
 
 	// Parse query parameters
 	query := ""
@@ -865,7 +885,7 @@ func parseTrojanNode(link string) (ProxyNode, error) {
 
 	address := addrPort[0]
 	port := 0
-	fmt.Sscanf(addrPort[1], "%d", &port)
+	_, _ = fmt.Sscanf(addrPort[1], "%d", &port)
 
 	// Parse query parameters
 	name := ""
@@ -995,7 +1015,7 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 			return ProxyNode{}, fmt.Errorf("invalid address:port")
 		}
 		address = addressPort[0]
-		fmt.Sscanf(addressPort[1], "%d", &port)
+		_, _ = fmt.Sscanf(addressPort[1], "%d", &port)
 	} else {
 		// Legacy format: the entire link is Base64 encoded method:password@server:port
 		decoded, err := decodeBase64(link)
@@ -1024,7 +1044,7 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 		}
 
 		address = addressPort[0]
-		fmt.Sscanf(addressPort[1], "%d", &port)
+		_, _ = fmt.Sscanf(addressPort[1], "%d", &port)
 	}
 
 	if name == "" {
@@ -1058,7 +1078,7 @@ func parseShadowsocksNode(link string) (ProxyNode, error) {
 // parseIntOrZero converts string to int, returns 0 on failure
 func parseIntOrZero(s string) int {
 	var result int
-	fmt.Sscanf(s, "%d", &result)
+	_, _ = fmt.Sscanf(s, "%d", &result)
 	return result
 }
 
@@ -1173,7 +1193,7 @@ func LoadSubscriptions() (*SubscriptionData, error) {
 		subData.URL = ""
 		subData.Nodes = nil
 		// Save migrated data
-		SaveSubscriptions(subData)
+		_ = SaveSubscriptions(subData)
 	}
 
 	if subData.Subscriptions == nil {

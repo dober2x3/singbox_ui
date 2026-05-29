@@ -145,7 +145,7 @@ func (d *DockerService) loadImageFromFile() error {
 		return fmt.Errorf("failed to load image: %w", err)
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	// Tag inside tar may differ from expected (CI uses temp tag), need to re-tag
 	// Find the just-loaded image and ensure SingBoxImageName tag exists
@@ -261,9 +261,9 @@ func (d *DockerService) CreateAndStartContainer(hostConfigDir string) (string, e
 	}
 
 	// Start container
-	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := d.cli.ContainerStart(d.ctx, resp.ID, container.StartOptions{}); err != nil {
 		// If start fails, remove container
-		_ = d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
+		_ = d.cli.ContainerRemove(d.ctx, resp.ID, container.RemoveOptions{Force: true})
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
 
@@ -288,7 +288,7 @@ func (d *DockerService) StopContainer() error {
 
 // RemoveContainer removes the sing-box container
 func (d *DockerService) RemoveContainer() error {
-	if err := d.cli.ContainerRemove(d.ctx, SingBoxContainerName, types.ContainerRemoveOptions{
+	if err := d.cli.ContainerRemove(d.ctx, SingBoxContainerName, container.RemoveOptions{
 		Force: true,
 	}); err != nil {
 		// Ignore if container does not exist
@@ -303,7 +303,7 @@ func (d *DockerService) RemoveContainer() error {
 
 // GetContainerStatus gets the container status
 func (d *DockerService) GetContainerStatus() (running bool, containerID string, err error) {
-	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
+	containers, err := d.cli.ContainerList(d.ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("name", SingBoxContainerName)),
 	})
@@ -325,7 +325,7 @@ func (d *DockerService) GetContainerLogs(tail string) (string, error) {
 		tail = "100"
 	}
 
-	options := types.ContainerLogsOptions{
+	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Tail:       tail,
@@ -363,9 +363,13 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp container: %w", err)
 	}
-	defer d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
+	defer func() {
+		if err := d.cli.ContainerRemove(d.ctx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
+			log.Printf("Warning: failed to remove version container %s: %v", resp.ID[:12], err)
+		}
+	}()
 
-	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := d.cli.ContainerStart(d.ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", fmt.Errorf("failed to start temp container: %w", err)
 	}
 
@@ -382,7 +386,7 @@ func (d *DockerService) GetSingBoxVersion() (string, error) {
 	}
 
 	// Read output from container logs (container already exited, read all at once)
-	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, container.LogsOptions{ShowStdout: true})
 	if err != nil {
 		return "", fmt.Errorf("failed to read logs: %w", err)
 	}
@@ -425,9 +429,13 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 	if err != nil {
 		return false, "", fmt.Errorf("failed to create check container: %w", err)
 	}
-	defer d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
+	defer func() {
+		if err := d.cli.ContainerRemove(d.ctx, resp.ID, container.RemoveOptions{Force: true}); err != nil {
+			log.Printf("Warning: failed to remove check container %s: %v", resp.ID[:12], err)
+		}
+	}()
 
-	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := d.cli.ContainerStart(d.ctx, resp.ID, container.StartOptions{}); err != nil {
 		return false, "", fmt.Errorf("failed to start check container: %w", err)
 	}
 
@@ -449,7 +457,7 @@ func (d *DockerService) CheckNamedConfig(configName string, hostConfigDir string
 	}
 
 	// Read output
-	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, types.ContainerLogsOptions{
+	logReader, err := d.cli.ContainerLogs(d.ctx, resp.ID, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
@@ -522,8 +530,8 @@ func (d *DockerService) StartSpeedTestContainer(hostConfigDir string) error {
 		return fmt.Errorf("create after retries: %w", err)
 	}
 
-	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		_ = d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
+	if err := d.cli.ContainerStart(d.ctx, resp.ID, container.StartOptions{}); err != nil {
+		_ = d.cli.ContainerRemove(d.ctx, resp.ID, container.RemoveOptions{Force: true})
 		return fmt.Errorf("start: %w", err)
 	}
 	return nil
@@ -531,7 +539,7 @@ func (d *DockerService) StartSpeedTestContainer(hostConfigDir string) error {
 
 // GetSpeedTestContainerLogs gets speed test container logs (for diagnosing startup failures)
 func (d *DockerService) GetSpeedTestContainerLogs() string {
-	reader, err := d.cli.ContainerLogs(d.ctx, SpeedTestContainerName, types.ContainerLogsOptions{
+	reader, err := d.cli.ContainerLogs(d.ctx, SpeedTestContainerName, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Tail:       "30",
@@ -551,7 +559,7 @@ func (d *DockerService) GetSpeedTestContainerLogs() string {
 
 // StopSpeedTestContainer stops and removes the speed test container
 func (d *DockerService) StopSpeedTestContainer() error {
-	if err := d.cli.ContainerRemove(d.ctx, SpeedTestContainerName, types.ContainerRemoveOptions{
+	if err := d.cli.ContainerRemove(d.ctx, SpeedTestContainerName, container.RemoveOptions{
 		Force: true,
 	}); err != nil && !strings.Contains(err.Error(), "No such container") {
 		return err
@@ -563,39 +571,6 @@ func (d *DockerService) StopSpeedTestContainer() error {
 func stripAnsi(s string) string {
 	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return re.ReplaceAllString(s, "")
-}
-
-// execInContainer executes a command in a running container
-func (d *DockerService) execInContainer(cmd ...string) (string, error) {
-	execConfig := types.ExecConfig{
-		Cmd:          cmd,
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	execResp, err := d.cli.ContainerExecCreate(d.ctx, SingBoxContainerName, execConfig)
-	if err != nil {
-		return "", fmt.Errorf("failed to create exec: %w", err)
-	}
-
-	attachResp, err := d.cli.ContainerExecAttach(d.ctx, execResp.ID, types.ExecStartCheck{})
-	if err != nil {
-		return "", fmt.Errorf("failed to attach to exec: %w", err)
-	}
-	defer attachResp.Close()
-
-	var stdout, stderr strings.Builder
-	_, err = stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
-	if err != nil {
-		return "", fmt.Errorf("failed to read exec output: %w", err)
-	}
-
-	output := strings.TrimSpace(stdout.String())
-	if output == "" {
-		output = strings.TrimSpace(stderr.String())
-	}
-
-	return output, nil
 }
 
 // GetNamedContainerName gets the container name for a named config
@@ -671,8 +646,8 @@ func (d *DockerService) CreateAndStartNamedContainer(configName string, hostConf
 	}
 
 	// Start container
-	if err := d.cli.ContainerStart(d.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		_ = d.cli.ContainerRemove(d.ctx, resp.ID, types.ContainerRemoveOptions{Force: true})
+	if err := d.cli.ContainerStart(d.ctx, resp.ID, container.StartOptions{}); err != nil {
+		_ = d.cli.ContainerRemove(d.ctx, resp.ID, container.RemoveOptions{Force: true})
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
 
@@ -701,7 +676,7 @@ func (d *DockerService) StopNamedContainer(configName string) error {
 // RemoveNamedContainer removes a named sing-box container
 func (d *DockerService) RemoveNamedContainer(configName string) error {
 	containerName := GetNamedContainerName(configName)
-	if err := d.cli.ContainerRemove(d.ctx, containerName, types.ContainerRemoveOptions{
+	if err := d.cli.ContainerRemove(d.ctx, containerName, container.RemoveOptions{
 		Force: true,
 	}); err != nil {
 		if !strings.Contains(err.Error(), "No such container") {
@@ -716,7 +691,7 @@ func (d *DockerService) RemoveNamedContainer(configName string) error {
 // GetNamedContainerStatus gets the named container status
 func (d *DockerService) GetNamedContainerStatus(configName string) (running bool, containerID string, err error) {
 	containerName := GetNamedContainerName(configName)
-	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
+	containers, err := d.cli.ContainerList(d.ctx, container.ListOptions{
 		All: true,
 	})
 	if err != nil {
@@ -742,7 +717,7 @@ func (d *DockerService) GetNamedContainerLogs(configName string, tail string) (s
 		tail = "100"
 	}
 
-	options := types.ContainerLogsOptions{
+	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Tail:       tail,
@@ -771,7 +746,7 @@ func (d *DockerService) GetNamedContainerLogs(configName string, tail string) (s
 
 // ListAllSingboxContainers lists all sing-box containers
 func (d *DockerService) ListAllSingboxContainers() ([]ContainerInfo, error) {
-	containers, err := d.cli.ContainerList(d.ctx, types.ContainerListOptions{
+	containers, err := d.cli.ContainerList(d.ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("name", SingBoxContainerPrefix)),
 	})

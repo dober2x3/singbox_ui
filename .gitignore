@@ -34,6 +34,9 @@ server/wireguard/
 # Data directory (contains keys cache and other runtime data)
 server/data/
 
+# Deployment scripts
+deploy.sh
+
 # IDE
 .vscode/
 .idea/
