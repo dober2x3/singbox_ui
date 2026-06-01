@@ -113,6 +113,30 @@ definitions:
         example: my-proxy
         type: string
     type: object
+  subscription.AddSubscriptionRequest:
+    properties:
+      name:
+        example: My VPN Server
+        type: string
+      url:
+        example: https://example.com/sub
+        type: string
+      user_agent:
+        example: clash-meta
+        type: string
+    required:
+    - name
+    - url
+    type: object
+  subscription.UpdateSettingsRequest:
+    properties:
+      auto_update:
+        example: true
+        type: boolean
+      update_interval:
+        example: 12
+        type: integer
+    type: object
   warp.LicenseBindRequest:
     properties:
       license:
@@ -543,6 +567,196 @@ paths:
       summary: Stop speed test
       tags:
       - speedtest
+  /subscription:
+    get:
+      description: Returns all subscriptions with total node counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get all subscriptions
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      description: Adds a new subscription by URL and parses its proxy nodes
+      parameters:
+      - description: Subscription details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.AddSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Add a new subscription
+      tags:
+      - subscription
+  /subscription/{id}:
+    delete:
+      description: Removes a subscription by its ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Delete a subscription
+      tags:
+      - subscription
+  /subscription/{id}/refresh:
+    post:
+      description: Re-fetches and parses a subscription by its ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Refresh a single subscription
+      tags:
+      - subscription
+  /subscription/{id}/settings:
+    patch:
+      consumes:
+      - application/json
+      description: Updates auto-update and interval settings for a subscription
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.UpdateSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Update subscription settings
+      tags:
+      - subscription
+  /subscription/nodes:
+    get:
+      description: Returns all proxy nodes across all subscriptions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get all proxy nodes
+      tags:
+      - subscription
+  /subscription/refresh-all:
+    post:
+      description: Re-fetches and parses all subscriptions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Refresh all subscriptions
+      tags:
+      - subscription
+  /subscription/user-agents:
+    get:
+      description: Returns available user-agent presets for subscription fetching
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get user agent presets
+      tags:
+      - subscription
   /warp/account:
     delete:
       description: Deletes the stored WARP device account
