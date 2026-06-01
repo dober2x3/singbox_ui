@@ -89,6 +89,30 @@ definitions:
         example: detailed error description
         type: string
     type: object
+  speedtest.SpeedTestState:
+    properties:
+      download_speed:
+        example: 15.5
+        type: number
+      error:
+        example: timeout
+        type: string
+      latency_ms:
+        example: 120
+        type: integer
+      progress:
+        example: 50
+        type: integer
+      running:
+        example: true
+        type: boolean
+      status:
+        example: testing...
+        type: string
+      tag:
+        example: my-proxy
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -256,6 +280,53 @@ paths:
       summary: Derive Reality public key
       tags:
       - reality
+  /speedtest/start:
+    post:
+      description: Starts a speed test for all loaded proxy nodes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: speed test started
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Start speed test
+      tags:
+      - speedtest
+  /speedtest/status:
+    get:
+      description: Returns the current speed test state including progress and results
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/speedtest.SpeedTestState'
+      summary: Get speed test status
+      tags:
+      - speedtest
+  /speedtest/stop:
+    post:
+      description: Stops the currently running speed test if one is in progress
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: stop requested
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Stop speed test
+      tags:
+      - speedtest
 schemes:
 - http
 swagger: "2.0"

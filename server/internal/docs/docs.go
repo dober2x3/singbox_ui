@@ -253,6 +253,78 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/speedtest/start": {
+            "post": {
+                "description": "Starts a speed test for all loaded proxy nodes",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "speedtest"
+                ],
+                "summary": "Start speed test",
+                "responses": {
+                    "200": {
+                        "description": "speed test started",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/speedtest/status": {
+            "get": {
+                "description": "Returns the current speed test state including progress and results",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "speedtest"
+                ],
+                "summary": "Get speed test status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/speedtest.SpeedTestState"
+                        }
+                    }
+                }
+            }
+        },
+        "/speedtest/stop": {
+            "post": {
+                "description": "Stops the currently running speed test if one is in progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "speedtest"
+                ],
+                "summary": "Stop speed test",
+                "responses": {
+                    "200": {
+                        "description": "stop requested",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -376,6 +448,39 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "detailed error description"
+                }
+            }
+        },
+        "speedtest.SpeedTestState": {
+            "type": "object",
+            "properties": {
+                "download_speed": {
+                    "type": "number",
+                    "example": 15.5
+                },
+                "error": {
+                    "type": "string",
+                    "example": "timeout"
+                },
+                "latency_ms": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "progress": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "running": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "status": {
+                    "type": "string",
+                    "example": "testing..."
+                },
+                "tag": {
+                    "type": "string",
+                    "example": "my-proxy"
                 }
             }
         }
