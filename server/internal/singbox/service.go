@@ -112,7 +112,7 @@ func (s *Service) ContainerLogs() string {
 }
 
 func (s *Service) EnsureImage() error {
-	return s.docker.EnsureImage("ghcr.io/sagernet/sing-box:latest", "")
+	return s.docker.EnsureImage(context.Background(), "ghcr.io/sagernet/sing-box:latest", "")
 }
 
 func (s *Service) GetVersion() (string, error) {

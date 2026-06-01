@@ -82,6 +82,10 @@ func (s *Scheduler) checkAndAutoUpdateSubscriptions() {
 		if entry.UpdateInterval <= 0 {
 			continue
 		}
+		if entry.LastUpdated == "" {
+			s.updateOne(entry.ID)
+			continue
+		}
 
 		lastUpdated, err := time.Parse(time.RFC3339, entry.LastUpdated)
 		if err != nil {

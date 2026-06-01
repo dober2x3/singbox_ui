@@ -21,7 +21,7 @@ type mockContainerManager struct {
 	imagePullFn         func(ctx context.Context, image string) (io.ReadCloser, error)
 	imageListFn         func(ctx context.Context, image string) (bool, error)
 	listContainersFn    func(ctx context.Context, prefix string) ([]docker.ContainerInfo, error)
-	ensureImageFn       func(imageName, tarPath string) error
+	ensureImageFn       func(ctx context.Context, imageName, tarPath string) error
 	closeFn             func() error
 }
 
@@ -61,8 +61,8 @@ func (m *mockContainerManager) ListContainers(ctx context.Context, prefix string
 	return m.listContainersFn(ctx, prefix)
 }
 
-func (m *mockContainerManager) EnsureImage(imageName, tarPath string) error {
-	return m.ensureImageFn(imageName, tarPath)
+func (m *mockContainerManager) EnsureImage(ctx context.Context, imageName, tarPath string) error {
+	return m.ensureImageFn(ctx, imageName, tarPath)
 }
 
 func (m *mockContainerManager) Close() error {
@@ -98,7 +98,7 @@ func newMockManager() *mockContainerManager {
 		listContainersFn: func(_ context.Context, _ string) ([]docker.ContainerInfo, error) {
 			return []docker.ContainerInfo{}, nil
 		},
-		ensureImageFn: func(_, _ string) error {
+		ensureImageFn: func(_ context.Context, _, _ string) error {
 			return nil
 		},
 		closeFn: func() error {

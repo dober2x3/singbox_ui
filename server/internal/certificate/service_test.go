@@ -82,7 +82,9 @@ func TestCertificateExists(t *testing.T) {
 	if svc.CertificateExists() {
 		t.Error("CertificateExists() = true before generating cert")
 	}
-	svc.GenerateSelfSignedCert("test.com", 30)
+	if _, err := svc.GenerateSelfSignedCert("test.com", 30); err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
 	if !svc.CertificateExists() {
 		t.Error("CertificateExists() = false after generating cert")
 	}

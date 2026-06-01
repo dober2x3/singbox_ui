@@ -3,18 +3,20 @@ package scheduler
 import (
 	"testing"
 	"time"
+
+	"singbox-config-service/internal/subscription"
 )
 
 type mockSubUpdater struct {
-	entries []SubscriptionEntry
+	entries []subscription.SubscriptionEntry
 	updated map[string]bool
 }
 
-func (m *mockSubUpdater) LoadAll() ([]SubscriptionEntry, error) {
+func (m *mockSubUpdater) LoadAll() ([]subscription.SubscriptionEntry, error) {
 	return m.entries, nil
 }
 
-func (m *mockSubUpdater) UpdateOne(id string) (*SubscriptionEntry, error) {
+func (m *mockSubUpdater) UpdateOne(id string) (*subscription.SubscriptionEntry, error) {
 	if m.updated == nil {
 		m.updated = make(map[string]bool)
 	}
@@ -34,7 +36,7 @@ func (m *mockContainerManager) Status(name string) (running bool, containerID st
 
 func TestScheduler_autoUpdateTrigger(t *testing.T) {
 	subMock := &mockSubUpdater{
-		entries: []SubscriptionEntry{
+		entries: []subscription.SubscriptionEntry{
 			{
 				ID: "test", AutoUpdate: true, UpdateInterval: 1,
 				LastUpdated: time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
@@ -53,7 +55,7 @@ func TestScheduler_autoUpdateTrigger(t *testing.T) {
 
 func TestScheduler_skipIfNotDue(t *testing.T) {
 	subMock := &mockSubUpdater{
-		entries: []SubscriptionEntry{
+		entries: []subscription.SubscriptionEntry{
 			{
 				ID: "test", AutoUpdate: true, UpdateInterval: 24,
 				LastUpdated: time.Now().Format(time.RFC3339),
@@ -69,7 +71,7 @@ func TestScheduler_skipIfNotDue(t *testing.T) {
 
 func TestScheduler_skipIfAutoUpdateDisabled(t *testing.T) {
 	subMock := &mockSubUpdater{
-		entries: []SubscriptionEntry{
+		entries: []subscription.SubscriptionEntry{
 			{
 				ID: "test", AutoUpdate: false,
 			},

@@ -9,12 +9,12 @@ import (
 func TestInit_defaultPath(t *testing.T) {
 	os.Clearenv()
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() { _ = os.Chdir(origWd) }()
 
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 	// Create go.mod to simulate server directory
-	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test"), 0644)
 
 	cfg, err := Init()
 	if err != nil {

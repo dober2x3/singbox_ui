@@ -17,6 +17,6 @@ type ContainerManager interface {
 	ImagePull(ctx context.Context, image string) (io.ReadCloser, error)
 	ImageList(ctx context.Context, image string) (bool, error)
 	ListContainers(ctx context.Context, prefix string) ([]docker.ContainerInfo, error)
-	EnsureImage(imageName, tarPath string) error
+	EnsureImage(ctx context.Context, imageName, tarPath string) error
 	Close() error
 }

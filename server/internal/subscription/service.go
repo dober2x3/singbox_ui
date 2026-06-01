@@ -244,6 +244,20 @@ func (s *Service) GetAllSubscriptions() (*SubscriptionData, error) {
 	return s.store.Load()
 }
 
+// LoadAll returns all subscription entries (for scheduler integration)
+func (s *Service) LoadAll() ([]SubscriptionEntry, error) {
+	data, err := s.store.Load()
+	if err != nil {
+		return nil, err
+	}
+	return data.Subscriptions, nil
+}
+
+// UpdateOne refreshes a single subscription (for scheduler integration)
+func (s *Service) UpdateOne(id string) (*SubscriptionEntry, error) {
+	return s.UpdateSubscription(id)
+}
+
 func (s *Service) GetAllNodes() ([]types.ProxyNode, error) {
 	data, err := s.store.Load()
 	if err != nil {

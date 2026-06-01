@@ -3,6 +3,7 @@ package speedtest
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -60,12 +61,23 @@ func (m *mockNodeProvider) GetAllNodes() []types.ProxyNode {
 }
 
 type mockResultSaver struct {
+	mu    sync.Mutex
 	saved []types.SpeedTestUpdate
 }
 
 func (m *mockResultSaver) SaveSpeedTestResults(results []types.SpeedTestUpdate) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.saved = append(m.saved, results...)
 	return nil
+}
+
+func (m *mockResultSaver) GetSaved() []types.SpeedTestUpdate {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	result := make([]types.SpeedTestUpdate, len(m.saved))
+	copy(result, m.saved)
+	return result
 }
 
 func TestPickFreePort(t *testing.T) {
@@ -294,7 +306,7 @@ func TestService_RunSpeedTest_WithResultSaver(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	if len(saver.saved) == 0 {
+	if len(saver.GetSaved()) == 0 {
 		t.Error("result saver should have been called")
 	}
 }
