@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// startFakeWarpUDP starts a fake UDP server that responds to WARP handshake probes.
 func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 	t.Helper()
 	addr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
@@ -53,6 +54,7 @@ func startFakeWarpUDP(t *testing.T, replySize int) (string, func()) {
 	}
 }
 
+// TestWarpHandshakeProbe_AllSuccess tests the probe with all handshakes succeeding.
 func TestWarpHandshakeProbe_AllSuccess(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, warpHandshakeResponseSize)
 	defer stop()
@@ -73,6 +75,7 @@ func TestWarpHandshakeProbe_AllSuccess(t *testing.T) {
 	}
 }
 
+// TestWarpHandshakeProbe_Timeout tests the probe when the server does not respond.
 func TestWarpHandshakeProbe_Timeout(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, 0)
 	defer stop()
@@ -96,6 +99,7 @@ func TestWarpHandshakeProbe_Timeout(t *testing.T) {
 	}
 }
 
+// TestWarpHandshakeProbe_WrongSize tests the probe when the server returns a response of incorrect size.
 func TestWarpHandshakeProbe_WrongSize(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, 50)
 	defer stop()
@@ -113,6 +117,7 @@ func TestWarpHandshakeProbe_WrongSize(t *testing.T) {
 	}
 }
 
+// TestWarpHandshakeProbe_PartialSuccess tests the probe with only some handshakes succeeding.
 func TestWarpHandshakeProbe_PartialSuccess(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, -2)
 	defer stop()
@@ -133,6 +138,7 @@ func TestWarpHandshakeProbe_PartialSuccess(t *testing.T) {
 	}
 }
 
+// TestWarpHandshakeProbe_ContextCancel tests that the probe honors context cancellation.
 func TestWarpHandshakeProbe_ContextCancel(t *testing.T) {
 	addr, stop := startFakeWarpUDP(t, 0)
 	defer stop()

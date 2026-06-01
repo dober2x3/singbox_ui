@@ -2,12 +2,14 @@ package types
 
 import "net/netip"
 
+// proxyOutboundTypes is the set of recognized proxy outbound protocol types.
 var proxyOutboundTypes = map[string]bool{
 	"vless": true, "vmess": true, "trojan": true, "shadowsocks": true,
 	"hysteria2": true, "tuic": true, "wireguard": true, "socks": true,
 	"http": true, "ssh": true, "anytls": true, "shadowtls": true, "naive": true,
 }
 
+// BlockedSubscriptionPrefixes lists IP prefixes that are considered invalid for subscription URLs.
 var BlockedSubscriptionPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("0.0.0.0/8"),
 	netip.MustParsePrefix("10.0.0.0/8"),
@@ -31,6 +33,7 @@ var BlockedSubscriptionPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("2001:db8::/32"),
 }
 
+// IsProxyOutboundType returns true if the given type is a recognized proxy outbound protocol.
 func IsProxyOutboundType(t string) bool {
 	return proxyOutboundTypes[t]
 }

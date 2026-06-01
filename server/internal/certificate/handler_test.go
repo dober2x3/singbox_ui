@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TestHandler_GenerateSelfSignedCert verifies generating a self-signed cert returns certificate info.
 func TestHandler_GenerateSelfSignedCert(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)
@@ -35,6 +36,7 @@ func TestHandler_GenerateSelfSignedCert(t *testing.T) {
 	}
 }
 
+// TestHandler_GenerateSelfSignedCert_badRequest verifies bad JSON returns 400.
 func TestHandler_GenerateSelfSignedCert_badRequest(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)

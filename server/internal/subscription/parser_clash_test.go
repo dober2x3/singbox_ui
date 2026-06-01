@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestIsClashYAML_True verifies that valid Clash YAML with proxies is detected as Clash format.
 func TestIsClashYAML_True(t *testing.T) {
 	content := `
 proxies:
@@ -22,6 +23,7 @@ proxies:
 	}
 }
 
+// TestIsClashYAML_TrueWithProxyGroups verifies that Clash YAML with proxy-groups is detected.
 func TestIsClashYAML_TrueWithProxyGroups(t *testing.T) {
 	content := `
 proxies:
@@ -41,6 +43,7 @@ proxy-groups:
 	}
 }
 
+// TestIsClashYAML_False verifies that non-Clash content is not detected as Clash format.
 func TestIsClashYAML_False(t *testing.T) {
 	content := `just some random text`
 	if isClashYAML(content) {
@@ -48,6 +51,7 @@ func TestIsClashYAML_False(t *testing.T) {
 	}
 }
 
+// TestParseClashYAML_VMess verifies that a Clash YAML with a vmess proxy is parsed correctly.
 func TestParseClashYAML_VMess(t *testing.T) {
 	data := []byte(`
 proxies:
@@ -74,6 +78,7 @@ proxies:
 	}
 }
 
+// TestParseClashYAML_Trojan verifies that a Clash YAML with a trojan proxy is parsed correctly.
 func TestParseClashYAML_Trojan(t *testing.T) {
 	data := []byte(`
 proxies:
@@ -96,6 +101,7 @@ proxies:
 	}
 }
 
+// TestParseClashYAML_MultipleNodes verifies that a Clash YAML with multiple proxies of different types is parsed.
 func TestParseClashYAML_MultipleNodes(t *testing.T) {
 	data := []byte(`
 proxies:

@@ -7,6 +7,7 @@ import (
 	"singbox-config-service/internal/pkg/docker"
 )
 
+// ContainerManager defines the interface for Docker container operations.
 type ContainerManager interface {
 	ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (containerID string, err error)
 	ContainerStart(ctx context.Context, containerID string) error

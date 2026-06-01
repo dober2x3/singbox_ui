@@ -2,6 +2,7 @@ package subscription
 
 import "singbox-config-service/internal/pkg/types"
 
+// SubscriptionEntry represents a single subscription with its metadata and parsed proxy nodes.
 type SubscriptionEntry struct {
 	ID             string              `json:"id"`
 	Name           string              `json:"name"`
@@ -13,6 +14,7 @@ type SubscriptionEntry struct {
 	Nodes          []types.ProxyNode   `json:"nodes"`
 }
 
+// SubscriptionData is the top-level persistence structure containing all subscriptions.
 type SubscriptionData struct {
 	URL           string                `json:"url,omitempty"`
 	Nodes         []types.ProxyNode     `json:"nodes,omitempty"`

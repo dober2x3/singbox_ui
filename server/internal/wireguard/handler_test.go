@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TestHandler_GenerateWireGuardKeys tests successful key generation via the handler.
 func TestHandler_GenerateWireGuardKeys(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)
@@ -38,6 +39,7 @@ func TestHandler_GenerateWireGuardKeys(t *testing.T) {
 	}
 }
 
+// TestHandler_GetPublicKeyFromPrivate tests deriving a public key from a private key via the handler.
 func TestHandler_GetPublicKeyFromPrivate(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)
@@ -66,6 +68,7 @@ func TestHandler_GetPublicKeyFromPrivate(t *testing.T) {
 	}
 }
 
+// TestHandler_GetPublicKeyFromPrivate_missing tests that the handler returns 400 when the private key is missing.
 func TestHandler_GetPublicKeyFromPrivate_missing(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)

@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: "sing-box configuration management panel",
 };
 
+/** Root layout rendering the HTML shell with Inter font, providers, and toaster. */
 export default function RootLayout({
   children,
 }: Readonly<{

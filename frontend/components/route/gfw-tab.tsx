@@ -3,11 +3,13 @@
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the GfwTab component. */
 interface GfwTabProps {
   enableGfw: boolean
   setEnableGfw: (v: boolean) => void
 }
 
+/** Geosite-GFW proxy routing toggle tab. */
 export function GfwTab({ enableGfw, setEnableGfw }: GfwTabProps) {
   const { t } = useTranslation("routing")
 

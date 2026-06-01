@@ -8,6 +8,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// decodeBase64 decodes a base64-encoded string, trying URL, Std, RawURL, and RawStd encodings in order.
 func decodeBase64(s string) ([]byte, error) {
 	s = strings.TrimSpace(s)
 	switch len(s) % 4 {
@@ -32,12 +33,14 @@ func decodeBase64(s string) ([]byte, error) {
 	return base64.RawStdEncoding.DecodeString(s)
 }
 
+// parseIntOrZero parses a string as an integer and returns 0 if parsing fails.
 func parseIntOrZero(s string) int {
 	var result int
 	_, _ = fmt.Sscanf(s, "%d", &result)
 	return result
 }
 
+// parseProxyLines parses proxy URIs (vmess://, vless://, trojan://, ss://) from a line-separated string.
 func parseProxyLines(content string) ([]types.ProxyNode, error) {
 	lines := strings.Split(content, "\n")
 	var nodes []types.ProxyNode

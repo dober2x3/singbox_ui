@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestParseVMessNode_Basic verifies parsing a vmess:// URI with base64-encoded JSON for a TCP connection.
 func TestParseVMessNode_Basic(t *testing.T) {
 	link := "vmess://eyJ2IjoiMiIsInBzIjoiVk1lc3MtMTU0LjE3LjMuMjE4IiwiYWRkIjoiMTU0LjE3LjMuMjE4IiwicG9ydCI6IjIwMjMiLCJpZCI6IjE2Njg2Y2QzLTRhNTUtNDA5OS1iMmU3LTM5YzhjZjU3MTQwNSIsImFpZCI6IjAiLCJuZXQiOiJ0Y3AiLCJ0eXBlIjoibm9uZSIsImhvc3QiOiIiLCJwYXRoIjoiIiwidGxzIjoiIn0="
 	node, err := parseVMessNode(link)
@@ -24,6 +25,7 @@ func TestParseVMessNode_Basic(t *testing.T) {
 	}
 }
 
+// TestParseVMessNode_WithTLSAndWSS verifies parsing a vmess:// URI with WebSocket transport and TLS.
 func TestParseVMessNode_WithTLSAndWSS(t *testing.T) {
 	link := "vmess://eyJ2IjoiMiIsInBzIjoiVk1lc3MtV1MtVExTIiwiYWRkIjoiZXhhbXBsZS5jb20iLCJwb3J0IjoiNDQzIiwiaWQiOiJhYmMxMjMtYWJjMTItYWJjMTItYWJjMTJhYmMxMjNhYmMiLCJhaWQiOiI2NCIsIm5ldCI6IndzIiwidHlwZSI6Im5vbmUiLCJob3N0IjoiZXhhbXBsZS5jb20iLCJwYXRoIjoiL3dzIiwidGxzIjoidGxzIiwic25pIjoiZXhhbXBsZS5jb20ifQ=="
 	node, err := parseVMessNode(link)
@@ -50,6 +52,7 @@ func TestParseVMessNode_WithTLSAndWSS(t *testing.T) {
 	}
 }
 
+// TestParseVMessNode_Invalid verifies that a vmess:// URI with invalid base64 returns an error.
 func TestParseVMessNode_Invalid(t *testing.T) {
 	_, err := parseVMessNode("vmess://invalid-base64!!!")
 	if err == nil {

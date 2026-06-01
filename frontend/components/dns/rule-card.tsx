@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import { DnsRule } from "@/lib/store/singbox-config"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the RuleCard component. */
 interface RuleCardProps {
   rule: DnsRule
   index: number
@@ -18,6 +19,7 @@ interface RuleCardProps {
   availableServerTags: string[]
 }
 
+/** Editable DNS rule card with action, server, rule set, and advanced options. */
 export function RuleCard({
   rule,
   index,

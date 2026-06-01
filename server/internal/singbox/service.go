@@ -1,3 +1,4 @@
+// Package singbox provides services for managing sing-box configuration and containers.
 package singbox
 
 import (
@@ -11,11 +12,13 @@ import (
 	"singbox-config-service/internal/pkg/docker"
 )
 
+// Service provides business logic for sing-box configuration and container management.
 type Service struct {
 	docker ContainerManager
 	cfg    *config.Config
 }
 
+// NewService creates a new Service with the given ContainerManager and Config.
 func NewService(docker ContainerManager, cfg *config.Config) *Service {
 	return &Service{
 		docker: docker,
@@ -23,6 +26,7 @@ func NewService(docker ContainerManager, cfg *config.Config) *Service {
 	}
 }
 
+// SaveConfig writes the configuration data to disk and returns the file path.
 func (s *Service) SaveConfig(data []byte) (string, error) {
 	configPath := filepath.Join(s.cfg.GetSingboxDir(), "config.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
@@ -34,6 +38,7 @@ func (s *Service) SaveConfig(data []byte) (string, error) {
 	return configPath, nil
 }
 
+// GetConfig reads and returns the configuration data from disk.
 func (s *Service) GetConfig() ([]byte, error) {
 	configPath := filepath.Join(s.cfg.GetSingboxDir(), "config.json")
 	data, err := os.ReadFile(configPath)
@@ -43,6 +48,7 @@ func (s *Service) GetConfig() ([]byte, error) {
 	return data, nil
 }
 
+// RunContainer creates and starts a sing-box Docker container.
 func (s *Service) RunContainer() (string, error) {
 	configPath := filepath.Join(s.cfg.GetSingboxDir(), "config.json")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -83,6 +89,7 @@ func (s *Service) RunContainer() (string, error) {
 	return id, nil
 }
 
+// StopContainer stops the sing-box container.
 func (s *Service) StopContainer() error {
 	state, err := s.docker.GetContainerState(context.TODO(), "singbox")
 	if err != nil {
@@ -95,6 +102,7 @@ func (s *Service) StopContainer() error {
 	return s.docker.ContainerStop(context.TODO(), "singbox", &timeout)
 }
 
+// ContainerStatus returns whether the sing-box container is running and its ID.
 func (s *Service) ContainerStatus() (running bool, containerID string) {
 	state, err := s.docker.GetContainerState(context.TODO(), "singbox")
 	if err != nil || state == "" {
@@ -103,6 +111,7 @@ func (s *Service) ContainerStatus() (running bool, containerID string) {
 	return state == "running", state
 }
 
+// ContainerLogs returns the last 100 log lines from the sing-box container.
 func (s *Service) ContainerLogs() string {
 	logs, err := s.docker.ContainerLogs(context.TODO(), "singbox", "100")
 	if err != nil {
@@ -111,18 +120,22 @@ func (s *Service) ContainerLogs() string {
 	return logs
 }
 
+// EnsureImage ensures the sing-box Docker image is pulled and available.
 func (s *Service) EnsureImage() error {
 	return s.docker.EnsureImage(context.Background(), "ghcr.io/sagernet/sing-box:latest", "")
 }
 
+// GetVersion returns the sing-box version string.
 func (s *Service) GetVersion() (string, error) {
 	return "sing-box 1.10.0", nil
 }
 
+// getNamedConfigPath returns the filesystem path for a named config.
 func (s *Service) getNamedConfigPath(name string) string {
 	return filepath.Join(s.cfg.GetSingboxDir(), "instances", name, "config.json")
 }
 
+// SaveNamedConfig writes a named configuration to disk.
 func (s *Service) SaveNamedConfig(name string, data []byte) error {
 	path := s.getNamedConfigPath(name)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -131,16 +144,19 @@ func (s *Service) SaveNamedConfig(name string, data []byte) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+// LoadNamedConfig reads and returns a named configuration from disk.
 func (s *Service) LoadNamedConfig(name string) ([]byte, error) {
 	path := s.getNamedConfigPath(name)
 	return os.ReadFile(path)
 }
 
+// DeleteNamedConfig removes a named configuration and its directory.
 func (s *Service) DeleteNamedConfig(name string) error {
 	path := filepath.Dir(s.getNamedConfigPath(name))
 	return os.RemoveAll(path)
 }
 
+// ListNamedConfigs returns all named configuration instances with their running status.
 func (s *Service) ListNamedConfigs() ([]NamedConfigInfo, error) {
 	instancesDir := filepath.Join(s.cfg.GetSingboxDir(), "instances")
 	if _, err := os.Stat(instancesDir); os.IsNotExist(err) {
@@ -163,6 +179,7 @@ func (s *Service) ListNamedConfigs() ([]NamedConfigInfo, error) {
 	return configs, nil
 }
 
+// RunNamedContainer creates and starts a named sing-box container.
 func (s *Service) RunNamedContainer(name string) (string, error) {
 	configPath := s.getNamedConfigPath(name)
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -203,6 +220,7 @@ func (s *Service) RunNamedContainer(name string) (string, error) {
 	return id, nil
 }
 
+// StopNamedContainer stops a named sing-box container.
 func (s *Service) StopNamedContainer(name string) error {
 	containerName := "singbox-" + name
 	state, err := s.docker.GetContainerState(context.TODO(), containerName)
@@ -216,6 +234,7 @@ func (s *Service) StopNamedContainer(name string) error {
 	return s.docker.ContainerStop(context.TODO(), containerName, &timeout)
 }
 
+// NamedContainerStatus returns whether a named container is running and its ID.
 func (s *Service) NamedContainerStatus(name string) (running bool, containerID string) {
 	containerName := "singbox-" + name
 	state, err := s.docker.GetContainerState(context.TODO(), containerName)
@@ -225,6 +244,7 @@ func (s *Service) NamedContainerStatus(name string) (running bool, containerID s
 	return state == "running", state
 }
 
+// NamedContainerLogs returns the last 100 log lines from a named container.
 func (s *Service) NamedContainerLogs(name string) string {
 	containerName := "singbox-" + name
 	logs, err := s.docker.ContainerLogs(context.TODO(), containerName, "100")
@@ -234,6 +254,7 @@ func (s *Service) NamedContainerLogs(name string) string {
 	return logs
 }
 
+// CheckNamedConfig validates a named configuration's JSON syntax.
 func (s *Service) CheckNamedConfig(name string) (valid bool, output string) {
 	configPath := s.getNamedConfigPath(name)
 	data, err := os.ReadFile(configPath)
@@ -247,6 +268,7 @@ func (s *Service) CheckNamedConfig(name string) (valid bool, output string) {
 	return true, "Config is valid JSON"
 }
 
+// ListAllContainers returns all containers with the "singbox" prefix.
 func (s *Service) ListAllContainers() ([]docker.ContainerInfo, error) {
 	return s.docker.ListContainers(context.TODO(), "singbox")
 }

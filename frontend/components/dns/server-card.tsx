@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import { DnsServer } from "@/lib/store/singbox-config"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the ServerCard component. */
 interface ServerCardProps {
   server: DnsServer
   index: number
@@ -16,6 +17,7 @@ interface ServerCardProps {
   onRemove: () => void
 }
 
+/** Editable DNS server card with tag, type, address, and type-specific advanced options. */
 export function ServerCard({ server, index, expanded, onToggleExpand, onUpdate, onRemove }: ServerCardProps) {
   const { t } = useTranslation("dns")
   const { t: tc } = useTranslation("common")

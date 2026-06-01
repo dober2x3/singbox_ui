@@ -1,5 +1,7 @@
+// Package types defines shared data structures for proxy nodes, probes, and speed test results.
 package types
 
+// ProxyNode represents a proxy node with connection details and test results.
 type ProxyNode struct {
 	Name     string                 `json:"name"`
 	Protocol string                 `json:"protocol"`
@@ -14,6 +16,7 @@ type ProxyNode struct {
 	SpeedKBps   float64 `json:"speed_kbps,omitempty"`
 }
 
+// ProbeNode identifies a node to be probed.
 type ProbeNode struct {
 	Tag      string `json:"tag"`
 	Protocol string `json:"protocol"`
@@ -21,6 +24,7 @@ type ProbeNode struct {
 	Port     int    `json:"port"`
 }
 
+// ProbeResult holds the result of a single node probe.
 type ProbeResult struct {
 	NodeTag     string  `json:"nodeTag"`
 	Protocol    string  `json:"protocol"`
@@ -33,6 +37,7 @@ type ProbeResult struct {
 	SuccessRate float64 `json:"successRate"`
 }
 
+// ProbeResultUpdate represents an incremental probe result update to be saved.
 type ProbeResultUpdate struct {
 	Tag         string `json:"tag"`
 	Latency     int64  `json:"latency"`
@@ -41,6 +46,7 @@ type ProbeResultUpdate struct {
 	SuccessRate int    `json:"success_rate"`
 }
 
+// SpeedTestResult contains the result of a completed speed test for a single node.
 type SpeedTestResult struct {
 	Tag       string  `json:"tag"`
 	Name      string  `json:"name"`
@@ -51,6 +57,7 @@ type SpeedTestResult struct {
 	TestedAt  string  `json:"tested_at,omitempty"`
 }
 
+// SpeedTestUpdate represents an incremental speed test result update to be saved.
 type SpeedTestUpdate struct {
 	Tag       string  `json:"tag"`
 	Latency   int64   `json:"latency"`

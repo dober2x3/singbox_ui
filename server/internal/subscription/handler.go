@@ -8,19 +8,23 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// Handler handles HTTP requests for subscription operations.
 type Handler struct {
 	svc *Service
 }
 
+// NewHandler creates a new Handler with the given Service.
 func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// errorResponse is a generic JSON error response structure.
 type errorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
 }
 
+// GetSubscriptions handles GET requests to list all subscriptions with total node counts.
 func (h *Handler) GetSubscriptions(c *gin.Context) {
 	subData, err := h.svc.GetAllSubscriptions()
 	if err != nil {
@@ -43,6 +47,7 @@ func (h *Handler) GetSubscriptions(c *gin.Context) {
 	})
 }
 
+// AddSubscription handles POST requests to add a new subscription and returns the parsed nodes.
 func (h *Handler) AddSubscription(c *gin.Context) {
 	var request struct {
 		Name      string `json:"name" binding:"required"`
@@ -74,6 +79,7 @@ func (h *Handler) AddSubscription(c *gin.Context) {
 	})
 }
 
+// RefreshSubscription handles POST requests to re-fetch a single subscription by ID.
 func (h *Handler) RefreshSubscription(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -100,6 +106,7 @@ func (h *Handler) RefreshSubscription(c *gin.Context) {
 	})
 }
 
+// DeleteSubscription handles DELETE requests to remove a subscription by ID.
 func (h *Handler) DeleteSubscription(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -123,6 +130,7 @@ func (h *Handler) DeleteSubscription(c *gin.Context) {
 	})
 }
 
+// RefreshAllSubscriptions handles POST requests to re-fetch all subscriptions.
 func (h *Handler) RefreshAllSubscriptions(c *gin.Context) {
 	data, err := h.svc.RefreshAllSubscriptions()
 	if err != nil {
@@ -146,6 +154,7 @@ func (h *Handler) RefreshAllSubscriptions(c *gin.Context) {
 	})
 }
 
+// UpdateSubscriptionSettings handles PATCH requests to update auto-update and interval settings.
 func (h *Handler) UpdateSubscriptionSettings(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -174,6 +183,7 @@ func (h *Handler) UpdateSubscriptionSettings(c *gin.Context) {
 	})
 }
 
+// GetAllNodes handles GET requests to return all proxy nodes across all subscriptions.
 func (h *Handler) GetAllNodes(c *gin.Context) {
 	nodes, err := h.svc.GetAllNodes()
 	if err != nil {
@@ -190,6 +200,7 @@ func (h *Handler) GetAllNodes(c *gin.Context) {
 	})
 }
 
+// GetUserAgents handles GET requests to return available user-agent presets.
 func (h *Handler) GetUserAgents(c *gin.Context) {
 	type UAOption struct {
 		Key   string `json:"key"`

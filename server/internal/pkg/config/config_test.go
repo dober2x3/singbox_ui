@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// TestInit_defaultPath verifies that Init() detects go.mod in the working directory
+// and uses it as DATA_DIR when the environment variable is not set.
 func TestInit_defaultPath(t *testing.T) {
 	os.Clearenv()
 	origWd, _ := os.Getwd()
@@ -25,6 +27,8 @@ func TestInit_defaultPath(t *testing.T) {
 	}
 }
 
+// TestInit_withDataDirEnv verifies that Init() uses the DATA_DIR environment variable
+// when it is explicitly set.
 func TestInit_withDataDirEnv(t *testing.T) {
 	os.Clearenv()
 	tmpDir := t.TempDir()
@@ -43,6 +47,8 @@ func TestInit_withDataDirEnv(t *testing.T) {
 	}
 }
 
+// TestResolveHostConfigDir verifies that ResolveHostConfigDir correctly maps a
+// container path under DATA_DIR to the corresponding host path.
 func TestResolveHostConfigDir(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("DATA_DIR", "/home/data")
@@ -65,6 +71,8 @@ func TestResolveHostConfigDir(t *testing.T) {
 	}
 }
 
+// TestResolveHostConfigDir_noHostDir verifies that ResolveHostConfigDir returns an
+// error when HOST_DATA_DIR is not set.
 func TestResolveHostConfigDir_noHostDir(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("DATA_DIR", "/home/data")
@@ -81,6 +89,8 @@ func TestResolveHostConfigDir_noHostDir(t *testing.T) {
 	}
 }
 
+// TestResolveHostConfigDir_outsideDataDir verifies that ResolveHostConfigDir returns
+// an error when the given path is not under DATA_DIR.
 func TestResolveHostConfigDir_outsideDataDir(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("DATA_DIR", "/home/data")
@@ -99,6 +109,8 @@ func TestResolveHostConfigDir_outsideDataDir(t *testing.T) {
 	}
 }
 
+// TestGetListenAddr_default verifies that GetListenAddr returns the default
+// address 127.0.0.1:7000 when LISTEN_ADDR is not set.
 func TestGetListenAddr_default(t *testing.T) {
 	os.Clearenv()
 	cfg, _ := Init()
@@ -107,6 +119,8 @@ func TestGetListenAddr_default(t *testing.T) {
 	}
 }
 
+// TestGetListenAddr_custom verifies that GetListenAddr returns the value of the
+// LISTEN_ADDR environment variable when it is explicitly set.
 func TestGetListenAddr_custom(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("LISTEN_ADDR", "0.0.0.0:8080")

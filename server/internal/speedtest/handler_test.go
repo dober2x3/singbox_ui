@@ -12,6 +12,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// newTestHandler creates a Handler backed by a mock ContainerManager for testing.
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	mockDocker := newMockContainerAPI()
@@ -25,6 +26,7 @@ func newTestHandler(t *testing.T) *Handler {
 	return NewHandler(svc)
 }
 
+// TestHandler_GetSpeedTestStatus_Initial verifies the initial state is not running.
 func TestHandler_GetSpeedTestStatus_Initial(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -48,6 +50,7 @@ func TestHandler_GetSpeedTestStatus_Initial(t *testing.T) {
 	}
 }
 
+// TestHandler_StartSpeedTest_NoProvider verifies a 400 is returned when no node provider is configured.
 func TestHandler_StartSpeedTest_NoProvider(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -63,6 +66,7 @@ func TestHandler_StartSpeedTest_NoProvider(t *testing.T) {
 	}
 }
 
+// TestHandler_StopSpeedTest verifies stop returns 200 even when no test is running.
 func TestHandler_StopSpeedTest(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -78,6 +82,7 @@ func TestHandler_StopSpeedTest(t *testing.T) {
 	}
 }
 
+// TestHandler_WithRunningService verifies start/status/stop flow with a real node provider.
 func TestHandler_WithRunningService(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfgDir := t.TempDir()

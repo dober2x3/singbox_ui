@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps, extractTransportHost } from "./types"
 import { Zap, Globe, Server, ShieldCheck } from "lucide-react"
 
+/** Flat form state for VMess outbound configuration. */
 interface VmessFlat {
   server: string
   server_port: number
@@ -44,6 +45,7 @@ interface VmessFlat {
   ech_config: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): VmessFlat {
   const c = initialConfig?.type === "vmess" ? initialConfig : null
   return {
@@ -84,6 +86,7 @@ function deriveFlat(initialConfig: any): VmessFlat {
   }
 }
 
+/** Build the VMess outbound config object from flat form state. */
 function buildVmessOutbound(s: VmessFlat): any {
   const previewConfig: any = {
     type: "vmess",
@@ -159,6 +162,7 @@ function buildVmessOutbound(s: VmessFlat): any {
   return previewConfig
 }
 
+/** VMess protocol outbound form component. */
 export function VmessForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

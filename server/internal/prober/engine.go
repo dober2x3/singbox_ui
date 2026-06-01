@@ -15,6 +15,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// nodeHistory tracks probe success history using a ring buffer.
 type nodeHistory struct {
 	mu      sync.Mutex
 	results []bool
@@ -22,6 +23,7 @@ type nodeHistory struct {
 	size    int
 }
 
+// update records a probe result and returns the success rate as a percentage.
 func (h *nodeHistory) update(success bool) float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -38,8 +40,10 @@ func (h *nodeHistory) update(success bool) float64 {
 	return float64(successCount) / float64(h.size) * 100
 }
 
+// maxRetries is the number of retry attempts for a failed probe.
 const maxRetries = 2
 
+// Prober periodically probes network nodes and tracks their availability.
 type Prober struct {
 	config    ProberConfig
 	nodes     sync.Map // map[string]types.ProbeNode
@@ -54,6 +58,7 @@ type Prober struct {
 	cancel    context.CancelFunc
 }
 
+// NewProber creates a new Prober with the given configuration.
 func NewProber(config ProberConfig) *Prober {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Prober{
@@ -65,6 +70,7 @@ func NewProber(config ProberConfig) *Prober {
 	}
 }
 
+// DefaultProberConfig returns a ProberConfig with sensible defaults.
 func DefaultProberConfig() ProberConfig {
 	return ProberConfig{
 		ProbeInterval:   30,
@@ -74,6 +80,7 @@ func DefaultProberConfig() ProberConfig {
 	}
 }
 
+// Start begins the periodic probe loop. No-op if already running.
 func (p *Prober) Start() {
 	if !atomic.CompareAndSwapInt32(&p.running, 0, 1) {
 		return
@@ -90,6 +97,7 @@ func (p *Prober) Start() {
 	go p.probeLoop()
 }
 
+// Stop halts the probe loop and waits for goroutines to finish. No-op if not running.
 func (p *Prober) Stop() {
 	if !atomic.CompareAndSwapInt32(&p.running, 1, 0) {
 		return
@@ -106,10 +114,12 @@ func (p *Prober) Stop() {
 	log.Println("Prober stopped")
 }
 
+// IsRunning reports whether the probe loop is currently active.
 func (p *Prober) IsRunning() bool {
 	return atomic.LoadInt32(&p.running) == 1
 }
 
+// AddNode registers a new node for probing and initialises its result state.
 func (p *Prober) AddNode(node types.ProbeNode) {
 	p.nodes.Store(node.Tag, node)
 
@@ -134,6 +144,7 @@ func (p *Prober) AddNode(node types.ProbeNode) {
 	log.Printf("Prober: added node %s (%s://%s:%d)", node.Tag, node.Protocol, node.Address, node.Port)
 }
 
+// RemoveNode unregisters a node by tag and deletes its results.
 func (p *Prober) RemoveNode(tag string) {
 	p.nodes.Delete(tag)
 	p.results.Delete(tag)
@@ -141,6 +152,7 @@ func (p *Prober) RemoveNode(tag string) {
 	log.Printf("Prober: removed node %s", tag)
 }
 
+// ClearNodes removes all registered nodes and their results.
 func (p *Prober) ClearNodes() {
 	p.nodes.Range(func(key, _ interface{}) bool {
 		p.nodes.Delete(key)
@@ -157,6 +169,7 @@ func (p *Prober) ClearNodes() {
 	log.Println("Prober: cleared all nodes")
 }
 
+// UpdateNodes replaces all registered nodes with the given list.
 func (p *Prober) UpdateNodes(nodes []types.ProbeNode) {
 	p.ClearNodes()
 	for _, node := range nodes {
@@ -165,6 +178,7 @@ func (p *Prober) UpdateNodes(nodes []types.ProbeNode) {
 	log.Printf("Prober: updated with %d nodes", len(nodes))
 }
 
+// GetResult returns a copy of the latest probe result for the given node tag.
 func (p *Prober) GetResult(tag string) *types.ProbeResult {
 	if result, ok := p.results.Load(tag); ok {
 		r := result.(*types.ProbeResult)
@@ -174,6 +188,7 @@ func (p *Prober) GetResult(tag string) *types.ProbeResult {
 	return nil
 }
 
+// GetAllResults returns copies of all probe results keyed by node tag.
 func (p *Prober) GetAllResults() map[string]*types.ProbeResult {
 	results := make(map[string]*types.ProbeResult)
 	p.results.Range(func(key, value interface{}) bool {
@@ -185,6 +200,7 @@ func (p *Prober) GetAllResults() map[string]*types.ProbeResult {
 	return results
 }
 
+// GetBestNode returns the online node with the lowest latency.
 func (p *Prober) GetBestNode() *types.ProbeResult {
 	var best *types.ProbeResult
 	p.results.Range(func(_, value interface{}) bool {
@@ -200,6 +216,7 @@ func (p *Prober) GetBestNode() *types.ProbeResult {
 	return best
 }
 
+// GetOnlineNodes returns all nodes currently marked as online.
 func (p *Prober) GetOnlineNodes() []*types.ProbeResult {
 	var online []*types.ProbeResult
 	p.results.Range(func(_, value interface{}) bool {
@@ -213,6 +230,7 @@ func (p *Prober) GetOnlineNodes() []*types.ProbeResult {
 	return online
 }
 
+// probeLoop is the main loop that periodically probes all nodes.
 func (p *Prober) probeLoop() {
 	defer p.wg.Done()
 
@@ -233,6 +251,7 @@ func (p *Prober) probeLoop() {
 	}
 }
 
+// probeAllNodes probes every registered node concurrently, limited by the semaphore.
 func (p *Prober) probeAllNodes() {
 	var wg sync.WaitGroup
 
@@ -262,6 +281,7 @@ func (p *Prober) probeAllNodes() {
 	wg.Wait()
 }
 
+// probeNode performs a TCP probe against a single node, with retries on failure.
 func (p *Prober) probeNode(node types.ProbeNode) {
 	var latency int64 = -1
 	var success bool
@@ -291,6 +311,7 @@ func (p *Prober) probeNode(node types.ProbeNode) {
 	p.updateResult(node.Tag, latency, success)
 }
 
+// tcpProbe attempts a TCP connection to the given address and port.
 func (p *Prober) tcpProbe(address string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", address, port)
 
@@ -306,6 +327,7 @@ func (p *Prober) tcpProbe(address string, port int) bool {
 	return true
 }
 
+// updateResult persists the probe result and computes the new status.
 func (p *Prober) updateResult(tag string, latency int64, success bool) {
 	resultVal, ok := p.results.Load(tag)
 	if !ok {
@@ -346,6 +368,7 @@ func (p *Prober) updateResult(tag string, latency int64, success bool) {
 	p.results.Store(tag, newResult)
 }
 
+// GetStats returns a snapshot of prober state and configuration.
 func (p *Prober) GetStats() map[string]interface{} {
 	var totalNodes, onlineNodes, offlineNodes, timeoutNodes int
 
@@ -378,6 +401,7 @@ func (p *Prober) GetStats() map[string]interface{} {
 	}
 }
 
+// SaveNodesToFile serialises all registered nodes to a JSON file.
 func (p *Prober) SaveNodesToFile(baseDir string) error {
 	var nodes []types.ProbeNode
 	p.nodes.Range(func(_, value interface{}) bool {
@@ -394,6 +418,7 @@ func (p *Prober) SaveNodesToFile(baseDir string) error {
 	return os.WriteFile(filePath, data, 0644)
 }
 
+// LoadNodesFromFile reads nodes from a JSON file and replaces the current set.
 func (p *Prober) LoadNodesFromFile(baseDir string) error {
 	filePath := filepath.Join(baseDir, "prober_nodes.json")
 

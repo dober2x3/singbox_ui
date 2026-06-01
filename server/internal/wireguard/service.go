@@ -1,3 +1,4 @@
+// Package wireguard provides WireGuard key generation, caching, and client configuration management.
 package wireguard
 
 import (
@@ -16,15 +17,18 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
+// Service manages WireGuard key generation, caching, and client configuration files.
 type Service struct {
 	mu      sync.Mutex
 	baseDir string
 }
 
+// NewService creates a new Service with the given base directory for storing data.
 func NewService(baseDir string) *Service {
 	return &Service{baseDir: baseDir}
 }
 
+// GeneratePrivateKey generates a new Curve25519 private key encoded in base64.
 func (s *Service) GeneratePrivateKey() (string, error) {
 	var privateKey [32]byte
 	_, err := rand.Read(privateKey[:])
@@ -37,6 +41,7 @@ func (s *Service) GeneratePrivateKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(privateKey[:]), nil
 }
 
+// GeneratePublicKey derives the Curve25519 public key from a base64-encoded private key.
 func (s *Service) GeneratePublicKey(privateKeyStr string) (string, error) {
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyStr)
 	if err != nil {
@@ -54,6 +59,7 @@ func (s *Service) GeneratePublicKey(privateKeyStr string) (string, error) {
 	return base64.StdEncoding.EncodeToString(pubKey), nil
 }
 
+// GenerateWireGuardKeysWithCache generates or retrieves cached WireGuard keys for a given IP.
 func (s *Service) GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,16 +107,19 @@ func (s *Service) GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, 
 	}, nil
 }
 
+// GetKeysCache returns all cached WireGuard key entries.
 func (s *Service) GetKeysCache() ([]KeyCacheEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.loadKeysCache()
 }
 
+// getKeysCacheFilePath returns the file path for the keys cache file.
 func (s *Service) getKeysCacheFilePath() string {
 	return filepath.Join(s.baseDir, "wireguard_keys_cache.txt")
 }
 
+// loadKeysCache reads and parses the keys cache file from disk.
 func (s *Service) loadKeysCache() ([]KeyCacheEntry, error) {
 	filePath := s.getKeysCacheFilePath()
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
@@ -140,6 +149,7 @@ func (s *Service) loadKeysCache() ([]KeyCacheEntry, error) {
 	return cache, nil
 }
 
+// saveKeysCache writes the keys cache to disk atomically.
 func (s *Service) saveKeysCache(cache []KeyCacheEntry) error {
 	var lines []string
 	for _, entry := range cache {
@@ -154,6 +164,7 @@ func (s *Service) saveKeysCache(cache []KeyCacheEntry) error {
 	return os.Rename(tmpPath, filePath)
 }
 
+// GetPublicIP retrieves the public IP address from external IP detection services.
 func (s *Service) GetPublicIP() (string, error) {
 	sources := []string{
 		"https://api.ipify.org",
@@ -177,6 +188,7 @@ func (s *Service) GetPublicIP() (string, error) {
 	return "", fmt.Errorf("no IP sources available")
 }
 
+// fetchIPFromSource fetches the public IP from a single URL source.
 func (s *Service) fetchIPFromSource(url string, timeout time.Duration) (string, error) {
 	client := &http.Client{Timeout: timeout}
 	resp, err := client.Get(url)
@@ -198,6 +210,7 @@ func (s *Service) fetchIPFromSource(url string, timeout time.Duration) (string, 
 	return ip, nil
 }
 
+// SaveClientConfig saves the client JSON configuration to disk.
 func (s *Service) SaveClientConfig(configData []byte) error {
 	if err := os.MkdirAll(s.baseDir, 0755); err != nil {
 		return err
@@ -205,6 +218,7 @@ func (s *Service) SaveClientConfig(configData []byte) error {
 	return os.WriteFile(filepath.Join(s.baseDir, "client-config.json"), configData, 0644)
 }
 
+// GetClientConfig reads and returns the saved client JSON configuration.
 func (s *Service) GetClientConfig() ([]byte, error) {
 	path := filepath.Join(s.baseDir, "client-config.json")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -213,6 +227,7 @@ func (s *Service) GetClientConfig() ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+// SaveClientConfigFile saves a WireGuard client config (.conf) file indexed by client number.
 func (s *Service) SaveClientConfigFile(clientIndex int, configContent string) error {
 	if err := os.MkdirAll(s.baseDir, 0755); err != nil {
 		return err
@@ -221,6 +236,7 @@ func (s *Service) SaveClientConfigFile(clientIndex int, configContent string) er
 	return os.WriteFile(confPath, []byte(configContent), 0644)
 }
 
+// ListClientConfigFiles lists all saved WireGuard client config (.conf) files.
 func (s *Service) ListClientConfigFiles() ([]ClientConfigFile, error) {
 	if _, err := os.Stat(s.baseDir); os.IsNotExist(err) {
 		return []ClientConfigFile{}, nil

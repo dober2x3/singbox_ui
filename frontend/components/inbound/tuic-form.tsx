@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, TUICUser, formatListen, parseListen } from "./types"
 
+/** Flat form state for TUIC inbound configuration. */
 interface TuicFlat {
   listen: string
   listen_port: number
@@ -25,6 +26,7 @@ interface TuicFlat {
   heartbeat: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): TuicFlat {
   const c = initialConfig?.type === "tuic" ? initialConfig : null
   const tuicUsers = (c?.users || []).map((u: any) => ({
@@ -48,6 +50,7 @@ function deriveFlat(initialConfig: any): TuicFlat {
   }
 }
 
+/** Build the TUIC inbound config object from flat form state. */
 function buildTuicInbound(f: TuicFlat): any {
   const tuicUsersPreview = f.users
     .filter((u) => u.uuid)
@@ -90,6 +93,7 @@ function buildTuicInbound(f: TuicFlat): any {
   return previewConfig
 }
 
+/** TUIC protocol inbound form component. */
 export function TuicForm({
   initialConfig,
   setInbound,
@@ -112,6 +116,7 @@ export function TuicForm({
     setInbound(0, buildTuicInbound(merged))
   }, [flat, clearEndpoints, setInbound])
 
+  /** Generate and show a QR code for a TUIC user connection string. */
   const showTuicQrCode = async (userIndex: number) => {
     try {
       const user = flat.users[userIndex]

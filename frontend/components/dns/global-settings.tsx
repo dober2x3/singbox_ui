@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the GlobalSettings component. */
 interface GlobalSettingsProps {
   finalServer: string
   setFinalServer: (v: string) => void
@@ -11,6 +12,7 @@ interface GlobalSettingsProps {
   availableServerTags: string[]
 }
 
+/** Global DNS settings including default server selection and independent cache toggle. */
 export function GlobalSettings({
   finalServer,
   setFinalServer,

@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// ContainerAPI defines the interface for Docker container and image operations.
 type ContainerAPI interface {
 	ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (containerID string, err error)
 	ContainerStart(ctx context.Context, containerID string) error

@@ -27,6 +27,7 @@ const actionTypes = {
 
 let count = 0
 
+/** Generates a unique toast ID by incrementing a module-level counter. */
 function genId() {
   count = (count + 1) % Number.MAX_SAFE_INTEGER
   return count.toString()
@@ -58,6 +59,7 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+/** Schedules a toast for removal after TOAST_REMOVE_DELAY. */
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
@@ -74,6 +76,7 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/** Toast state reducer handling ADD_TOAST, UPDATE_TOAST, DISMISS_TOAST, and REMOVE_TOAST actions. */
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -133,6 +136,7 @@ const listeners: Array<(state: State) => void> = []
 
 let memoryState: State = { toasts: [] }
 
+/** Dispatches an action to the reducer and notifies all registered listeners. */
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
   listeners.forEach((listener) => {
@@ -142,6 +146,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+/** Creates and shows a toast notification, returning dismiss and update controls. */
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -171,6 +176,7 @@ function toast({ ...props }: Toast) {
   }
 }
 
+/** Hook that subscribes to toast state and provides toast/dismiss functions. */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

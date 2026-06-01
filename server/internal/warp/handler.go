@@ -6,14 +6,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler handles HTTP requests for WARP-related endpoints.
 type Handler struct {
 	svc *Service
 }
 
+// NewHandler creates a new Handler with the given Service.
 func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// GetWarpAccount returns the stored WARP device account info.
 func (h *Handler) GetWarpAccount(c *gin.Context) {
 	rec, err := h.svc.LoadRecord()
 	if err != nil {
@@ -27,6 +30,7 @@ func (h *Handler) GetWarpAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, rec)
 }
 
+// DeleteWarpAccount deletes the stored WARP device account.
 func (h *Handler) DeleteWarpAccount(c *gin.Context) {
 	if err := h.svc.DeleteRecord(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -35,6 +39,7 @@ func (h *Handler) DeleteWarpAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "WARP account deleted"})
 }
 
+// RegisterWarp registers a new WARP device with Cloudflare.
 func (h *Handler) RegisterWarp(c *gin.Context) {
 	rec, err := h.svc.RegisterDevice()
 	if err != nil {
@@ -44,6 +49,7 @@ func (h *Handler) RegisterWarp(c *gin.Context) {
 	c.JSON(http.StatusOK, rec)
 }
 
+// BindWarpLicense binds a WARP+ license key to the registered device.
 func (h *Handler) BindWarpLicense(c *gin.Context) {
 	var req struct {
 		License string `json:"license"`
@@ -60,6 +66,7 @@ func (h *Handler) BindWarpLicense(c *gin.Context) {
 	c.JSON(http.StatusOK, rec)
 }
 
+// ScanWarpEndpoints scans for available WARP endpoints with best latency.
 func (h *Handler) ScanWarpEndpoints(c *gin.Context) {
 	cfg := DefaultWarpScanConfig()
 	_ = c.ShouldBindJSON(&cfg) // Use whatever the client sent

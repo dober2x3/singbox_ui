@@ -8,6 +8,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// VMess represents the JSON structure of a vmess:// share link after base64 decoding.
 type VMess struct {
 	V    string `json:"v"`
 	PS   string `json:"ps"`
@@ -23,6 +24,7 @@ type VMess struct {
 	SNI  string `json:"sni"`
 }
 
+// parseVMessNode parses a vmess:// URI (base64-encoded JSON) and returns a ProxyNode.
 func parseVMessNode(link string) (types.ProxyNode, error) {
 	link = strings.TrimPrefix(link, "vmess://")
 	decoded, err := decodeBase64(link)

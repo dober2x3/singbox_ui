@@ -1,3 +1,5 @@
+// Package main is the entry point for the sing-box config service HTTP server.
+// It initializes all domain services, sets up Gin routes, and starts the HTTP listener.
 package main
 
 import (
@@ -21,9 +23,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// distFS embeds the compiled frontend dist directory for static file serving.
+//
 //go:embed dist/*
 var distFS embed.FS
 
+// main is the application entry point. It initializes configuration, domain services,
+// HTTP handlers, the background task scheduler, and finally starts the Gin HTTP server.
 func main() {
 	// Initialize config
 	cfg, err := config.Init()

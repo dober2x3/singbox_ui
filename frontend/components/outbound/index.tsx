@@ -22,6 +22,7 @@ import { Hysteria2Form } from "./hysteria2-form"
 import { AnytlsForm } from "./anytls-form"
 import { WarpForm } from "./warp-form"
 
+/** A subscription proxy node with connection details. */
 interface ProxyNode {
   name: string
   type: string
@@ -35,6 +36,7 @@ interface ProxyNode {
   speed_kbps?: number
 }
 
+/** A subscription entry containing a list of proxy nodes. */
 interface SubscriptionEntry {
   id: string
   name: string
@@ -42,19 +44,22 @@ interface SubscriptionEntry {
   nodes: ProxyNode[]
 }
 
+/** Props for the OutboundConfig component. */
 interface OutboundConfigProps {
   showCard?: boolean
 }
 
+/** Shared CSS class for tab trigger buttons. */
 const tabTriggerClass = "rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm transition-all"
 
-// Generate canonical node tag matching backend format
+/** Generate a canonical node tag matching the backend format. */
 function generateNodeTag(type: string, address: string, port: number): string {
   const safeAddress = address.replace(/\./g, '_').replace(/:/g, '_').replace(/-/g, '_')
   const typeTag = type === 'shadowsocks' ? 'ss' : type
   return `${typeTag}-${safeAddress}-${port}`
 }
 
+/** Main outbound configuration component with subscription tab and protocol forms. */
 export function OutboundConfig({ showCard = true }: OutboundConfigProps) {
   const { config, setOutbound, setBalancerState } = useSingboxConfigStore()
   const initialConfig = config.outbounds?.[0]
@@ -161,6 +166,7 @@ export function OutboundConfig({ showCard = true }: OutboundConfigProps) {
   }, [])
 
   // Refresh subscription nodes
+  /** Refresh subscription nodes from the server. */
   const refreshNodes = async () => {
     setLoadingNodes(true)
     try {
@@ -186,7 +192,7 @@ export function OutboundConfig({ showCard = true }: OutboundConfigProps) {
     }
   }
 
-  // Select subscription node (single-select mode)
+  /** Select a subscription node as the active outbound. */
   const handleSelectNode = (node: ProxyNode) => {
     setSelectedNode(node)
     if (node.outbound) {
@@ -200,7 +206,7 @@ export function OutboundConfig({ showCard = true }: OutboundConfigProps) {
     })
   }
 
-  // Toggle node for multi-select (balancer)
+  /** Toggle a node for multi-select balancer mode. */
   const handleNodeToggle = (nodeTag: string) => {
     setSelectedNodeTags(prev => {
       if (prev.includes(nodeTag)) {

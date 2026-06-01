@@ -2,6 +2,7 @@ package prober
 
 import "github.com/gin-gonic/gin"
 
+// RegisterRoutes registers all prober HTTP routes on the given router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET("/status", h.GetProberStatus)
 	rg.GET("/results", h.GetProbeResults)

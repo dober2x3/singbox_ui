@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps, extractTransportHost } from "./types"
 import { Zap, Globe, Server, ShieldCheck } from "lucide-react"
 
+/** Flat form state for VLESS outbound configuration. */
 interface VlessFlat {
   server: string
   server_port: number
@@ -44,6 +45,7 @@ interface VlessFlat {
   ech_config: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): VlessFlat {
   const c = initialConfig?.type === "vless" ? initialConfig : null
   return {
@@ -84,6 +86,7 @@ function deriveFlat(initialConfig: any): VlessFlat {
   }
 }
 
+/** Build the VLESS outbound config object from flat form state. */
 function buildVlessOutbound(s: VlessFlat): any {
   const previewConfig: any = {
     type: "vless",
@@ -159,6 +162,7 @@ function buildVlessOutbound(s: VlessFlat): any {
   return previewConfig
 }
 
+/** VLESS protocol outbound form component. */
 export function VlessForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

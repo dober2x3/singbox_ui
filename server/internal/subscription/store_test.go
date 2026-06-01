@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestFileStore_SaveAndLoad verifies that saving a subscription and loading it back returns the same data.
 func TestFileStore_SaveAndLoad(t *testing.T) {
 	dir := t.TempDir()
 	store := NewFileStore(dir)
@@ -41,6 +42,7 @@ func TestFileStore_SaveAndLoad(t *testing.T) {
 	}
 }
 
+// TestFileStore_FileNotExist verifies that Load returns an empty list when the JSON file does not exist.
 func TestFileStore_FileNotExist(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
 	store := NewFileStore(dir)
@@ -54,6 +56,7 @@ func TestFileStore_FileNotExist(t *testing.T) {
 	}
 }
 
+// TestFileStore_FilePath verifies that filePath returns the correct subscription.json path in the base directory.
 func TestFileStore_FilePath(t *testing.T) {
 	dir := t.TempDir()
 	store := NewFileStore(dir)
@@ -62,6 +65,7 @@ func TestFileStore_FilePath(t *testing.T) {
 	}
 }
 
+// TestFileStore_DefaultDir verifies that NewFileStore with empty string defaults to the current working directory.
 func TestFileStore_DefaultDir(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	store := NewFileStore("")

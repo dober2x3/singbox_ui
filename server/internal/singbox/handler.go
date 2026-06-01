@@ -8,8 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// validNamePattern validates config names: 2-10 chars, start with letter, allow letters/underscore/hyphen.
 var validNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z_-]{1,9}$`)
 
+// validateName validates the "name" URL parameter against validNamePattern.
+// Returns the name and true if valid, or sends an error response and returns "", false.
 func validateName(c *gin.Context) (string, bool) {
 	name := c.Param("name")
 	if name == "" || !validNamePattern.MatchString(name) {
@@ -22,14 +25,17 @@ func validateName(c *gin.Context) (string, bool) {
 	return name, true
 }
 
+// Handler handles HTTP requests for sing-box operations.
 type Handler struct {
 	service *Service
 }
 
+// NewHandler creates a new Handler with the given Service.
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetVersion returns the sing-box version.
 func (h *Handler) GetVersion(c *gin.Context) {
 	version, err := h.service.GetVersion()
 	if err != nil {
@@ -45,6 +51,7 @@ func (h *Handler) GetVersion(c *gin.Context) {
 	})
 }
 
+// GetConfig returns the current sing-box configuration.
 func (h *Handler) GetConfig(c *gin.Context) {
 	data, err := h.service.GetConfig()
 	if err != nil {
@@ -58,6 +65,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
+// SaveConfig saves the sing-box configuration from the request body.
 func (h *Handler) SaveConfig(c *gin.Context) {
 	configData, err := c.GetRawData()
 	if err != nil {
@@ -83,6 +91,7 @@ func (h *Handler) SaveConfig(c *gin.Context) {
 	})
 }
 
+// RunSingbox starts the sing-box container.
 func (h *Handler) RunSingbox(c *gin.Context) {
 	containerID, err := h.service.RunContainer()
 	if err != nil {
@@ -99,6 +108,7 @@ func (h *Handler) RunSingbox(c *gin.Context) {
 	})
 }
 
+// StopSingbox stops the sing-box container.
 func (h *Handler) StopSingbox(c *gin.Context) {
 	if err := h.service.StopContainer(); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -113,6 +123,7 @@ func (h *Handler) StopSingbox(c *gin.Context) {
 	})
 }
 
+// GetSingboxLogs returns the logs from the sing-box container.
 func (h *Handler) GetSingboxLogs(c *gin.Context) {
 	logs := h.service.ContainerLogs()
 	c.JSON(http.StatusOK, gin.H{
@@ -120,6 +131,7 @@ func (h *Handler) GetSingboxLogs(c *gin.Context) {
 	})
 }
 
+// CheckSingboxStatus checks whether the sing-box container is running.
 func (h *Handler) CheckSingboxStatus(c *gin.Context) {
 	running, containerID := h.service.ContainerStatus()
 
@@ -129,6 +141,7 @@ func (h *Handler) CheckSingboxStatus(c *gin.Context) {
 	})
 }
 
+// EnsureImage ensures the sing-box Docker image is available.
 func (h *Handler) EnsureImage(c *gin.Context) {
 	if err := h.service.EnsureImage(); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -143,6 +156,7 @@ func (h *Handler) EnsureImage(c *gin.Context) {
 	})
 }
 
+// ListNamedConfigs returns all named configuration instances.
 func (h *Handler) ListNamedConfigs(c *gin.Context) {
 	configs, err := h.service.ListNamedConfigs()
 	if err != nil {
@@ -158,6 +172,7 @@ func (h *Handler) ListNamedConfigs(c *gin.Context) {
 	})
 }
 
+// SaveNamedConfigWithContainer saves a named configuration and validates it.
 func (h *Handler) SaveNamedConfigWithContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -199,6 +214,7 @@ func (h *Handler) SaveNamedConfigWithContainer(c *gin.Context) {
 	})
 }
 
+// LoadNamedConfigFromContainer returns a named configuration.
 func (h *Handler) LoadNamedConfigFromContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -217,6 +233,7 @@ func (h *Handler) LoadNamedConfigFromContainer(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
+// CheckNamedConfig validates a named configuration's JSON syntax.
 func (h *Handler) CheckNamedConfig(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -231,6 +248,7 @@ func (h *Handler) CheckNamedConfig(c *gin.Context) {
 	})
 }
 
+// DeleteNamedConfigWithContainer deletes a named configuration instance.
 func (h *Handler) DeleteNamedConfigWithContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -251,6 +269,7 @@ func (h *Handler) DeleteNamedConfigWithContainer(c *gin.Context) {
 	})
 }
 
+// RunNamedContainer starts a named container instance.
 func (h *Handler) RunNamedContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -274,6 +293,7 @@ func (h *Handler) RunNamedContainer(c *gin.Context) {
 	})
 }
 
+// StopNamedContainer stops a named container instance.
 func (h *Handler) StopNamedContainer(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -294,6 +314,7 @@ func (h *Handler) StopNamedContainer(c *gin.Context) {
 	})
 }
 
+// GetNamedContainerStatus returns the status of a named container.
 func (h *Handler) GetNamedContainerStatus(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -309,6 +330,7 @@ func (h *Handler) GetNamedContainerStatus(c *gin.Context) {
 	})
 }
 
+// GetNamedContainerLogs returns the logs for a named container.
 func (h *Handler) GetNamedContainerLogs(c *gin.Context) {
 	name, ok := validateName(c)
 	if !ok {
@@ -322,6 +344,7 @@ func (h *Handler) GetNamedContainerLogs(c *gin.Context) {
 	})
 }
 
+// ListAllContainers returns all sing-box containers.
 func (h *Handler) ListAllContainers(c *gin.Context) {
 	containers, err := h.service.ListAllContainers()
 	if err != nil {
@@ -337,6 +360,7 @@ func (h *Handler) ListAllContainers(c *gin.Context) {
 	})
 }
 
+// ErrorResponse represents a standard error response body.
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`

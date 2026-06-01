@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// TestRegisterAndBuildOutbound tests the full flow of device registration and outbound building.
 func TestRegisterAndBuildOutbound(t *testing.T) {
 	// Mock Cloudflare API
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +79,7 @@ func TestRegisterAndBuildOutbound(t *testing.T) {
 	}
 }
 
+// TestRegisterDevice_noServer tests that RegisterDevice returns an error when no server is reachable.
 func TestRegisterDevice_noServer(t *testing.T) {
 	tmpDir := t.TempDir()
 	svc := NewService(tmpDir)

@@ -1,3 +1,4 @@
+// Package docker provides a client for managing Docker containers and images.
 package docker
 
 import (
@@ -15,10 +16,12 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
+// Client wraps the Docker SDK client with higher-level container operations.
 type Client struct {
 	cli *client.Client
 }
 
+// NewClient creates a new Docker client from environment settings.
 func NewClient() (*Client, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -29,6 +32,7 @@ func NewClient() (*Client, error) {
 	}, nil
 }
 
+// Close closes the underlying Docker client connection.
 func (d *Client) Close() error {
 	if d.cli != nil {
 		return d.cli.Close()
@@ -77,6 +81,7 @@ func (d *Client) EnsureImage(ctx context.Context, imageName, tarPath string) err
 	return nil
 }
 
+// loadImageFromFile loads a Docker image from a tar archive and tags it with the given name.
 func (d *Client) loadImageFromFile(ctx context.Context, tarPath, imageName string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
@@ -119,6 +124,7 @@ func (d *Client) loadImageFromFile(ctx context.Context, tarPath, imageName strin
 	return nil
 }
 
+// ContainerCreate creates a Docker container. Config and hostConfig must be *container.Config and *container.HostConfig.
 func (d *Client) ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error) {
 	cfg, ok := config.(*container.Config)
 	if !ok {
@@ -135,6 +141,7 @@ func (d *Client) ContainerCreate(ctx context.Context, config interface{}, hostCo
 	return resp.ID, nil
 }
 
+// ContainerStart starts a container by its ID.
 func (d *Client) ContainerStart(ctx context.Context, containerID string) error {
 	if err := d.cli.ContainerStart(ctx, containerID, container.StartOptions{}); err != nil {
 		return fmt.Errorf("failed to start container: %w", err)
@@ -142,6 +149,7 @@ func (d *Client) ContainerStart(ctx context.Context, containerID string) error {
 	return nil
 }
 
+// ContainerStop stops a container by its ID with an optional timeout.
 func (d *Client) ContainerStop(ctx context.Context, containerID string, timeout *int) error {
 	stopOptions := container.StopOptions{Timeout: timeout}
 	if err := d.cli.ContainerStop(ctx, containerID, stopOptions); err != nil {
@@ -152,6 +160,7 @@ func (d *Client) ContainerStop(ctx context.Context, containerID string, timeout 
 	return nil
 }
 
+// ContainerRemove removes a container by its ID, optionally forcing the removal.
 func (d *Client) ContainerRemove(ctx context.Context, containerID string, force bool) error {
 	if err := d.cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: force}); err != nil {
 		if !strings.Contains(err.Error(), "No such container") {
@@ -161,6 +170,7 @@ func (d *Client) ContainerRemove(ctx context.Context, containerID string, force 
 	return nil
 }
 
+// ContainerLogs returns the log output of a container. Tail specifies how many recent lines.
 func (d *Client) ContainerLogs(ctx context.Context, containerID, tail string) (string, error) {
 	if tail == "" {
 		tail = "100"
@@ -190,6 +200,7 @@ func (d *Client) ContainerLogs(ctx context.Context, containerID, tail string) (s
 	return logs, nil
 }
 
+// GetContainerState returns the state string of a container by name (e.g. "running", "exited").
 func (d *Client) GetContainerState(ctx context.Context, containerName string) (state string, err error) {
 	containers, err := d.cli.ContainerList(ctx, container.ListOptions{
 		All:     true,
@@ -204,6 +215,7 @@ func (d *Client) GetContainerState(ctx context.Context, containerName string) (s
 	return containers[0].State, nil
 }
 
+// ListContainers returns all containers whose names start with the given prefix.
 func (d *Client) ListContainers(ctx context.Context, prefix string) ([]ContainerInfo, error) {
 	containers, err := d.cli.ContainerList(ctx, container.ListOptions{
 		All:     true,

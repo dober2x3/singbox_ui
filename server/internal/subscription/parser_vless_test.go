@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestParseVLESSNode_Basic verifies parsing a basic vless:// URI with UUID, server, port, and name.
 func TestParseVLESSNode_Basic(t *testing.T) {
 	link := "vless://abc123-abc12-abc12-abc12-abc123abc@154.17.3.218:2023?type=tcp&security=none#VLESS-154.17.3.218"
 	node, err := parseVLESSNode(link)
@@ -24,6 +25,7 @@ func TestParseVLESSNode_Basic(t *testing.T) {
 	}
 }
 
+// TestParseVLESSNode_WithReality verifies parsing a vless:// URI with Reality TLS, flow, and fingerprint settings.
 func TestParseVLESSNode_WithReality(t *testing.T) {
 	link := "vless://abc123-abc12-abc12-abc12-abc123abc@example.com:443?type=tcp&security=reality&pbk=testPublicKey&sid=123456&fp=firefox&sni=example.com&flow=xtls-rprx-vision#VLESS-Reality"
 	node, err := parseVLESSNode(link)
@@ -56,6 +58,7 @@ func TestParseVLESSNode_WithReality(t *testing.T) {
 	}
 }
 
+// TestParseVLESSNode_Invalid verifies that a vless:// URI without @ returns an error.
 func TestParseVLESSNode_Invalid(t *testing.T) {
 	_, err := parseVLESSNode("vless://no-at-sign")
 	if err == nil {

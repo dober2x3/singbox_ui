@@ -9,6 +9,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSS2022Key } from 
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, formatListen, parseListen } from "./types"
 
+/** Flat form state for Shadowsocks inbound configuration. */
 interface SsFlat {
   listen: string
   listen_port: number
@@ -25,6 +26,7 @@ interface SsFlat {
 
 const NETWORK_BOTH_VALUE = "__all__"
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): SsFlat {
   if (!initialConfig || initialConfig.type !== "shadowsocks") {
     return {
@@ -56,6 +58,7 @@ function deriveFlat(initialConfig: any): SsFlat {
   }
 }
 
+/** Build the Shadowsocks inbound config object from flat form state. */
 function buildSsInbound(flat: SsFlat): any {
   const previewConfig: any = {
     type: "shadowsocks",
@@ -90,6 +93,7 @@ function buildSsInbound(flat: SsFlat): any {
   return previewConfig
 }
 
+/** Shadowsocks protocol inbound form component. */
 export function ShadowsocksForm({
   initialConfig,
   setInbound,
@@ -110,6 +114,7 @@ export function ShadowsocksForm({
     setInbound(0, buildSsInbound(newFlat))
   }
 
+  /** Generate and show a QR code for the Shadowsocks connection string. */
   const showShadowsocksQrCode = async () => {
     onError("")
     try {

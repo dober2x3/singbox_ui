@@ -1,3 +1,4 @@
+// Package certificate provides services for generating and managing TLS certificates.
 package certificate
 
 import (
@@ -15,14 +16,17 @@ import (
 	"time"
 )
 
+// Service provides business logic for certificate generation and management.
 type Service struct {
 	certDir string
 }
 
+// NewService creates a new Service that stores certificates in the given directory.
 func NewService(certDir string) *Service {
 	return &Service{certDir: certDir}
 }
 
+// GenerateSelfSignedCert creates an ECDSA self-signed certificate and saves cert.pem and key.pem.
 func (s *Service) GenerateSelfSignedCert(domain string, validDays int) (*CertificateInfo, error) {
 	if domain == "" {
 		domain = "localhost"
@@ -116,6 +120,7 @@ func (s *Service) GenerateSelfSignedCert(domain string, validDays int) (*Certifi
 	}, nil
 }
 
+// GetCertificateInfo reads and parses a PEM certificate file, returning its metadata.
 func (s *Service) GetCertificateInfo(certPath string) (*CertificateInfo, error) {
 	certPEM, err := os.ReadFile(certPath)
 	if err != nil {
@@ -141,6 +146,7 @@ func (s *Service) GetCertificateInfo(certPath string) (*CertificateInfo, error) 
 	}, nil
 }
 
+// CertificateExists checks whether both cert.pem and key.pem exist on disk.
 func (s *Service) CertificateExists() bool {
 	certPath := filepath.Join(s.certDir, "cert.pem")
 	keyPath := filepath.Join(s.certDir, "key.pem")

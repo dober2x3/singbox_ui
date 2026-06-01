@@ -6,12 +6,15 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// mockResultSaver is a no-op implementation of ProbeResultSaver for testing.
 type mockResultSaver struct{}
 
+// SaveProbeResults is a no-op implementation for testing.
 func (m *mockResultSaver) SaveProbeResults(results []types.ProbeResultUpdate) error {
 	return nil
 }
 
+// TestNewService verifies that NewService creates a non-nil service.
 func TestNewService(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -21,6 +24,7 @@ func TestNewService(t *testing.T) {
 	}
 }
 
+// TestServiceInit verifies that Init creates the underlying prober.
 func TestServiceInit(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -35,6 +39,7 @@ func TestServiceInit(t *testing.T) {
 	}
 }
 
+// TestServiceStartStop verifies the service start/stop lifecycle.
 func TestServiceStartStop(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -55,6 +60,7 @@ func TestServiceStartStop(t *testing.T) {
 	}
 }
 
+// TestServiceCRUD verifies basic add/get/remove operations through the service.
 func TestServiceCRUD(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -77,6 +83,7 @@ func TestServiceCRUD(t *testing.T) {
 	}
 }
 
+// TestServiceSaveProbeResults verifies saving probe results via the result saver.
 func TestServiceSaveProbeResults(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -97,6 +104,7 @@ func TestServiceSaveProbeResults(t *testing.T) {
 	}
 }
 
+// TestServiceSaveProbeResults_Empty verifies saving with no results returns zero.
 func TestServiceSaveProbeResults_Empty(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -115,6 +123,7 @@ func TestServiceSaveProbeResults_Empty(t *testing.T) {
 	}
 }
 
+// TestServiceSaveNodes verifies saving and loading nodes through the service.
 func TestServiceSaveNodes(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
@@ -144,6 +153,7 @@ func TestServiceSaveNodes(t *testing.T) {
 	}
 }
 
+// TestServiceGetAllResults verifies GetAllResults returns an empty map initially.
 func TestServiceGetAllResults(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}

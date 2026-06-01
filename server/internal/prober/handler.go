@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ProberNodeRequest represents a single node to be added via the API.
 type ProberNodeRequest struct {
 	Tag      string `json:"tag" binding:"required"`
 	Protocol string `json:"protocol" binding:"required"`
@@ -15,22 +16,27 @@ type ProberNodeRequest struct {
 	Port     int    `json:"port" binding:"required"`
 }
 
+// ProberNodesRequest represents a batch of nodes to update via the API.
 type ProberNodesRequest struct {
 	Nodes []ProberNodeRequest `json:"nodes" binding:"required"`
 }
 
+// Handler serves HTTP endpoints for prober operations.
 type Handler struct {
 	service *Service
 }
 
+// NewHandler creates a new Handler with the given prober service.
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetProberStatus returns the current prober status and stats.
 func (h *Handler) GetProberStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, h.service.GetStats())
 }
 
+// GetProbeResults returns all probe results.
 func (h *Handler) GetProbeResults(c *gin.Context) {
 	results := h.service.GetAllResults()
 	c.JSON(http.StatusOK, gin.H{
@@ -39,6 +45,7 @@ func (h *Handler) GetProbeResults(c *gin.Context) {
 	})
 }
 
+// GetProbeResult returns the probe result for a specific node tag.
 func (h *Handler) GetProbeResult(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
@@ -55,6 +62,7 @@ func (h *Handler) GetProbeResult(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GetBestNode returns the online node with the lowest latency.
 func (h *Handler) GetBestNode(c *gin.Context) {
 	best := h.service.GetBestNode()
 	if best == nil {
@@ -68,6 +76,7 @@ func (h *Handler) GetBestNode(c *gin.Context) {
 	c.JSON(http.StatusOK, best)
 }
 
+// GetOnlineNodes returns all online nodes.
 func (h *Handler) GetOnlineNodes(c *gin.Context) {
 	online := h.service.GetOnlineNodes()
 	c.JSON(http.StatusOK, gin.H{
@@ -76,6 +85,7 @@ func (h *Handler) GetOnlineNodes(c *gin.Context) {
 	})
 }
 
+// AddProberNode adds a new node for probing.
 func (h *Handler) AddProberNode(c *gin.Context) {
 	var req ProberNodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -96,6 +106,7 @@ func (h *Handler) AddProberNode(c *gin.Context) {
 	})
 }
 
+// UpdateProberNodes replaces all probed nodes with the given list.
 func (h *Handler) UpdateProberNodes(c *gin.Context) {
 	var req ProberNodesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -128,6 +139,7 @@ func (h *Handler) UpdateProberNodes(c *gin.Context) {
 	})
 }
 
+// RemoveProberNode removes a node from probing by tag.
 func (h *Handler) RemoveProberNode(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
@@ -143,11 +155,13 @@ func (h *Handler) RemoveProberNode(c *gin.Context) {
 	})
 }
 
+// ClearProberNodes removes all probed nodes.
 func (h *Handler) ClearProberNodes(c *gin.Context) {
 	h.service.ClearNodes()
 	c.JSON(http.StatusOK, gin.H{"message": "All nodes cleared"})
 }
 
+// StartProber starts the probe loop.
 func (h *Handler) StartProber(c *gin.Context) {
 	if h.service.IsRunning() {
 		c.JSON(http.StatusOK, gin.H{"message": "Prober is already running"})
@@ -158,6 +172,7 @@ func (h *Handler) StartProber(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Prober started"})
 }
 
+// StopProber stops the probe loop.
 func (h *Handler) StopProber(c *gin.Context) {
 	if !h.service.IsRunning() {
 		c.JSON(http.StatusOK, gin.H{"message": "Prober is not running"})
@@ -168,6 +183,7 @@ func (h *Handler) StopProber(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Prober stopped"})
 }
 
+// SyncNodesFromSubscription imports nodes from the subscription service and starts probing.
 func (h *Handler) SyncNodesFromSubscription(c *gin.Context) {
 	nodes, err := h.service.SyncNodesFromSubscription()
 	if err != nil {
@@ -181,6 +197,7 @@ func (h *Handler) SyncNodesFromSubscription(c *gin.Context) {
 	})
 }
 
+// SaveProbeResultsToSubscription persists probe results to the subscription service.
 func (h *Handler) SaveProbeResultsToSubscription(c *gin.Context) {
 	count, err := h.service.SaveProbeResults()
 	if err != nil {

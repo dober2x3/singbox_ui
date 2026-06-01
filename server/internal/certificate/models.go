@@ -1,5 +1,6 @@
 package certificate
 
+// CertificateInfo contains metadata about a TLS certificate.
 type CertificateInfo struct {
 	CertPath    string `json:"cert_path"`
 	KeyPath     string `json:"key_path"`

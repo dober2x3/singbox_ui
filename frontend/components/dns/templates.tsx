@@ -5,13 +5,16 @@ import { Label } from "@/components/ui/label"
 import { DnsServer, DnsRule } from "@/lib/store/singbox-config"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the Templates component. */
 interface TemplatesProps {
   onApply: (servers: DnsServer[], rules: DnsRule[], final: string) => void
 }
 
+/** DNS quick-template buttons for common configurations. */
 export function Templates({ onApply }: TemplatesProps) {
   const { t } = useTranslation("dns")
 
+  /** Apply a named preset template. */
   const applyTemplate = (template: string) => {
     let servers: DnsServer[] = []
     let rules: DnsRule[] = []

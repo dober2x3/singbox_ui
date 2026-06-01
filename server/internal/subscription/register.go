@@ -2,6 +2,7 @@ package subscription
 
 import "github.com/gin-gonic/gin"
 
+// RegisterRoutes registers all subscription-related HTTP routes on the given RouterGroup.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET("", h.GetSubscriptions)
 	rg.POST("", h.AddSubscription)

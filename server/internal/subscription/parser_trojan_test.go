@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestParseTrojanNode_Basic verifies parsing a trojan:// URI with password, server, port, and name.
 func TestParseTrojanNode_Basic(t *testing.T) {
 	link := "trojan://password123@154.17.3.218:2023?type=tcp#Trojan-154.17.3.218"
 	node, err := parseTrojanNode(link)
@@ -27,6 +28,7 @@ func TestParseTrojanNode_Basic(t *testing.T) {
 	}
 }
 
+// TestParseTrojanNode_WithTLS verifies parsing a trojan:// URI with TLS sni and fingerprint settings.
 func TestParseTrojanNode_WithTLS(t *testing.T) {
 	link := "trojan://pass@example.com:443?type=tcp&sni=example.com&fp=chrome#Secure-Trojan"
 	node, err := parseTrojanNode(link)
@@ -45,6 +47,7 @@ func TestParseTrojanNode_WithTLS(t *testing.T) {
 	}
 }
 
+// TestParseTrojanNode_Invalid verifies that a trojan:// URI without @ returns an error.
 func TestParseTrojanNode_Invalid(t *testing.T) {
 	_, err := parseTrojanNode("trojan://no-at")
 	if err == nil {

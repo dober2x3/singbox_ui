@@ -1,3 +1,4 @@
+// Package scheduler provides periodic subscription auto-update scheduling.
 package scheduler
 
 import (
@@ -6,6 +7,7 @@ import (
 	"time"
 )
 
+// Scheduler periodically checks subscriptions and triggers auto-updates.
 type Scheduler struct {
 	subUpdater   SubscriptionUpdater
 	containerMgr ContainerManager
@@ -15,6 +17,7 @@ type Scheduler struct {
 	running      bool
 }
 
+// New creates a new Scheduler with the given updater and container manager.
 func New(subUpdater SubscriptionUpdater, containerMgr ContainerManager) *Scheduler {
 	return &Scheduler{
 		subUpdater:   subUpdater,
@@ -23,6 +26,7 @@ func New(subUpdater SubscriptionUpdater, containerMgr ContainerManager) *Schedul
 	}
 }
 
+// Start begins the scheduler loop. No-op if already running.
 func (s *Scheduler) Start() {
 	s.mu.Lock()
 	if s.running {
@@ -37,6 +41,7 @@ func (s *Scheduler) Start() {
 	log.Println("Scheduler started")
 }
 
+// Stop halts the scheduler loop. No-op if not running.
 func (s *Scheduler) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -48,12 +53,14 @@ func (s *Scheduler) Stop() {
 	log.Println("Scheduler stopped")
 }
 
+// IsRunning reports whether the scheduler loop is active.
 func (s *Scheduler) IsRunning() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.running
 }
 
+// loop is the internal ticker loop that triggers subscription checks.
 func (s *Scheduler) loop() {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
@@ -68,6 +75,7 @@ func (s *Scheduler) loop() {
 	}
 }
 
+// checkAndAutoUpdateSubscriptions iterates subscriptions and updates those that are due.
 func (s *Scheduler) checkAndAutoUpdateSubscriptions() {
 	entries, err := s.subUpdater.LoadAll()
 	if err != nil {
@@ -100,6 +108,7 @@ func (s *Scheduler) checkAndAutoUpdateSubscriptions() {
 	}
 }
 
+// updateOne triggers an update for a single subscription by ID.
 func (s *Scheduler) updateOne(id string) {
 	log.Printf("Scheduler: auto-updating subscription %s", id)
 	_, err := s.subUpdater.UpdateOne(id)

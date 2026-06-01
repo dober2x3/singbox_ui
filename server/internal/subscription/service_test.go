@@ -7,6 +7,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// TestService_AddAndDeleteSubscription verifies adding a subscription via store and deleting it by ID.
 func TestService_AddAndDeleteSubscription(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -39,6 +40,7 @@ func TestService_AddAndDeleteSubscription(t *testing.T) {
 	}
 }
 
+// TestService_GetAllNodes verifies that GetAllNodes returns nodes from all stored subscriptions.
 func TestService_GetAllNodes(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -64,6 +66,7 @@ func TestService_GetAllNodes(t *testing.T) {
 	}
 }
 
+// TestService_UpdateSubscriptionSettings verifies updating auto-update and interval settings.
 func TestService_UpdateSubscriptionSettings(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -87,6 +90,7 @@ func TestService_UpdateSubscriptionSettings(t *testing.T) {
 	}
 }
 
+// TestService_NotFound verifies that operations on a nonexistent subscription ID return an error.
 func TestService_NotFound(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -107,6 +111,7 @@ func TestService_NotFound(t *testing.T) {
 	}
 }
 
+// TestService_UpdateSubscription verifies that UpdateSubscription attempts to fetch a stored subscription URL.
 func TestService_UpdateSubscription(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -125,6 +130,7 @@ func TestService_UpdateSubscription(t *testing.T) {
 	}
 }
 
+// TestService_SaveProbeResults verifies that probe results are stored and retrievable for matching nodes.
 func TestService_SaveProbeResults(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -175,6 +181,7 @@ func TestService_SaveProbeResults(t *testing.T) {
 	}
 }
 
+// TestService_SaveSpeedTestResults verifies that speed test results are stored for matching nodes.
 func TestService_SaveSpeedTestResults(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))
@@ -206,6 +213,7 @@ func TestService_SaveSpeedTestResults(t *testing.T) {
 	}
 }
 
+// TestService_FetchSubscription_ValidatesURL verifies that a non-http/https URL is rejected.
 func TestService_FetchSubscription_ValidatesURL(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewService(NewFileStore(dir))

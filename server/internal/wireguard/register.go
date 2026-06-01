@@ -2,6 +2,7 @@ package wireguard
 
 import "github.com/gin-gonic/gin"
 
+// RegisterRoutes registers WireGuard-related routes on the given router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST("/keygen", h.GenerateWireGuardKeys)
 	rg.POST("/pubkey", h.GetPublicKeyFromPrivate)

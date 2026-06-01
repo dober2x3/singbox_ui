@@ -7,15 +7,18 @@ import (
 	"singbox-config-service/internal/subscription"
 )
 
+// mockSubUpdater is a test implementation of SubscriptionUpdater.
 type mockSubUpdater struct {
 	entries []subscription.SubscriptionEntry
 	updated map[string]bool
 }
 
+// LoadAll returns the mock entries.
 func (m *mockSubUpdater) LoadAll() ([]subscription.SubscriptionEntry, error) {
 	return m.entries, nil
 }
 
+// UpdateOne records the update and returns the first entry.
 func (m *mockSubUpdater) UpdateOne(id string) (*subscription.SubscriptionEntry, error) {
 	if m.updated == nil {
 		m.updated = make(map[string]bool)
@@ -24,16 +27,20 @@ func (m *mockSubUpdater) UpdateOne(id string) (*subscription.SubscriptionEntry, 
 	return &m.entries[0], nil
 }
 
+// mockContainerManager is a no-op implementation of ContainerManager for testing.
 type mockContainerManager struct{}
 
+// UpdateAndRestart is a no-op implementation for testing.
 func (m *mockContainerManager) UpdateAndRestart(name string, configData []byte) error {
 	return nil
 }
 
+// Status is a no-op implementation for testing.
 func (m *mockContainerManager) Status(name string) (running bool, containerID string) {
 	return false, ""
 }
 
+// TestScheduler_autoUpdateTrigger verifies an overdue subscription is updated.
 func TestScheduler_autoUpdateTrigger(t *testing.T) {
 	subMock := &mockSubUpdater{
 		entries: []subscription.SubscriptionEntry{
@@ -53,6 +60,7 @@ func TestScheduler_autoUpdateTrigger(t *testing.T) {
 	}
 }
 
+// TestScheduler_skipIfNotDue verifies a subscription is skipped if not yet due.
 func TestScheduler_skipIfNotDue(t *testing.T) {
 	subMock := &mockSubUpdater{
 		entries: []subscription.SubscriptionEntry{
@@ -69,6 +77,7 @@ func TestScheduler_skipIfNotDue(t *testing.T) {
 	}
 }
 
+// TestScheduler_skipIfAutoUpdateDisabled verifies AutoUpdate=false subscriptions are skipped.
 func TestScheduler_skipIfAutoUpdateDisabled(t *testing.T) {
 	subMock := &mockSubUpdater{
 		entries: []subscription.SubscriptionEntry{
@@ -84,6 +93,7 @@ func TestScheduler_skipIfAutoUpdateDisabled(t *testing.T) {
 	}
 }
 
+// TestScheduler_startStop verifies the scheduler start/stop lifecycle.
 func TestScheduler_startStop(t *testing.T) {
 	subMock := &mockSubUpdater{}
 	sched := New(subMock, &mockContainerManager{})

@@ -9,10 +9,12 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// ClashConfig represents a Clash YAML configuration containing a list of proxies.
 type ClashConfig struct {
 	Proxies []ClashProxy `yaml:"proxies"`
 }
 
+// ClashProxy represents a single proxy entry in a Clash configuration YAML.
 type ClashProxy struct {
 	Name           string `yaml:"name"`
 	Type           string `yaml:"type"`
@@ -37,20 +39,25 @@ type ClashProxy struct {
 	PluginOpts     map[string]interface{} `yaml:"plugin-opts"`
 }
 
+// ClashWSOptions holds WebSocket transport options for a Clash proxy.
 type ClashWSOptions struct {
 	Path    string            `yaml:"path"`
 	Headers map[string]string `yaml:"headers"`
 }
 
+// ClashGRPCOptions holds gRPC transport options for a Clash proxy.
 type ClashGRPCOptions struct {
 	GRPCServiceName string `yaml:"grpc-service-name"`
 }
 
+// ClashRealityOptions holds Reality (TLS) options for a Clash proxy.
 type ClashRealityOptions struct {
 	PublicKey string `yaml:"public-key"`
 	ShortID   string `yaml:"short-id"`
 }
 
+// isClashYAML detects whether the content is a Clash YAML configuration by checking for
+// known Clash keys (proxies, proxy-groups, rules, mixed-port, allow-lan) or by attempting to parse the proxies field.
 func isClashYAML(content string) bool {
 	if !strings.Contains(content, "proxies:") {
 		return false
@@ -70,6 +77,7 @@ func isClashYAML(content string) bool {
 	return false
 }
 
+// parseClashYAML parses a Clash YAML configuration and converts each proxy entry to a ProxyNode.
 func parseClashYAML(data []byte) ([]types.ProxyNode, error) {
 	var config ClashConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
@@ -86,6 +94,7 @@ func parseClashYAML(data []byte) ([]types.ProxyNode, error) {
 	return nodes, nil
 }
 
+// convertClashProxy converts a ClashProxy into a ProxyNode based on its type (vmess, vless, trojan, ss, shadowsocks, anytls).
 func convertClashProxy(proxy ClashProxy) (types.ProxyNode, error) {
 	switch proxy.Type {
 	case "anytls":
@@ -103,6 +112,7 @@ func convertClashProxy(proxy ClashProxy) (types.ProxyNode, error) {
 	}
 }
 
+// convertClashAnyTLS converts a Clash anytls proxy into a ProxyNode.
 func convertClashAnyTLS(proxy ClashProxy) (types.ProxyNode, error) {
 	node := types.ProxyNode{
 		Name:     proxy.Name,
@@ -133,6 +143,7 @@ func convertClashAnyTLS(proxy ClashProxy) (types.ProxyNode, error) {
 	return node, nil
 }
 
+// convertClashVMess converts a Clash vmess proxy into a ProxyNode.
 func convertClashVMess(proxy ClashProxy) (types.ProxyNode, error) {
 	node := types.ProxyNode{
 		Name:     proxy.Name,
@@ -159,6 +170,7 @@ func convertClashVMess(proxy ClashProxy) (types.ProxyNode, error) {
 	return node, nil
 }
 
+// convertClashVLESS converts a Clash vless proxy into a ProxyNode.
 func convertClashVLESS(proxy ClashProxy) (types.ProxyNode, error) {
 	node := types.ProxyNode{
 		Name:     proxy.Name,
@@ -185,6 +197,7 @@ func convertClashVLESS(proxy ClashProxy) (types.ProxyNode, error) {
 	return node, nil
 }
 
+// convertClashTrojan converts a Clash trojan proxy into a ProxyNode.
 func convertClashTrojan(proxy ClashProxy) (types.ProxyNode, error) {
 	node := types.ProxyNode{
 		Name:     proxy.Name,
@@ -222,6 +235,7 @@ func convertClashTrojan(proxy ClashProxy) (types.ProxyNode, error) {
 	return node, nil
 }
 
+// convertClashShadowsocks converts a Clash shadowsocks or ss proxy into a ProxyNode.
 func convertClashShadowsocks(proxy ClashProxy) (types.ProxyNode, error) {
 	node := types.ProxyNode{
 		Name:     proxy.Name,
@@ -244,6 +258,7 @@ func convertClashShadowsocks(proxy ClashProxy) (types.ProxyNode, error) {
 	return node, nil
 }
 
+// addClashTransport populates the transport configuration in the outbound map for ws or grpc networks.
 func addClashTransport(proxy ClashProxy, outbound map[string]interface{}) {
 	if proxy.Network == "" || proxy.Network == "tcp" {
 		return
@@ -269,6 +284,7 @@ func addClashTransport(proxy ClashProxy, outbound map[string]interface{}) {
 	outbound["transport"] = transport
 }
 
+// addClashTLS populates the TLS configuration in the outbound map, including Reality and uTLS fingerprint.
 func addClashTLS(proxy ClashProxy, outbound map[string]interface{}) {
 	if !proxy.TLS && proxy.RealityOpts == nil {
 		return

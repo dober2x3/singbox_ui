@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 import { Zap, Server, Network } from "lucide-react"
 
+/** Flat form state for Shadowsocks outbound configuration. */
 interface SsFlat {
   server: string
   server_port: number
@@ -27,6 +28,7 @@ interface SsFlat {
   multiplex_brutal_down: number
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): SsFlat {
   const c = initialConfig?.type === "shadowsocks" ? initialConfig : null
   return {
@@ -50,6 +52,7 @@ function deriveFlat(initialConfig: any): SsFlat {
   }
 }
 
+/** Build the Shadowsocks outbound config object from flat form state. */
 function buildSsOutbound(s: SsFlat): any {
   const previewConfig: any = {
     type: "shadowsocks",
@@ -81,6 +84,7 @@ function buildSsOutbound(s: SsFlat): any {
   return previewConfig
 }
 
+/** Shadowsocks protocol outbound form component. */
 export function ShadowsocksForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

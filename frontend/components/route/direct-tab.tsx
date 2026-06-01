@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the DirectTab component. */
 interface DirectTabProps {
   directDomains: string
   setDirectDomains: (v: string) => void
@@ -13,6 +14,7 @@ interface DirectTabProps {
   setEnablePrivateIpDirect: (v: boolean) => void
 }
 
+/** Direct list tab for managing direct routing rules. */
 export function DirectTab({
   directDomains,
   setDirectDomains,

@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps, extractTransportHost } from "./types"
 import { Zap, Globe, Server, ShieldCheck } from "lucide-react"
 
+/** Flat form state for Trojan outbound configuration. */
 interface TrojanFlat {
   server: string
   server_port: number
@@ -38,6 +39,7 @@ interface TrojanFlat {
   ech_config: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): TrojanFlat {
   const c = initialConfig?.type === "trojan" ? initialConfig : null
   return {
@@ -72,6 +74,7 @@ function deriveFlat(initialConfig: any): TrojanFlat {
   }
 }
 
+/** Build the Trojan outbound config object from flat form state. */
 function buildTrojanOutbound(s: TrojanFlat): any {
   const previewConfig: any = {
     type: "trojan",
@@ -140,6 +143,7 @@ function buildTrojanOutbound(s: TrojanFlat): any {
   return previewConfig
 }
 
+/** Trojan protocol outbound form component. */
 export function TrojanForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

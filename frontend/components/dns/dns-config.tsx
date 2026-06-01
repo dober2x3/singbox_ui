@@ -11,17 +11,19 @@ import { RuleCard } from "./rule-card"
 import { Templates } from "./templates"
 import { GlobalSettings } from "./global-settings"
 
+/** Props for the DnsConfigComponent. */
 interface DnsConfigProps {
   showCard?: boolean
 }
 
-// Filter servers that are valid for sing-box (incomplete entries are kept in draft state only)
+/** Filter servers that are valid for sing-box; incomplete entries are kept in draft state only. */
 function filterValidServers(servers: DnsServer[]): DnsServer[] {
   return servers.filter(
     (s) => s.tag && (s.type === "local" || s.type === "fakeip" || s.type === "dhcp" || s.type === "hosts" || s.server)
   )
 }
 
+/** DNS configuration component with server list, rules, global settings, and templates. */
 export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
   const { t } = useTranslation("dns")
   const { config, setDns } = useSingboxConfigStore()
@@ -40,7 +42,7 @@ export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
 
   const availableServerTags = servers.filter((s) => s.tag).map((s) => s.tag)
 
-  // Write validated config to store (filters incomplete servers, cleans up empty arrays)
+  /** Write validated config to the store, filtering incomplete servers and cleaning up empty arrays. */
   function commitDns(srv: DnsServer[], rls: DnsRule[], final: string, cache: boolean) {
     setDns({
       servers: filterValidServers(srv),
@@ -50,24 +52,28 @@ export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
     })
   }
 
+  /** Add a new DNS server entry. */
   const addServer = () => {
     const next = [...servers, { tag: `dns_${servers.length + 1}`, server: "", type: "udp" as const }]
     setServers(next)
     commitDns(next, rules, finalServer, independentCache)
   }
 
+  /** Remove a DNS server by index. */
   const removeServer = (index: number) => {
     const next = servers.filter((_, i) => i !== index)
     setServers(next)
     commitDns(next, rules, finalServer, independentCache)
   }
 
+  /** Update a specific field on a DNS server entry. */
   const updateServer = (index: number, field: keyof DnsServer, value: any) => {
     const next = servers.map((s, i) => (i === index ? { ...s, [field]: value } : s))
     setServers(next)
     commitDns(next, rules, finalServer, independentCache)
   }
 
+  /** Toggle expanded state for a server card. */
   const toggleServerExpanded = (index: number) => {
     const next = new Set(expandedServers)
     if (next.has(index)) next.delete(index)
@@ -75,24 +81,28 @@ export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
     setExpandedServers(next)
   }
 
+  /** Add a new DNS rule entry. */
   const addRule = () => {
     const next = [...rules, { action: "route" as const, server: availableServerTags[0] || "" }]
     setRules(next)
     commitDns(servers, next, finalServer, independentCache)
   }
 
+  /** Remove a DNS rule by index. */
   const removeRule = (index: number) => {
     const next = rules.filter((_, i) => i !== index)
     setRules(next)
     commitDns(servers, next, finalServer, independentCache)
   }
 
+  /** Update a specific field on a DNS rule entry. */
   const updateRule = (index: number, field: keyof DnsRule, value: any) => {
     const next = rules.map((r, i) => (i === index ? { ...r, [field]: value } : r))
     setRules(next)
     commitDns(servers, next, finalServer, independentCache)
   }
 
+  /** Update a comma-separated array field on a DNS rule entry. */
   const updateRuleArray = (
     index: number,
     field: "domain" | "domain_suffix" | "rule_set" | "query_type",
@@ -118,6 +128,7 @@ export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
     commitDns(servers, next, finalServer, independentCache)
   }
 
+  /** Toggle expanded state for a rule card. */
   const toggleRuleExpanded = (index: number) => {
     const next = new Set(expandedRules)
     if (next.has(index)) next.delete(index)
@@ -125,13 +136,16 @@ export function DnsConfigComponent({ showCard = true }: DnsConfigProps) {
     setExpandedRules(next)
   }
 
+  /** Apply a DNS template, replacing servers, rules, and final server. */
   const handleApplyTemplate = (templateServers: DnsServer[], templateRules: DnsRule[], templateFinal: string) => {
     setServers(templateServers)
     setRules(templateRules)
     commitDns(templateServers, templateRules, templateFinal, independentCache)
   }
 
+  /** Set the final/fallback DNS server. */
   const setFinalServer = (val: string) => commitDns(servers, rules, val, independentCache)
+  /** Toggle independent cache mode. */
   const setIndependentCache = (val: boolean) => commitDns(servers, rules, finalServer, val)
 
   const content = (

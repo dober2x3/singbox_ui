@@ -8,6 +8,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// parseTrojanNode parses a trojan:// URI and returns a ProxyNode with password, server, port, and optional TLS/transport settings.
 func parseTrojanNode(link string) (types.ProxyNode, error) {
 	link = strings.TrimPrefix(link, "trojan://")
 	parts := strings.SplitN(link, "@", 2)

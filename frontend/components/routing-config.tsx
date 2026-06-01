@@ -1,3 +1,4 @@
-// Implementation moved to components/route/
-// This file kept for backward compatibility.
+/**
+ * Re-export of RoutingConfig from the route module for backward compatibility.
+ */
 export { RoutingConfig } from "./route"

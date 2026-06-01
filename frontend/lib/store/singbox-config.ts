@@ -1063,15 +1063,23 @@ export interface Service {
   tag?: string
 }
 
-// Legacy type aliases for backward compatibility
+/** @deprecated Use DNSServerOptions instead. */
 export type DnsServer = DNSServerOptions
+/** @deprecated Use DNSRule instead. */
 export type DnsRule = DNSRule
+/** @deprecated Use DNSOptions instead. */
 export type DnsConfig = DNSOptions
+/** @deprecated Use RouteRule instead. */
 export type RoutingRule = RouteRule
+/** @deprecated Use RouteOptions instead. */
 export type RoutingConfig = RouteOptions
+/** @deprecated Use RouteOptions instead. */
 export type RouteConfig = RouteOptions
+/** @deprecated Use CacheFileOptions instead. */
 export type CacheFile = CacheFileOptions
+/** @deprecated Use ClashAPIOptions instead. */
 export type ClashApi = ClashAPIOptions
+/** @deprecated Use ExperimentalOptions instead. */
 export type Experimental = ExperimentalOptions
 
 // ============= Default Config (sing-box format) =============
@@ -1118,6 +1126,7 @@ const defaultConfig: SingBoxConfig = {
 
 // ============= Store Interface =============
 
+/** State for the URL-test balancer outbound mode. */
 interface BalancerState {
   enabled: boolean
   selectedOutbounds: string[]
@@ -1125,6 +1134,7 @@ interface BalancerState {
   allOutbounds: Outbound[]
 }
 
+/** Result of a save operation returned by store actions. */
 interface SaveResult {
   success: boolean
   path?: string
@@ -1133,6 +1143,7 @@ interface SaveResult {
   warning?: string
 }
 
+/** Zustand store interface for the full sing-box configuration state and actions. */
 interface SingboxConfigStore {
   // Current instance
   currentInstance: string | null
@@ -1151,57 +1162,75 @@ interface SingboxConfigStore {
   lastSavedAt: number | null
   error: string | null
 
-  // Actions - Log
+  /** Sets the log level. */
   setLogLevel: (level: string) => void
 
-  // Actions - DNS
+  /** Replaces the entire DNS configuration. */
   setDns: (dns: DNSOptions) => void
 
-  // Actions - Endpoint (sing-box 1.11.0+)
+  /** Updates an endpoint at the given index. */
   setEndpoint: (index: number, endpoint: Endpoint) => void
+  /** Appends a new endpoint. */
   addEndpoint: (endpoint: Endpoint) => void
+  /** Removes an endpoint at the given index. */
   removeEndpoint: (index: number) => void
+  /** Removes all endpoints. */
   clearEndpoints: () => void
 
-  // Actions - Inbound
+  /** Updates an inbound at the given index. */
   setInbound: (index: number, inbound: Inbound) => void
+  /** Appends a new inbound. */
   addInbound: (inbound: Inbound) => void
+  /** Removes an inbound at the given index. */
   removeInbound: (index: number) => void
+  /** Removes all inbounds. */
   clearInbounds: () => void
 
-  // Actions - Outbound
+  /** Updates an outbound at the given index. */
   setOutbound: (index: number, outbound: Outbound) => void
+  /** Appends a new outbound. */
   addOutbound: (outbound: Outbound) => void
+  /** Removes an outbound at the given index. */
   removeOutbound: (index: number) => void
+  /** Removes all outbounds. */
   clearOutbounds: () => void
+  /** Replaces the entire outbounds array. */
   setOutbounds: (outbounds: Outbound[]) => void
 
-  // Actions - Route (renamed from Routing)
+  /** Sets the route configuration (was renamed from setRouting). */
   setRoute: (route: RouteOptions | undefined) => void
-  // Legacy alias
+  /** @deprecated Use setRoute instead. */
   setRouting: (routing: RouteOptions | undefined) => void
 
-  // Actions - Balancer
+  /** Sets the balancer state (null resets to defaults). */
   setBalancerState: (state: BalancerState | null) => void
 
-  // Actions - Instance management
+  /** Sets the currently selected instance name. */
   setCurrentInstance: (instance: string | null) => void
+  /** Replaces the list of known instances. */
   setInstances: (instances: InstanceInfo[]) => void
+  /** Fetches the list of instances from the backend. */
   loadInstances: () => Promise<void>
+  /** Loads a named instance config from the backend. */
   loadInstanceConfig: (instance: string) => Promise<boolean>
+  /** Saves the current config to the selected instance. */
   saveInstanceConfig: () => Promise<SaveResult>
+  /** Creates a new named instance with the current config. */
   createInstance: (name: string) => Promise<boolean>
+  /** Deletes a named instance from the backend. */
   deleteInstance: (name: string) => Promise<boolean>
 
-  // Actions - Server sync
+  /** Loads the config from the legacy server endpoint. */
   loadFromServer: () => Promise<boolean>
+  /** Saves the config to the legacy server endpoint. */
   saveToServer: () => Promise<SaveResult>
 
-  // Actions - Local config
+  /** Merges a partial config into the current state. */
   loadConfig: (config: Partial<SingBoxConfig>) => void
+  /** Resets the config to defaults and clears the loaded state. */
   resetConfig: () => void
 
-  // Computed - Get full config with balancer logic
+  /** Computes the full sing-box config with balancer logic, WireGuard migration, and DNS defaults. */
   getFullConfig: () => SingBoxConfig
 }
 
@@ -1821,8 +1850,7 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
       ...mergedEndpoints.map((ep) => ep.tag).filter((t): t is string => typeof t === "string" && t.length > 0),
     ])
 
-    // Helper function to generate rule_set definitions for used rule_set tags
-    // Collects from both route rules and DNS rules
+    /** Generates remote RuleSet definitions for all rule_set tags referenced in route and DNS rules. */
     const generateRuleSetDefinitions = (routeRules: RouteRule[], dnsRules?: DNSRule[]): RuleSet[] => {
       const usedRuleSets = new Set<string>()
       for (const rule of routeRules) {
@@ -1976,10 +2004,10 @@ export const useSingboxConfigStore = create<SingboxConfigStore>((set, get) => ({
   },
 }))
 
-// Legacy export for backward compatibility
+/** @deprecated Use useSingboxConfigStore instead. */
 export const useXrayConfigStore = useSingboxConfigStore
 
-// Instance info type
+/** Metadata for a named sing-box instance on the backend. */
 export interface InstanceInfo {
   name: string
   created_at: number

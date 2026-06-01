@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestGeneratePrivateKey tests that GeneratePrivateKey produces a valid base64-encoded key.
 func TestGeneratePrivateKey(t *testing.T) {
 	svc := NewService(t.TempDir())
 	key, err := svc.GeneratePrivateKey()
@@ -15,6 +16,7 @@ func TestGeneratePrivateKey(t *testing.T) {
 	}
 }
 
+// TestGeneratePublicKey tests that GeneratePublicKey correctly derives a public key from a private key.
 func TestGeneratePublicKey(t *testing.T) {
 	svc := NewService(t.TempDir())
 	priv, _ := svc.GeneratePrivateKey()
@@ -27,6 +29,7 @@ func TestGeneratePublicKey(t *testing.T) {
 	}
 }
 
+// TestGeneratePublicKey_invalidBase64 tests that GeneratePublicKey returns an error for invalid base64 input.
 func TestGeneratePublicKey_invalidBase64(t *testing.T) {
 	svc := NewService(t.TempDir())
 	_, err := svc.GeneratePublicKey("invalid-base64!")
@@ -35,6 +38,7 @@ func TestGeneratePublicKey_invalidBase64(t *testing.T) {
 	}
 }
 
+// TestGenerateWireGuardKeysWithCache tests that keys are generated on first call and cached on subsequent calls.
 func TestGenerateWireGuardKeysWithCache(t *testing.T) {
 	tmpDir := t.TempDir()
 	svc := NewService(tmpDir)
@@ -64,6 +68,7 @@ func TestGenerateWireGuardKeysWithCache(t *testing.T) {
 	}
 }
 
+// TestGenerateWireGuardKeysWithCache_differentIP tests that different IPs get different keys.
 func TestGenerateWireGuardKeysWithCache_differentIP(t *testing.T) {
 	svc := NewService(t.TempDir())
 	resp1, _ := svc.GenerateWireGuardKeysWithCache("10.0.0.1")
@@ -73,6 +78,7 @@ func TestGenerateWireGuardKeysWithCache_differentIP(t *testing.T) {
 	}
 }
 
+// TestGenerateWireGuardKeysWithCache_noIP tests that the function returns an error when no IP is provided.
 func TestGenerateWireGuardKeysWithCache_noIP(t *testing.T) {
 	svc := NewService(t.TempDir())
 	_, err := svc.GenerateWireGuardKeysWithCache("")
@@ -81,6 +87,7 @@ func TestGenerateWireGuardKeysWithCache_noIP(t *testing.T) {
 	}
 }
 
+// TestGetKeysCache_empty tests that GetKeysCache returns an empty slice when no keys are cached.
 func TestGetKeysCache_empty(t *testing.T) {
 	svc := NewService(t.TempDir())
 	cache, err := svc.GetKeysCache()
@@ -92,6 +99,7 @@ func TestGetKeysCache_empty(t *testing.T) {
 	}
 }
 
+// TestSaveAndListClientConfigFiles tests saving and listing client config files.
 func TestSaveAndListClientConfigFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	svc := NewService(tmpDir)
@@ -113,6 +121,7 @@ func TestSaveAndListClientConfigFiles(t *testing.T) {
 	}
 }
 
+// TestSaveClientConfig tests saving and reading back a client JSON configuration.
 func TestSaveClientConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	svc := NewService(tmpDir)
@@ -131,6 +140,7 @@ func TestSaveClientConfig(t *testing.T) {
 	}
 }
 
+// TestGetClientConfig_notFound tests that GetClientConfig returns an error when the config file is missing.
 func TestGetClientConfig_notFound(t *testing.T) {
 	svc := NewService(t.TempDir())
 	_, err := svc.GetClientConfig()

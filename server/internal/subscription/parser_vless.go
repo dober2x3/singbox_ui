@@ -8,6 +8,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// parseVLESSNode parses a vless:// URI and returns a ProxyNode with UUID, server, port, and optional transport/TLS/Reality settings.
 func parseVLESSNode(link string) (types.ProxyNode, error) {
 	link = strings.TrimPrefix(link, "vless://")
 	parts := strings.SplitN(link, "@", 2)

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// newTestHandler creates a Handler backed by a temporary directory for testing.
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	dir := t.TempDir()
@@ -18,6 +19,7 @@ func newTestHandler(t *testing.T) *Handler {
 	return NewHandler(svc)
 }
 
+// TestHandler_GetSubscriptions_Empty verifies that GET returns an empty list with count 0 initially.
 func TestHandler_GetSubscriptions_Empty(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -39,6 +41,7 @@ func TestHandler_GetSubscriptions_Empty(t *testing.T) {
 	}
 }
 
+// TestHandler_GetUserAgents verifies that the user-agents endpoint returns 5 predefined options.
 func TestHandler_GetUserAgents(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -64,6 +67,7 @@ func TestHandler_GetUserAgents(t *testing.T) {
 	}
 }
 
+// TestHandler_DeleteSubscription_NoID verifies that DELETE without an ID returns a 404.
 func TestHandler_DeleteSubscription_NoID(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -80,6 +84,7 @@ func TestHandler_DeleteSubscription_NoID(t *testing.T) {
 	}
 }
 
+// TestHandler_RefreshSubscription_NoID verifies that POST refresh without an ID returns 400.
 func TestHandler_RefreshSubscription_NoID(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -95,6 +100,7 @@ func TestHandler_RefreshSubscription_NoID(t *testing.T) {
 	}
 }
 
+// TestHandler_UpdateSubscriptionSettings_InvalidJSON verifies that PATCH with bad JSON returns 400.
 func TestHandler_UpdateSubscriptionSettings_InvalidJSON(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -112,6 +118,7 @@ func TestHandler_UpdateSubscriptionSettings_InvalidJSON(t *testing.T) {
 	}
 }
 
+// TestHandler_GetAllNodes_Empty verifies that GET nodes returns empty list with no subscriptions.
 func TestHandler_GetAllNodes_Empty(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -127,6 +134,7 @@ func TestHandler_GetAllNodes_Empty(t *testing.T) {
 	}
 }
 
+// TestHandler_RefreshAllSubscriptions_Empty verifies that POST refresh-all returns 200 even with no subscriptions.
 func TestHandler_RefreshAllSubscriptions_Empty(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)
@@ -142,6 +150,7 @@ func TestHandler_RefreshAllSubscriptions_Empty(t *testing.T) {
 	}
 }
 
+// TestHandler_AddSubscription_MissingFields verifies that POST with empty JSON body returns 400.
 func TestHandler_AddSubscription_MissingFields(t *testing.T) {
 	h := newTestHandler(t)
 	gin.SetMode(gin.TestMode)

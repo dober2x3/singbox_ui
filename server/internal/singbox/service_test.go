@@ -11,6 +11,7 @@ import (
 	"singbox-config-service/internal/pkg/docker"
 )
 
+// mockContainerManager implements ContainerManager for testing.
 type mockContainerManager struct {
 	createContainerFn   func(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error)
 	startContainerFn    func(ctx context.Context, containerID string) error
@@ -25,50 +26,62 @@ type mockContainerManager struct {
 	closeFn             func() error
 }
 
+// ContainerCreate mocks container creation.
 func (m *mockContainerManager) ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error) {
 	return m.createContainerFn(ctx, config, hostConfig, name)
 }
 
+// ContainerStart mocks starting a container.
 func (m *mockContainerManager) ContainerStart(ctx context.Context, containerID string) error {
 	return m.startContainerFn(ctx, containerID)
 }
 
+// ContainerStop mocks stopping a container.
 func (m *mockContainerManager) ContainerStop(ctx context.Context, containerID string, timeout *int) error {
 	return m.stopContainerFn(ctx, containerID, timeout)
 }
 
+// ContainerRemove mocks removing a container.
 func (m *mockContainerManager) ContainerRemove(ctx context.Context, containerID string, force bool) error {
 	return m.removeContainerFn(ctx, containerID, force)
 }
 
+// ContainerLogs mocks fetching container logs.
 func (m *mockContainerManager) ContainerLogs(ctx context.Context, containerID string, tail string) (string, error) {
 	return m.containerLogsFn(ctx, containerID, tail)
 }
 
+// GetContainerState mocks getting container state.
 func (m *mockContainerManager) GetContainerState(ctx context.Context, containerName string) (string, error) {
 	return m.getContainerStateFn(ctx, containerName)
 }
 
+// ImagePull mocks pulling a Docker image.
 func (m *mockContainerManager) ImagePull(ctx context.Context, image string) (io.ReadCloser, error) {
 	return m.imagePullFn(ctx, image)
 }
 
+// ImageList mocks listing Docker images.
 func (m *mockContainerManager) ImageList(ctx context.Context, image string) (bool, error) {
 	return m.imageListFn(ctx, image)
 }
 
+// ListContainers mocks listing containers by prefix.
 func (m *mockContainerManager) ListContainers(ctx context.Context, prefix string) ([]docker.ContainerInfo, error) {
 	return m.listContainersFn(ctx, prefix)
 }
 
+// EnsureImage mocks ensuring a Docker image is available.
 func (m *mockContainerManager) EnsureImage(ctx context.Context, imageName, tarPath string) error {
 	return m.ensureImageFn(ctx, imageName, tarPath)
 }
 
+// Close mocks closing the container manager connection.
 func (m *mockContainerManager) Close() error {
 	return m.closeFn()
 }
 
+// newMockManager creates a mockContainerManager with default success responses.
 func newMockManager() *mockContainerManager {
 	return &mockContainerManager{
 		createContainerFn: func(_ context.Context, _ interface{}, _ interface{}, _ string) (string, error) {
@@ -107,6 +120,7 @@ func newMockManager() *mockContainerManager {
 	}
 }
 
+// newTestService creates a Service with a mock manager and temporary directory for testing.
 func newTestService(t *testing.T) (*Service, *config.Config, func()) {
 	t.Helper()
 	dir := t.TempDir()
@@ -122,6 +136,7 @@ func newTestService(t *testing.T) (*Service, *config.Config, func()) {
 	return NewService(mgr, cfg), cfg, cleanup
 }
 
+// TestNewService verifies that NewService returns a non-nil Service.
 func TestNewService(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -130,6 +145,7 @@ func TestNewService(t *testing.T) {
 	}
 }
 
+// TestSaveAndGetConfig verifies saving config and reading it back.
 func TestSaveAndGetConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -152,6 +168,7 @@ func TestSaveAndGetConfig(t *testing.T) {
 	}
 }
 
+// TestContainerLifecycle verifies the full lifecycle: save config, run, status, stop.
 func TestContainerLifecycle(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -190,6 +207,7 @@ func TestContainerLifecycle(t *testing.T) {
 	}
 }
 
+// TestGetVersion verifies that GetVersion returns a non-empty version string.
 func TestGetVersion(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -203,6 +221,7 @@ func TestGetVersion(t *testing.T) {
 	}
 }
 
+// TestNamedConfigs verifies the full lifecycle of named configs: save, load, check, run, stop, delete.
 func TestNamedConfigs(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -276,6 +295,7 @@ func TestNamedConfigs(t *testing.T) {
 	}
 }
 
+// TestCheckNamedConfig verifies validation of named configs: missing, valid JSON, invalid JSON.
 func TestCheckNamedConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -301,6 +321,7 @@ func TestCheckNamedConfig(t *testing.T) {
 	}
 }
 
+// TestListAllContainers verifies ListAllContainers returns a non-nil list.
 func TestListAllContainers(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -314,6 +335,7 @@ func TestListAllContainers(t *testing.T) {
 	}
 }
 
+// TestEnsureImage verifies EnsureImage completes without error.
 func TestEnsureImage(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -324,6 +346,7 @@ func TestEnsureImage(t *testing.T) {
 	}
 }
 
+// TestContainerLogs verifies ContainerLogs returns without error.
 func TestContainerLogs(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -332,6 +355,7 @@ func TestContainerLogs(t *testing.T) {
 	_ = logs
 }
 
+// TestNamedContainerStatus_NotRunning verifies status is false for nonexistent containers.
 func TestNamedContainerStatus_NotRunning(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -345,6 +369,7 @@ func TestNamedContainerStatus_NotRunning(t *testing.T) {
 	}
 }
 
+// TestContainerStatus_NoContainer verifies status returns not running when no container exists.
 func TestContainerStatus_NoContainer(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -358,6 +383,7 @@ func TestContainerStatus_NoContainer(t *testing.T) {
 	}
 }
 
+// TestStopContainer_NoContainer verifies StopContainer does not error when no container exists.
 func TestStopContainer_NoContainer(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -368,6 +394,7 @@ func TestStopContainer_NoContainer(t *testing.T) {
 	}
 }
 
+// TestStopNamedContainer_NoContainer verifies StopNamedContainer does not error when no container exists.
 func TestStopNamedContainer_NoContainer(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -378,6 +405,7 @@ func TestStopNamedContainer_NoContainer(t *testing.T) {
 	}
 }
 
+// TestRunNamedContainer_NoConfig verifies RunNamedContainer errors when config is missing.
 func TestRunNamedContainer_NoConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -388,6 +416,7 @@ func TestRunNamedContainer_NoConfig(t *testing.T) {
 	}
 }
 
+// TestRunNamedContainer_AlreadyRunning verifies RunNamedContainer errors when container is already running.
 func TestRunNamedContainer_AlreadyRunning(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -408,6 +437,7 @@ func TestRunNamedContainer_AlreadyRunning(t *testing.T) {
 	}
 }
 
+// TestRunContainer_NoConfig verifies RunContainer errors when no config file exists.
 func TestRunContainer_NoConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -418,6 +448,7 @@ func TestRunContainer_NoConfig(t *testing.T) {
 	}
 }
 
+// TestNamedContainerLogs_Error verifies NamedContainerLogs returns without panic.
 func TestNamedContainerLogs_Error(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -426,6 +457,7 @@ func TestNamedContainerLogs_Error(t *testing.T) {
 	_ = logs
 }
 
+// TestSaveNamedConfig verifies saving a named config completes without error.
 func TestSaveNamedConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -436,6 +468,7 @@ func TestSaveNamedConfig(t *testing.T) {
 	}
 }
 
+// TestDeleteNamedConfig verifies deleting a named config removes its files.
 func TestDeleteNamedConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -453,6 +486,7 @@ func TestDeleteNamedConfig(t *testing.T) {
 	}
 }
 
+// TestListNamedConfigs_Empty verifies ListNamedConfigs returns empty list when no configs exist.
 func TestListNamedConfigs_Empty(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -466,6 +500,7 @@ func TestListNamedConfigs_Empty(t *testing.T) {
 	}
 }
 
+// TestContainerLogs_Error verifies ContainerLogs handles mock errors gracefully.
 func TestContainerLogs_Error(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -479,6 +514,7 @@ func TestContainerLogs_Error(t *testing.T) {
 	_ = logs
 }
 
+// TestContainerRun_AfterDeleteConfig verifies RunContainer works after saving a new config.
 func TestContainerRun_AfterDeleteConfig(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
@@ -498,6 +534,7 @@ func TestContainerRun_AfterDeleteConfig(t *testing.T) {
 	}
 }
 
+// TestGetVersion_Empty verifies GetVersion returns the expected version string.
 func TestGetVersion_Empty(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()

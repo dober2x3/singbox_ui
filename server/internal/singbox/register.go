@@ -2,6 +2,7 @@ package singbox
 
 import "github.com/gin-gonic/gin"
 
+// RegisterRoutes registers all sing-box routes on the given router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET("/version", h.GetVersion)
 	rg.GET("/config", h.GetConfig)

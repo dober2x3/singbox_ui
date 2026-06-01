@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 
+/** WARP account information from the API. */
 interface WarpAccount {
   exists: boolean
   id?: string
@@ -22,6 +23,7 @@ interface WarpAccount {
   updated_at?: string
 }
 
+/** A scanned WARP endpoint with latency information. */
 interface WarpEndpoint {
   host: string
   port: number
@@ -29,6 +31,7 @@ interface WarpEndpoint {
   reachable: boolean
 }
 
+/** Default WARP endpoint presets. */
 const DEFAULT_ENDPOINTS = [
   { host: "engage.cloudflareclient.com", port: 2408, label: "engage.cloudflareclient.com:2408" },
   { host: "162.159.192.1", port: 2408, label: "162.159.192.1:2408" },
@@ -47,6 +50,7 @@ const WARP_PORTS = [
   8319, 8742, 8854, 8886,
 ]
 
+/** Fetch with JSON content type and error handling for WARP API calls. */
 async function warpFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -61,6 +65,7 @@ async function warpFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T
 }
 
+/** WARP protocol outbound form component with account registration and endpoint scanning. */
 export function WarpForm({ setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")
@@ -100,6 +105,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     })()
   }, [])
 
+  /** Register or re-register the WARP outbound with the given options. */
   async function applyOutbound(opts: { force?: boolean; license?: string }) {
     // Sync ref lock: reject 2nd call before state update flushes,
     // prevent double-click/concurrent creation of two CF devices.
@@ -137,6 +143,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Register a new WARP account and apply the outbound. */
   async function handleRegister() {
     setRegistering(true)
     try {
@@ -146,6 +153,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Re-register (force) a new WARP account, discarding the existing one. */
   async function handleReregister() {
     if (!window.confirm(t("warpReregisterConfirm"))) return
     setRegistering(true)
@@ -156,6 +164,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Reset the WARP account, deleting it from the server. */
   async function handleResetAccount() {
     if (!window.confirm(t("warpResetConfirm"))) return
     try {
@@ -171,6 +180,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Bind a WARP+ license key to the account and regenerate the outbound. */
   async function handleBindLicense() {
     if (!license.trim()) {
       toast({
@@ -218,6 +228,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Scan for optimal WARP endpoints via the API. */
   async function handleScan() {
     setScanning(true)
     setEndpoints([])
@@ -242,6 +253,7 @@ export function WarpForm({ setOutbound }: OutboundFormProps) {
     }
   }
 
+  /** Select a scanned endpoint as the current WARP endpoint. */
   function selectScannedEndpoint(ep: WarpEndpoint) {
     setEndpointHost(ep.host)
     setEndpointPort(ep.port)

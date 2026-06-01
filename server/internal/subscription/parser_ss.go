@@ -8,6 +8,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// parseShadowsocksNode parses a ss:// URI and returns a ProxyNode with method, password, server, and port.
 func parseShadowsocksNode(link string) (types.ProxyNode, error) {
 	link = strings.TrimPrefix(link, "ss://")
 

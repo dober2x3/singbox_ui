@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TestHandler_RegisterWarp tests successful WARP device registration via the handler.
 func TestHandler_RegisterWarp(t *testing.T) {
 	// Mock Cloudflare API
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +55,7 @@ func TestHandler_RegisterWarp(t *testing.T) {
 	}
 }
 
+// TestHandler_GetWarpAccount_notFound tests that GetWarpAccount returns 404 when no account exists.
 func TestHandler_GetWarpAccount_notFound(t *testing.T) {
 	svc := NewService(t.TempDir())
 	h := NewHandler(svc)

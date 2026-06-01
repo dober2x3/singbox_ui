@@ -12,6 +12,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// mockContainerAPI implements ContainerManager for testing.
 type mockContainerAPI struct {
 	ContainerCreateFn func(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error)
 	ContainerStartFn  func(ctx context.Context, containerID string) error
@@ -19,6 +20,7 @@ type mockContainerAPI struct {
 	ContainerRemoveFn func(ctx context.Context, containerID string, force bool) error
 }
 
+// newMockContainerAPI creates a mockContainerAPI with default successful responses.
 func newMockContainerAPI() *mockContainerAPI {
 	return &mockContainerAPI{
 		ContainerCreateFn: func(_ context.Context, config interface{}, hostConfig interface{}, name string) (string, error) {
@@ -36,35 +38,43 @@ func newMockContainerAPI() *mockContainerAPI {
 	}
 }
 
+// ContainerCreate delegates to the mock function.
 func (m *mockContainerAPI) ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error) {
 	return m.ContainerCreateFn(ctx, config, hostConfig, name)
 }
 
+// ContainerStart delegates to the mock function.
 func (m *mockContainerAPI) ContainerStart(ctx context.Context, containerID string) error {
 	return m.ContainerStartFn(ctx, containerID)
 }
 
+// ContainerStop delegates to the mock function.
 func (m *mockContainerAPI) ContainerStop(ctx context.Context, containerID string, timeout *int) error {
 	return m.ContainerStopFn(ctx, containerID, timeout)
 }
 
+// ContainerRemove delegates to the mock function.
 func (m *mockContainerAPI) ContainerRemove(ctx context.Context, containerID string, force bool) error {
 	return m.ContainerRemoveFn(ctx, containerID, force)
 }
 
+// mockNodeProvider implements NodeProvider for testing.
 type mockNodeProvider struct {
 	nodes []types.ProxyNode
 }
 
+// GetAllNodes returns the mock list of nodes.
 func (m *mockNodeProvider) GetAllNodes() []types.ProxyNode {
 	return m.nodes
 }
 
+// mockResultSaver implements SpeedTestResultSaver for testing.
 type mockResultSaver struct {
 	mu    sync.Mutex
 	saved []types.SpeedTestUpdate
 }
 
+// SaveSpeedTestResults stores the results in memory.
 func (m *mockResultSaver) SaveSpeedTestResults(results []types.SpeedTestUpdate) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -72,6 +82,7 @@ func (m *mockResultSaver) SaveSpeedTestResults(results []types.SpeedTestUpdate) 
 	return nil
 }
 
+// GetSaved returns a copy of all saved results.
 func (m *mockResultSaver) GetSaved() []types.SpeedTestUpdate {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -80,6 +91,7 @@ func (m *mockResultSaver) GetSaved() []types.SpeedTestUpdate {
 	return result
 }
 
+// TestPickFreePort verifies that pickFreePort returns a valid port number.
 func TestPickFreePort(t *testing.T) {
 	port, err := pickFreePort()
 	if err != nil {
@@ -90,6 +102,7 @@ func TestPickFreePort(t *testing.T) {
 	}
 }
 
+// TestNewService verifies that NewService returns a non-nil Service with an initialized state.
 func TestNewService(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfg, err := config.Init()
@@ -105,6 +118,7 @@ func TestNewService(t *testing.T) {
 	}
 }
 
+// TestService_StartSpeedTest_NoProvider verifies that StartSpeedTest fails without a node provider.
 func TestService_StartSpeedTest_NoProvider(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfg, err := config.Init()
@@ -122,6 +136,7 @@ func TestService_StartSpeedTest_NoProvider(t *testing.T) {
 	}
 }
 
+// TestService_StartSpeedTest_NoNodes verifies that StartSpeedTest fails with an empty node list.
 func TestService_StartSpeedTest_NoNodes(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfg, err := config.Init()
@@ -140,6 +155,7 @@ func TestService_StartSpeedTest_NoNodes(t *testing.T) {
 	}
 }
 
+// TestService_StartSpeedTest_AlreadyRunning verifies that starting a second test returns an error.
 func TestService_StartSpeedTest_AlreadyRunning(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfgDir := t.TempDir()
@@ -169,6 +185,7 @@ func TestService_StartSpeedTest_AlreadyRunning(t *testing.T) {
 	}
 }
 
+// TestService_GetSpeedTestState verifies the initial state is not running.
 func TestService_GetSpeedTestState(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfg, err := config.Init()
@@ -186,6 +203,7 @@ func TestService_GetSpeedTestState(t *testing.T) {
 	}
 }
 
+// TestService_StopSpeedTest verifies that stopping a running test sets state to not running.
 func TestService_StopSpeedTest(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	cfgDir := t.TempDir()
@@ -217,6 +235,7 @@ func TestService_StopSpeedTest(t *testing.T) {
 	}
 }
 
+// TestService_RunSpeedTest_ContainerStartFails verifies cleanup when container start fails.
 func TestService_RunSpeedTest_ContainerStartFails(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	var created, started, removed atomic.Bool
@@ -271,6 +290,7 @@ func TestService_RunSpeedTest_ContainerStartFails(t *testing.T) {
 	}
 }
 
+// TestService_RunSpeedTest_WithResultSaver verifies that results are saved when a result saver is set.
 func TestService_RunSpeedTest_WithResultSaver(t *testing.T) {
 	mockDocker := newMockContainerAPI()
 	mockDocker.ContainerCreateFn = func(_ context.Context, config, hostConfig interface{}, name string) (string, error) {
@@ -311,6 +331,7 @@ func TestService_RunSpeedTest_WithResultSaver(t *testing.T) {
 	}
 }
 
+// TestBuildSpeedTestConfig verifies the generated sing-box config structure.
 func TestBuildSpeedTestConfig(t *testing.T) {
 	node := &types.ProxyNode{
 		Name:     "test-node",
@@ -356,6 +377,7 @@ func TestBuildSpeedTestConfig(t *testing.T) {
 	}
 }
 
+// TestNodeOutboundTag verifies tag resolution from outbound config and fallback generation.
 func TestNodeOutboundTag(t *testing.T) {
 	node := &types.ProxyNode{
 		Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443,
@@ -371,6 +393,7 @@ func TestNodeOutboundTag(t *testing.T) {
 	}
 }
 
+// TestNewProxyClient verifies the proxy http.Client is created with the correct timeout.
 func TestNewProxyClient(t *testing.T) {
 	client := newProxyClient("http://127.0.0.1:1080", 10*time.Second)
 	if client == nil {

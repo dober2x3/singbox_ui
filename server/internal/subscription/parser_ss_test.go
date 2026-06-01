@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestParseShadowsocksNode_SIP002 verifies parsing a SIP002-style ss:// URI with name fragment.
 func TestParseShadowsocksNode_SIP002(t *testing.T) {
 	// ss://BASE64(method:password)@server:port#name
 	link := "ss://YWVzLTI1Ni1nY206cGFzc3dvcmQxMjM=@154.17.3.218:2023#SS-Example"
@@ -25,6 +26,7 @@ func TestParseShadowsocksNode_SIP002(t *testing.T) {
 	}
 }
 
+// TestParseShadowsocksNode_Legacy verifies parsing a legacy ss:// URI with base64-encoded method:password@server:port.
 func TestParseShadowsocksNode_Legacy(t *testing.T) {
 	// Legacy: ss://BASE64(method:password@server:port)
 	link := "ss://YWVzLTI1Ni1nY206cGFzc3dvcmRAMTU0LjE3LjMuMjE4OjIwMjM="
@@ -43,6 +45,7 @@ func TestParseShadowsocksNode_Legacy(t *testing.T) {
 	}
 }
 
+// TestParseShadowsocksNode_Invalid verifies that an empty ss:// link returns an error.
 func TestParseShadowsocksNode_Invalid(t *testing.T) {
 	_, err := parseShadowsocksNode("ss://")
 	if err == nil {

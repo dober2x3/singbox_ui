@@ -7,14 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler handles HTTP requests for WireGuard-related endpoints.
 type Handler struct {
 	svc *Service
 }
 
+// NewHandler creates a new Handler with the given Service.
 func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// GenerateWireGuardKeys handles POST /keygen to generate or retrieve cached WireGuard keys.
 func (h *Handler) GenerateWireGuardKeys(c *gin.Context) {
 	var req struct {
 		IP string `json:"ip"`
@@ -30,6 +33,7 @@ func (h *Handler) GenerateWireGuardKeys(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// GetPublicKeyFromPrivate handles POST /pubkey to derive a public key from a private key.
 func (h *Handler) GetPublicKeyFromPrivate(c *gin.Context) {
 	var req struct {
 		PrivateKey string `json:"private_key"`
@@ -46,6 +50,7 @@ func (h *Handler) GetPublicKeyFromPrivate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"public_key": pub})
 }
 
+// GetKeysCache handles GET /keys-cache to retrieve all cached WireGuard key entries.
 func (h *Handler) GetKeysCache(c *gin.Context) {
 	cache, err := h.svc.GetKeysCache()
 	if err != nil {
@@ -55,6 +60,7 @@ func (h *Handler) GetKeysCache(c *gin.Context) {
 	c.JSON(http.StatusOK, cache)
 }
 
+// GetPublicIP handles GET /public-ip to retrieve the server's public IP address.
 func (h *Handler) GetPublicIP(c *gin.Context) {
 	ip, err := h.svc.GetPublicIP()
 	if err != nil {
@@ -64,6 +70,7 @@ func (h *Handler) GetPublicIP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ip": ip})
 }
 
+// GetClientConfig handles GET /client-config to retrieve the saved client JSON configuration.
 func (h *Handler) GetClientConfig(c *gin.Context) {
 	data, err := h.svc.GetClientConfig()
 	if err != nil {
@@ -73,6 +80,7 @@ func (h *Handler) GetClientConfig(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", data)
 }
 
+// SaveClientConfig handles POST /client-config to save client JSON configuration.
 func (h *Handler) SaveClientConfig(c *gin.Context) {
 	body, err := c.GetRawData()
 	if err != nil {
@@ -86,6 +94,7 @@ func (h *Handler) SaveClientConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "config saved"})
 }
 
+// SaveClientConfigFile handles POST /save-client-file to save a client config (.conf) file.
 func (h *Handler) SaveClientConfigFile(c *gin.Context) {
 	var req struct {
 		ClientIndex int    `json:"client_index"`
@@ -111,6 +120,7 @@ func (h *Handler) SaveClientConfigFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "config file saved"})
 }
 
+// ListClientConfigFiles handles GET /client-files to list all saved client config files.
 func (h *Handler) ListClientConfigFiles(c *gin.Context) {
 	files, err := h.svc.ListClientConfigFiles()
 	if err != nil {

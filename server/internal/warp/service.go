@@ -1,3 +1,4 @@
+// Package warp provides WARP client registration, key management, and endpoint scanning.
 package warp
 
 import (
@@ -17,8 +18,10 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
+// warpAPIBase is the base URL for the Cloudflare WARP API.
 var warpAPIBase = "https://api.cloudflareclient.com"
 
+// WARP API and client constants.
 const (
 	warpAPIVersion  = "v0a2158"
 	warpClientUA    = "okhttp/3.12.1"
@@ -27,15 +30,18 @@ const (
 	warpDefaultPort = 2408
 )
 
+// Service manages WARP device registration, record persistence, and outbound configuration.
 type Service struct {
 	baseDir string
 	record  *WarpRecord
 }
 
+// NewService creates a new Service with the given base directory for storing records.
 func NewService(baseDir string) *Service {
 	return &Service{baseDir: baseDir}
 }
 
+// RegisterDevice registers a new WARP device with Cloudflare and stores the record.
 func (s *Service) RegisterDevice() (*WarpRecord, error) {
 	privKey, err := generatePrivateKey()
 	if err != nil {
@@ -97,6 +103,7 @@ func (s *Service) RegisterDevice() (*WarpRecord, error) {
 	return s.record, nil
 }
 
+// LoadRecord loads the WARP device record from disk. Returns nil if no record exists.
 func (s *Service) LoadRecord() (*WarpRecord, error) {
 	path := s.recordPath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -114,6 +121,7 @@ func (s *Service) LoadRecord() (*WarpRecord, error) {
 	return &rec, nil
 }
 
+// DeleteRecord removes the WARP device record from memory and disk.
 func (s *Service) DeleteRecord() error {
 	s.record = nil
 	path := s.recordPath()
@@ -123,6 +131,7 @@ func (s *Service) DeleteRecord() error {
 	return os.Remove(path)
 }
 
+// BindLicense binds a WARP+ license key to the registered device.
 func (s *Service) BindLicense(license string) (*WarpRecord, error) {
 	if s.record == nil {
 		if _, err := s.LoadRecord(); err != nil || s.record == nil {
@@ -173,6 +182,7 @@ func (s *Service) BindLicense(license string) (*WarpRecord, error) {
 	return rec, nil
 }
 
+// BuildWarpOutbound builds a WireGuard outbound configuration from the WARP record.
 func (s *Service) BuildWarpOutbound(endpointHost string, endpointPort int, mtu int) (map[string]interface{}, error) {
 	if s.record == nil {
 		if _, err := s.LoadRecord(); err != nil || s.record == nil {
@@ -240,10 +250,12 @@ func (s *Service) BuildWarpOutbound(endpointHost string, endpointPort int, mtu i
 	}, nil
 }
 
+// recordPath returns the file path for persisting the WARP device record.
 func (s *Service) recordPath() string {
 	return filepath.Join(s.baseDir, "warp-account.json")
 }
 
+// saveRecord persists the current WARP record to disk atomically.
 func (s *Service) saveRecord() error {
 	if err := os.MkdirAll(s.baseDir, 0755); err != nil {
 		return err
@@ -266,6 +278,7 @@ func (s *Service) saveRecord() error {
 	return nil
 }
 
+// generatePrivateKey generates a new Curve25519 private key encoded in base64.
 func generatePrivateKey() (string, error) {
 	var key [32]byte
 	if _, err := rand.Read(key[:]); err != nil {
@@ -277,6 +290,7 @@ func generatePrivateKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(key[:]), nil
 }
 
+// generatePublicKey derives a Curve25519 public key from a base64-encoded private key.
 func generatePublicKey(priv string) (string, error) {
 	b, err := base64.StdEncoding.DecodeString(priv)
 	if err != nil {
@@ -291,6 +305,7 @@ func generatePublicKey(priv string) (string, error) {
 	return base64.StdEncoding.EncodeToString(pub), nil
 }
 
+// randomHexStr generates a random hexadecimal string of the given byte length.
 func randomHexStr(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
@@ -299,10 +314,12 @@ func randomHexStr(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// httpClient returns an HTTP client with a 30-second timeout.
 func httpClient() *http.Client {
 	return &http.Client{Timeout: 30 * time.Second}
 }
 
+// decodeWarpClientID decodes a WARP client_id from base64 using multiple encoding variants.
 func decodeWarpClientID(cid string) ([]byte, error) {
 	if cid == "" {
 		return nil, fmt.Errorf("empty client_id")

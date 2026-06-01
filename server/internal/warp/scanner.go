@@ -18,8 +18,10 @@ const warpHandshakeResponseSize = 92
 // warpHandshakePacketHex pre-built WireGuard handshake init packet.
 const warpHandshakePacketHex = "013cbdafb4135cac96a29484d7a0175ab152dd3e59be35049beadf758b8d48af14ca65f25a168934746fe8bc8867b1c17113d71c0fac5c141ef9f35783ffa5357c9871f4a006662b83ad71245a862495376a5fe3b4f2e1f06974d748416670e5f9b086297f652e6dfbf742fbfc63c3d8aeb175a3e9b7582fbc67c77577e4c0b32b05f92900000000000000000000000000000000"
 
+// warpHandshakePacket is the pre-built WireGuard handshake initiation packet in bytes.
 var warpHandshakePacket []byte
 
+// init decodes the hex-encoded WARP handshake packet at package initialization.
 func init() {
 	p, err := hex.DecodeString(warpHandshakePacketHex)
 	if err != nil {
@@ -51,6 +53,7 @@ func WarpEndpointPorts() []int {
 	return ports
 }
 
+// DefaultWarpScanConfig returns a WarpScanConfig with sensible default values.
 func DefaultWarpScanConfig() WarpScanConfig {
 	return WarpScanConfig{
 		SamplePerRange: 4,

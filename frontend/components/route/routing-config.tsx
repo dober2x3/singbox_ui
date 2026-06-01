@@ -16,14 +16,16 @@ import { GfwTab } from "./gfw-tab"
 import { CnDomainTab } from "./cn-domain-tab"
 import { CnIpTab } from "./cn-ip-tab"
 
+/** Props for the RoutingConfig component. */
 interface RoutingConfigProps {
   showCard?: boolean
   availableOutbounds?: string[]
 }
 
-// Stable default to avoid useEffect infinite loops from reference changes
+/** Stable default to avoid useEffect infinite loops from reference changes. */
 const EMPTY_OUTBOUNDS: string[] = []
 
+/** Routing configuration component with rule management, mode selection, and list tabs. */
 export function RoutingConfig({ showCard = true, availableOutbounds = EMPTY_OUTBOUNDS }: RoutingConfigProps) {
   const { config, setRouting } = useSingboxConfigStore()
   const { t } = useTranslation("routing")

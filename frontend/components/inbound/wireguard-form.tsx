@@ -9,6 +9,7 @@ import { isValidPort, parsePort, parseErrorResponse } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, LocalPeer } from "./types"
 
+/** Parse a persistent keepalive value into seconds, supporting numeric and string formats. */
 function parseKeepaliveSeconds(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return Math.floor(value)
@@ -24,6 +25,7 @@ function parseKeepaliveSeconds(value: unknown): number | undefined {
   return undefined
 }
 
+/** Flat form state for WireGuard inbound/endpoint configuration. */
 interface WgFlat {
   listen_port: number
   local_address: string
@@ -32,6 +34,7 @@ interface WgFlat {
   mtu: number
 }
 
+/** Derive flat form state from existing inbound and endpoint configs. */
 function deriveFlat(initialConfig: any, initialEndpoint: any): WgFlat {
   const wgEndpoint = initialEndpoint?.type === "wireguard" ? initialEndpoint : null
   const loadedPeers = ((wgEndpoint?.peers || initialConfig?.peers) || []).map((peer: any) => ({
@@ -50,6 +53,7 @@ function deriveFlat(initialConfig: any, initialEndpoint: any): WgFlat {
   }
 }
 
+/** Build the WireGuard endpoint config object from flat form state. */
 function buildWireguardEndpoint(f: WgFlat): any {
   const wgPeers = f.peers
     .filter((p) => p.publicKey)
@@ -76,6 +80,7 @@ function buildWireguardEndpoint(f: WgFlat): any {
   }
 }
 
+/** WireGuard protocol inbound/endpoint form component. */
 export function WireguardForm({
   initialConfig,
   initialEndpoint,
@@ -95,6 +100,7 @@ export function WireguardForm({
   // privateKey map from there and use it to power Download/QR buttons after reload.
   const [peerPrivateKeys, setPeerPrivateKeys] = useState<Record<string, string>>({})
 
+  /** Store a peer private key in local state, keyed by public key. */
   const rememberPeerPrivateKey = useCallback((publicKey: string, privateKey: string) => {
     if (!publicKey || !privateKey) return
     setPeerPrivateKeys((prev) =>
@@ -102,6 +108,7 @@ export function WireguardForm({
     )
   }, [])
 
+  /** Resolve a peer's private key from form state or the key cache. */
   const resolvePeerPrivateKey = useCallback(
     (peer: LocalPeer): string | undefined =>
       peer.privateKey || (peer.publicKey ? peerPrivateKeys[peer.publicKey] : undefined),
@@ -141,11 +148,13 @@ export function WireguardForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peerPubKeysSignature])
 
+  /** Update the WireGuard endpoint with partial flat form state. */
   const updateEndpoint = useCallback((patch: Partial<WgFlat>) => {
     const merged = { ...flat, ...patch }
     setEndpoint(0, buildWireguardEndpoint(merged))
   }, [flat, setEndpoint])
 
+  /** Find the next available IP in the 10.10.0.x range for a new peer. */
   const findNextAvailableIP = useCallback(() => {
     const usedIPs = flat.peers
       .map((peer) => {
@@ -159,6 +168,7 @@ export function WireguardForm({
     return `10.10.0.${maxIP + 1}`
   }, [flat.peers])
 
+  /** Generate new WireGuard server keys via the API. */
   const generateWireGuardKeys = async () => {
     onError("")
     try {
@@ -180,6 +190,7 @@ export function WireguardForm({
     }
   }
 
+  /** Generate new WireGuard keys for a specific peer via the API. */
   const generatePeerKeys = async (peerIndex: number) => {
     onError("")
     try {
@@ -220,6 +231,7 @@ export function WireguardForm({
     }
   }
 
+  /** Build a WireGuard client configuration file content string. */
   const buildPeerConfContent = async (peer: LocalPeer, clientPrivateKey: string): Promise<string> => {
     const [serverPubKeyResponse, publicIPResponse] = await Promise.all([
       fetch("/api/wireguard/pubkey", {
@@ -249,6 +261,7 @@ PersistentKeepalive = 25
 `
   }
 
+  /** Download a WireGuard client configuration file for a peer. */
   const downloadPeerConfig = async (peerIndex: number) => {
     onError("")
     const peer = flat.peers[peerIndex]
@@ -274,6 +287,7 @@ PersistentKeepalive = 25
     }
   }
 
+  /** Show a QR code for a WireGuard peer's client configuration. */
   const showPeerQrCode = async (peerIndex: number) => {
     onError("")
     const peer = flat.peers[peerIndex]

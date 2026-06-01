@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestGenerateSelfSignedCert verifies generating a self-signed cert with a domain and valid days.
 func TestGenerateSelfSignedCert(t *testing.T) {
 	svc := NewService(t.TempDir())
 
@@ -34,6 +35,7 @@ func TestGenerateSelfSignedCert(t *testing.T) {
 	}
 }
 
+// TestGenerateSelfSignedCert_defaultDomain verifies empty domain defaults to "localhost".
 func TestGenerateSelfSignedCert_defaultDomain(t *testing.T) {
 	svc := NewService(t.TempDir())
 	info, err := svc.GenerateSelfSignedCert("", 30)
@@ -45,6 +47,7 @@ func TestGenerateSelfSignedCert_defaultDomain(t *testing.T) {
 	}
 }
 
+// TestGenerateSelfSignedCert_defaultDays verifies zero valid days defaults to 365.
 func TestGenerateSelfSignedCert_defaultDays(t *testing.T) {
 	svc := NewService(t.TempDir())
 	info, err := svc.GenerateSelfSignedCert("test.com", 0)
@@ -56,6 +59,7 @@ func TestGenerateSelfSignedCert_defaultDays(t *testing.T) {
 	}
 }
 
+// TestGetCertificateInfo verifies reading back certificate metadata matches what was generated.
 func TestGetCertificateInfo(t *testing.T) {
 	svc := NewService(t.TempDir())
 	genInfo, _ := svc.GenerateSelfSignedCert("test.com", 30)
@@ -69,6 +73,7 @@ func TestGetCertificateInfo(t *testing.T) {
 	}
 }
 
+// TestGetCertificateInfo_notFound verifies GetCertificateInfo errors on missing file.
 func TestGetCertificateInfo_notFound(t *testing.T) {
 	svc := NewService(t.TempDir())
 	_, err := svc.GetCertificateInfo("/nonexistent/cert.pem")
@@ -77,6 +82,7 @@ func TestGetCertificateInfo_notFound(t *testing.T) {
 	}
 }
 
+// TestCertificateExists verifies CertificateExists returns false before and true after generation.
 func TestCertificateExists(t *testing.T) {
 	svc := NewService(t.TempDir())
 	if svc.CertificateExists() {

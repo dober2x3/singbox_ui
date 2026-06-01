@@ -1,5 +1,6 @@
 package speedtest
 
+// SpeedTestState represents the current state of a speed test.
 type SpeedTestState struct {
 	Running       bool    `json:"running"`
 	Tag           string  `json:"tag,omitempty"`

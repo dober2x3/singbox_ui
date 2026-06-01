@@ -1,3 +1,6 @@
+// Package speedtest provides a speed testing service for proxy nodes.
+// It creates sing-box containers to measure latency and download speed
+// through each configured proxy node.
 package speedtest
 
 import (
@@ -20,16 +23,24 @@ import (
 )
 
 const (
-	speedTestLatencyURL  = "http://www.gstatic.com/generate_204"
+	// speedTestLatencyURL is the URL used to measure proxy latency.
+	speedTestLatencyURL = "http://www.gstatic.com/generate_204"
+	// speedTestDownloadURL is the URL used to measure download speed.
 	speedTestDownloadURL = "https://speed.cloudflare.com/__down?bytes=10000000"
-	speedTestDuration    = 10 * time.Second
+	// speedTestDuration is the maximum time allowed for a download speed test.
+	speedTestDuration = 10 * time.Second
 
+	// speedTestContainerName is the name of the sing-box container used for testing.
 	speedTestContainerName = "sing-box-speedtest"
-	containerConfigDir     = "/etc/sing-box"
-	containerDataDir       = "/var/lib/sing-box"
-	singBoxImage           = "ghcr.io/sagernet/sing-box:v1.13.5"
+	// containerConfigDir is the config directory path inside the container.
+	containerConfigDir = "/etc/sing-box"
+	// containerDataDir is the data directory path inside the container.
+	containerDataDir = "/var/lib/sing-box"
+	// singBoxImage is the Docker image tag for the sing-box container.
+	singBoxImage = "ghcr.io/sagernet/sing-box:v1.13.5"
 )
 
+// Service orchestrates speed tests against proxy nodes using sing-box containers.
 type Service struct {
 	docker       ContainerManager
 	cfg          *config.Config
@@ -40,6 +51,7 @@ type Service struct {
 	cancel       context.CancelFunc
 }
 
+// NewService creates a new Service with the given Docker manager and config.
 func NewService(docker ContainerManager, cfg *config.Config) *Service {
 	return &Service{
 		docker: docker,
@@ -48,16 +60,20 @@ func NewService(docker ContainerManager, cfg *config.Config) *Service {
 	}
 }
 
+// WithNodeProvider sets the node provider and returns the Service for chaining.
 func (s *Service) WithNodeProvider(np NodeProvider) *Service {
 	s.nodeProvider = np
 	return s
 }
 
+// WithResultSaver sets the result saver and returns the Service for chaining.
 func (s *Service) WithResultSaver(rs SpeedTestResultSaver) *Service {
 	s.resultSaver = rs
 	return s
 }
 
+// StartSpeedTest begins a speed test on all nodes from the node provider.
+// Returns an error if a test is already running, no provider is set, or no nodes exist.
 func (s *Service) StartSpeedTest() error {
 	s.mu.Lock()
 	if s.state.Running {
@@ -90,6 +106,7 @@ func (s *Service) StartSpeedTest() error {
 	return nil
 }
 
+// GetSpeedTestState returns a copy of the current speed test state.
 func (s *Service) GetSpeedTestState() *SpeedTestState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,6 +114,7 @@ func (s *Service) GetSpeedTestState() *SpeedTestState {
 	return &cp
 }
 
+// StopSpeedTest cancels the running speed test context.
 func (s *Service) StopSpeedTest() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -105,6 +123,7 @@ func (s *Service) StopSpeedTest() {
 	}
 }
 
+// runSpeedTest iterates over nodes, testing each one sequentially and updating state.
 func (s *Service) runSpeedTest(ctx context.Context, cancel context.CancelFunc, nodes []types.ProxyNode) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -171,6 +190,8 @@ func (s *Service) runSpeedTest(ctx context.Context, cancel context.CancelFunc, n
 	}
 }
 
+// nodeOutboundTag returns the outbound tag from the node's outbound config,
+// or generates one via SanitizeTag if no tag is set.
 func nodeOutboundTag(n *types.ProxyNode) string {
 	if n.Outbound != nil {
 		if t, ok := n.Outbound["tag"].(string); ok && t != "" {
@@ -180,6 +201,8 @@ func nodeOutboundTag(n *types.ProxyNode) string {
 	return types.SanitizeTag(n.Protocol, n.Address, n.Port)
 }
 
+// testOneNode runs a single speed test for the given node.
+// Returns the latency in ms, download speed in KB/s, a download error string (if any), and an error.
 func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag string) (int64, float64, string, error) {
 	if node.Outbound == nil {
 		return 0, 0, "", fmt.Errorf("missing outbound")
@@ -299,14 +322,17 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 	return minLatency, speed, "", nil
 }
 
+// cleanupContainer removes the speed test container forcefully.
 func (s *Service) cleanupContainer() {
 	_ = s.docker.ContainerRemove(context.Background(), speedTestContainerName, true)
 }
 
+// getContainerLogs is a stub that returns an empty string.
 func (s *Service) getContainerLogs() string {
 	return ""
 }
 
+// pickFreePort finds a free TCP port on localhost.
 func pickFreePort() (int, error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -316,6 +342,7 @@ func pickFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
+// waitProxyReady polls the given TCP port until it accepts a connection or the timeout expires.
 func waitProxyReady(ctx context.Context, port int, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
@@ -335,6 +362,7 @@ func waitProxyReady(ctx context.Context, port int, timeout time.Duration) error 
 	return fmt.Errorf("timeout")
 }
 
+// newProxyClient creates an http.Client that routes through the given proxy URL.
 func newProxyClient(proxyURL string, timeout time.Duration) *http.Client {
 	pu, _ := url.Parse(proxyURL)
 	return &http.Client{
@@ -347,6 +375,7 @@ func newProxyClient(proxyURL string, timeout time.Duration) *http.Client {
 	}
 }
 
+// buildSpeedTestConfig constructs a sing-box configuration for the given node, tag, and inbound port.
 func buildSpeedTestConfig(node *types.ProxyNode, tag string, port int) map[string]interface{} {
 	outbound := make(map[string]interface{}, len(node.Outbound)+1)
 	for k, v := range node.Outbound {

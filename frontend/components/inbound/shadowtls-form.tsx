@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, ShadowTLSUser, formatListen, parseListen } from "./types"
 
+/** Flat form state for ShadowTLS inbound configuration. */
 interface ShadowtlsFlat {
   listen: string
   listen_port: number
@@ -24,6 +25,7 @@ interface ShadowtlsFlat {
   wildcard_sni: "off" | "authed" | "all"
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): ShadowtlsFlat {
   const c = initialConfig?.type === "shadowtls" ? initialConfig : null
   const shadowtlsUsers = (c?.users || []).map((u: any) => ({
@@ -50,6 +52,7 @@ function deriveFlat(initialConfig: any): ShadowtlsFlat {
   }
 }
 
+/** Build the ShadowTLS inbound config object from flat form state. */
 function buildShadowtlsInbound(f: ShadowtlsFlat): any {
   const previewConfig: any = {
     type: "shadowtls",
@@ -99,6 +102,7 @@ function buildShadowtlsInbound(f: ShadowtlsFlat): any {
   return previewConfig
 }
 
+/** ShadowTLS protocol inbound form component. */
 export function ShadowtlsForm({
   initialConfig,
   setInbound,

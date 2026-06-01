@@ -9,6 +9,7 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// TestNewProber verifies that NewProber initialises correctly.
 func TestNewProber(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 	if p == nil {
@@ -31,6 +32,7 @@ func TestNewProber(t *testing.T) {
 	}
 }
 
+// TestProberAddRemoveNode verifies adding and removing nodes.
 func TestProberAddRemoveNode(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -61,6 +63,7 @@ func TestProberAddRemoveNode(t *testing.T) {
 	}
 }
 
+// TestProberUpdateNodes verifies that UpdateNodes replaces all nodes.
 func TestProberUpdateNodes(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -98,6 +101,7 @@ func TestProberUpdateNodes(t *testing.T) {
 	}
 }
 
+// TestProberClearNodes verifies that ClearNodes removes all nodes.
 func TestProberClearNodes(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -112,6 +116,7 @@ func TestProberClearNodes(t *testing.T) {
 	}
 }
 
+// TestProberStartStop verifies the start/stop lifecycle and idempotency.
 func TestProberStartStop(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -144,6 +149,7 @@ func TestProberStartStop(t *testing.T) {
 	}
 }
 
+// TestProberStartStopRace verifies concurrent start/stop does not panic.
 func TestProberStartStopRace(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -165,6 +171,7 @@ func TestProberStartStopRace(t *testing.T) {
 	p.Stop()
 }
 
+// TestProberGetBestNode verifies best-node selection by latency.
 func TestProberGetBestNode(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -197,6 +204,7 @@ func TestProberGetBestNode(t *testing.T) {
 	}
 }
 
+// TestProberGetOnlineNodes verifies online node filtering.
 func TestProberGetOnlineNodes(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -214,6 +222,7 @@ func TestProberGetOnlineNodes(t *testing.T) {
 	}
 }
 
+// TestProberConcurrentAccess verifies thread-safe concurrent node operations.
 func TestProberConcurrentAccess(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -244,6 +253,7 @@ func TestProberConcurrentAccess(t *testing.T) {
 	wg.Wait()
 }
 
+// TestProberStats verifies the stats output counts correctly.
 func TestProberStats(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -268,6 +278,7 @@ func TestProberStats(t *testing.T) {
 	}
 }
 
+// TestProberUpdateResult verifies result status transitions based on success/failure.
 func TestProberUpdateResult(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 	p.config.MaxResults = 5
@@ -302,6 +313,7 @@ func TestProberUpdateResult(t *testing.T) {
 	}
 }
 
+// TestProberUpdateResultDeletedNode verifies no panic when updating a deleted node.
 func TestProberUpdateResultDeletedNode(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -311,6 +323,7 @@ func TestProberUpdateResultDeletedNode(t *testing.T) {
 	p.updateResult("test", 100, true)
 }
 
+// TestProberResultIsCopy verifies that GetResult returns a copy not the original.
 func TestProberResultIsCopy(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -331,6 +344,7 @@ func TestProberResultIsCopy(t *testing.T) {
 	}
 }
 
+// TestProberContextCancellation verifies clean stop within a reasonable time.
 func TestProberContextCancellation(t *testing.T) {
 	p := NewProber(DefaultProberConfig())
 
@@ -353,6 +367,7 @@ func TestProberContextCancellation(t *testing.T) {
 	}
 }
 
+// TestNodeHistoryThreadSafe verifies thread-safe concurrent history updates.
 func TestNodeHistoryThreadSafe(t *testing.T) {
 	h := &nodeHistory{
 		results: make([]bool, 10),
@@ -371,6 +386,7 @@ func TestNodeHistoryThreadSafe(t *testing.T) {
 	wg.Wait()
 }
 
+// TestSaveNodesToFile verifies saving and loading nodes to/from a file.
 func TestSaveNodesToFile(t *testing.T) {
 	dir := t.TempDir()
 	p := NewProber(DefaultProberConfig())
@@ -404,6 +420,7 @@ func TestSaveNodesToFile(t *testing.T) {
 	}
 }
 
+// TestSaveNodesToFile_NoFile verifies LoadNodesFromFile handles a missing file gracefully.
 func TestSaveNodesToFile_NoFile(t *testing.T) {
 	dir := t.TempDir()
 	p := NewProber(DefaultProberConfig())

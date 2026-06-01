@@ -7,10 +7,12 @@ import (
 	"path/filepath"
 )
 
+// FileStore persists subscription data as a JSON file on disk.
 type FileStore struct {
 	baseDir string
 }
 
+// NewFileStore creates a FileStore that reads/writes subscription.json in the given directory.
 func NewFileStore(baseDir string) *FileStore {
 	if baseDir == "" {
 		baseDir, _ = os.Getwd()
@@ -18,10 +20,12 @@ func NewFileStore(baseDir string) *FileStore {
 	return &FileStore{baseDir: baseDir}
 }
 
+// filePath returns the full path to the subscription.json file.
 func (s *FileStore) filePath() string {
 	return filepath.Join(s.baseDir, "subscription.json")
 }
 
+// Load reads subscription data from the JSON file. If the file does not exist, it returns an empty SubscriptionData.
 func (s *FileStore) Load() (*SubscriptionData, error) {
 	path := s.filePath()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -54,6 +58,7 @@ func (s *FileStore) Load() (*SubscriptionData, error) {
 	return &subData, nil
 }
 
+// Save writes subscription data to the JSON file using an atomic write pattern (write to .tmp, then rename).
 func (s *FileStore) Save(data SubscriptionData) error {
 	path := s.filePath()
 	dir := filepath.Dir(path)

@@ -9,14 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler handles HTTP requests for certificate operations.
 type Handler struct {
 	svc *Service
 }
 
+// NewHandler creates a new Handler with the given Service.
 func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// GenerateSelfSignedCert generates a self-signed certificate for the given domain and validity period.
 func (h *Handler) GenerateSelfSignedCert(c *gin.Context) {
 	var req struct {
 		Domain    string `json:"domain"`
@@ -34,6 +37,7 @@ func (h *Handler) GenerateSelfSignedCert(c *gin.Context) {
 	c.JSON(http.StatusOK, info)
 }
 
+// GetCertificateInfo returns information about the currently stored certificate.
 func (h *Handler) GetCertificateInfo(c *gin.Context) {
 	certPath := filepath.Join(h.svc.certDir, "cert.pem")
 	if _, err := os.Stat(certPath); os.IsNotExist(err) {
@@ -48,6 +52,7 @@ func (h *Handler) GetCertificateInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, info)
 }
 
+// UploadCertificate handles uploading cert.pem and key.pem files.
 func (h *Handler) UploadCertificate(c *gin.Context) {
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})

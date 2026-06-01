@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api"
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, VMESSUser, formatListen, parseListen, getPublicIP } from "./types"
 
+/** Flat form state for VMess inbound configuration. */
 interface VmessFlat {
   listen: string
   listen_port: number
@@ -39,6 +40,7 @@ interface VmessFlat {
   multiplex_brutal_down: number
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): VmessFlat {
   if (!initialConfig || initialConfig.type !== "vmess") {
     return {
@@ -109,6 +111,7 @@ function deriveFlat(initialConfig: any): VmessFlat {
   }
 }
 
+/** Build the VMess inbound config object from flat form state. */
 function buildVmessInbound(flat: VmessFlat): any {
   const vmessUsers = flat.users
     .filter((u) => u.uuid)
@@ -208,6 +211,7 @@ function buildVmessInbound(flat: VmessFlat): any {
   return previewConfig
 }
 
+/** VMess protocol inbound form component. */
 export function VmessForm({
   initialConfig,
   setInbound,
@@ -246,6 +250,7 @@ export function VmessForm({
     setInbound(0, buildVmessInbound(newFlat))
   }
 
+  /** Generate and show a QR code for a VMess user connection string. */
   const showVmessQrCode = async (userIndex: number) => {
     try {
       const user = flat.users[userIndex]

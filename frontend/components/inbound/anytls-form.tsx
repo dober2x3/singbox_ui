@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, AnyTLSUser, formatListen, parseListen } from "./types"
 
+/** Flat form state for AnyTLS inbound configuration. */
 interface AnytlsFlat {
   listen: string
   listen_port: number
@@ -21,6 +22,7 @@ interface AnytlsFlat {
   padding_scheme: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): AnytlsFlat {
   const c = initialConfig?.type === "anytls" ? initialConfig : null
   const anytlsUsers = (c?.users || []).map((u: any) => ({
@@ -39,6 +41,7 @@ function deriveFlat(initialConfig: any): AnytlsFlat {
   }
 }
 
+/** Build the AnyTLS inbound config object from flat form state. */
 function buildAnytlsInbound(f: AnytlsFlat): any {
   const anytlsUsersPreview = f.users
     .filter((u) => u.password)
@@ -72,6 +75,7 @@ function buildAnytlsInbound(f: AnytlsFlat): any {
   return previewConfig
 }
 
+/** AnyTLS protocol inbound form component. */
 export function AnytlsForm({
   initialConfig,
   setInbound,

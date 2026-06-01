@@ -1,3 +1,5 @@
+// Package subscription provides subscription management including fetching,
+// parsing, and storing proxy node subscriptions.
 package subscription
 
 import (
@@ -16,23 +18,29 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// Service manages subscription operations including fetching, adding,
+// updating, deleting, and refreshing proxy node subscriptions.
 type Service struct {
 	store *FileStore
 }
 
+// NewService creates a new Service backed by the given FileStore.
 func NewService(store *FileStore) *Service {
 	return &Service{store: store}
 }
 
+// generateID returns a unique subscription ID based on the current Unix nanosecond timestamp.
 func generateID() string {
 	return fmt.Sprintf("sub_%d", time.Now().UnixNano())
 }
 
+// allowInsecureTLS returns true if the SUBSCRIPTION_INSECURE_TLS env var is set to a truthy value.
 func allowInsecureTLS() bool {
 	value := strings.TrimSpace(strings.ToLower(os.Getenv("SUBSCRIPTION_INSECURE_TLS")))
 	return value == "1" || value == "true" || value == "yes"
 }
 
+// isPublicAddr checks whether the IP is a public address not in the blocked prefix list.
 func isPublicAddr(ip net.IP) bool {
 	addr, ok := netip.AddrFromSlice(ip)
 	if !ok {
@@ -47,6 +55,7 @@ func isPublicAddr(ip net.IP) bool {
 	return true
 }
 
+// validateHost ensures the host is non-empty, not localhost, and resolves to a public IP address.
 func validateHost(host string) error {
 	normalizedHost := strings.Trim(strings.TrimSpace(host), "[]")
 	if normalizedHost == "" {
@@ -76,6 +85,7 @@ func validateHost(host string) error {
 	return nil
 }
 
+// validateURL checks that the parsed URL uses http/https and has a valid public host.
 func validateURL(parsedURL *url.URL) error {
 	if parsedURL == nil {
 		return fmt.Errorf("subscription URL is nil")
@@ -86,6 +96,7 @@ func validateURL(parsedURL *url.URL) error {
 	return validateHost(parsedURL.Hostname())
 }
 
+// FetchSubscription fetches a subscription URL, validates the response, and parses it into proxy nodes.
 func (s *Service) FetchSubscription(subURL string, userAgent ...string) ([]types.ProxyNode, error) {
 	parsedURL, err := url.Parse(subURL)
 	if err != nil {
@@ -151,6 +162,7 @@ func (s *Service) FetchSubscription(subURL string, userAgent ...string) ([]types
 	return parseProxyLines(string(decoded))
 }
 
+// AddSubscription fetches a subscription URL and stores it as a new entry. Returns the created entry.
 func (s *Service) AddSubscription(name, subURL, userAgent string) (*SubscriptionEntry, error) {
 	data, err := s.store.Load()
 	if err != nil {
@@ -179,6 +191,7 @@ func (s *Service) AddSubscription(name, subURL, userAgent string) (*Subscription
 	return &entry, nil
 }
 
+// UpdateSubscription re-fetches the subscription URL for the given ID and updates its nodes.
 func (s *Service) UpdateSubscription(id string) (*SubscriptionEntry, error) {
 	data, err := s.store.Load()
 	if err != nil {
@@ -204,6 +217,7 @@ func (s *Service) UpdateSubscription(id string) (*SubscriptionEntry, error) {
 	return nil, fmt.Errorf("subscription not found: %s", id)
 }
 
+// UpdateSubscriptionSettings updates the auto-update and interval settings for a subscription.
 func (s *Service) UpdateSubscriptionSettings(id string, autoUpdate bool, updateInterval int) (*SubscriptionEntry, error) {
 	data, err := s.store.Load()
 	if err != nil {
@@ -224,6 +238,7 @@ func (s *Service) UpdateSubscriptionSettings(id string, autoUpdate bool, updateI
 	return nil, fmt.Errorf("subscription not found: %s", id)
 }
 
+// DeleteSubscription removes the subscription entry with the given ID from the store.
 func (s *Service) DeleteSubscription(id string) error {
 	data, err := s.store.Load()
 	if err != nil {
@@ -240,6 +255,7 @@ func (s *Service) DeleteSubscription(id string) error {
 	return fmt.Errorf("subscription not found: %s", id)
 }
 
+// GetAllSubscriptions returns all subscription data from the store.
 func (s *Service) GetAllSubscriptions() (*SubscriptionData, error) {
 	return s.store.Load()
 }
@@ -258,6 +274,7 @@ func (s *Service) UpdateOne(id string) (*SubscriptionEntry, error) {
 	return s.UpdateSubscription(id)
 }
 
+// GetAllNodes returns all proxy nodes across every subscription.
 func (s *Service) GetAllNodes() ([]types.ProxyNode, error) {
 	data, err := s.store.Load()
 	if err != nil {
@@ -271,6 +288,7 @@ func (s *Service) GetAllNodes() ([]types.ProxyNode, error) {
 	return allNodes, nil
 }
 
+// RefreshAllSubscriptions re-fetches all subscriptions and updates their nodes. Returns the refreshed data.
 func (s *Service) RefreshAllSubscriptions() (*SubscriptionData, error) {
 	data, err := s.store.Load()
 	if err != nil {
@@ -292,6 +310,7 @@ func (s *Service) RefreshAllSubscriptions() (*SubscriptionData, error) {
 	return data, nil
 }
 
+// SaveProbeResults stores probe latency results into matching nodes across all subscriptions.
 func (s *Service) SaveProbeResults(results []types.ProbeResultUpdate) error {
 	data, err := s.store.Load()
 	if err != nil {
@@ -327,6 +346,7 @@ func (s *Service) SaveProbeResults(results []types.ProbeResultUpdate) error {
 	return s.store.Save(*data)
 }
 
+// SaveSpeedTestResults stores speed test results into matching nodes across all subscriptions.
 func (s *Service) SaveSpeedTestResults(results []types.SpeedTestUpdate) error {
 	data, err := s.store.Load()
 	if err != nil {
