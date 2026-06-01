@@ -11,7 +11,372 @@
     },
     "host": "localhost:8080",
     "basePath": "/api",
-    "paths": {},
+    "paths": {
+        "/singbox/certificate": {
+            "get": {
+                "description": "Returns metadata about the stored TLS certificate including validity and fingerprint",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificate"
+                ],
+                "summary": "Get certificate info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.CertificateInfo"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Generates a self-signed TLS certificate for the given domain and validity period, saves it to the singbox directory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificate"
+                ],
+                "summary": "Generate self-signed certificate",
+                "parameters": [
+                    {
+                        "description": "Domain and validity period",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/certificate.GenerateCertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.CertificateInfo"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/certificate/upload": {
+            "post": {
+                "description": "Uploads cert.pem and key.pem files as multipart form data",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificate"
+                ],
+                "summary": "Upload certificate files",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Certificate file (cert.pem)",
+                        "name": "cert",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Private key file (key.pem)",
+                        "name": "key",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.CertificateInfo"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/reality/check-tls": {
+            "post": {
+                "description": "Checks if a remote server supports TLS 1.3 (required for Reality disguise domain)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reality"
+                ],
+                "summary": "Check TLS 1.3 support",
+                "parameters": [
+                    {
+                        "description": "Server domain and port",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/certificate.CheckTLS13Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.CheckTLS13Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/reality/keypair": {
+            "post": {
+                "description": "Generates a random x25519 key pair for use with Reality TLS",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reality"
+                ],
+                "summary": "Generate Reality key pair",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.RealityKeypairResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/reality/public-key": {
+            "post": {
+                "description": "Derives the public key from a base64-encoded x25519 private key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reality"
+                ],
+                "summary": "Derive Reality public key",
+                "parameters": [
+                    {
+                        "description": "Private key",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/certificate.DerivePublicKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/certificate.RealityKeypairResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "certificate.CertificateInfo": {
+            "description": "Certificate metadata including validity period and fingerprint",
+            "type": "object",
+            "properties": {
+                "cert_path": {
+                    "type": "string",
+                    "example": "/data/singbox/cert.pem"
+                },
+                "common_name": {
+                    "type": "string",
+                    "example": "example.com"
+                },
+                "fingerprint": {
+                    "type": "string",
+                    "example": "SHA256:abc123def456"
+                },
+                "key_path": {
+                    "type": "string",
+                    "example": "/data/singbox/key.pem"
+                },
+                "valid_from": {
+                    "type": "string",
+                    "example": "2026-06-01T00:00:00Z"
+                },
+                "valid_to": {
+                    "type": "string",
+                    "example": "2027-06-01T00:00:00Z"
+                }
+            }
+        },
+        "certificate.CheckTLS13Request": {
+            "description": "Request to check if a server supports TLS 1.3 (required for Reality disguise domain)",
+            "type": "object",
+            "required": [
+                "server"
+            ],
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "example": 443
+                },
+                "server": {
+                    "type": "string",
+                    "example": "example.com"
+                }
+            }
+        },
+        "certificate.CheckTLS13Response": {
+            "description": "Result of TLS 1.3 support check",
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "connection failed"
+                },
+                "supported": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "tls_version": {
+                    "type": "string",
+                    "example": "TLS 1.3"
+                }
+            }
+        },
+        "certificate.DerivePublicKeyRequest": {
+            "description": "Request to derive a public key from a private key",
+            "type": "object",
+            "required": [
+                "private_key"
+            ],
+            "properties": {
+                "private_key": {
+                    "type": "string",
+                    "example": "ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ"
+                }
+            }
+        },
+        "certificate.GenerateCertRequest": {
+            "description": "Request to generate a self-signed TLS certificate",
+            "type": "object",
+            "required": [
+                "domain",
+                "valid_days"
+            ],
+            "properties": {
+                "domain": {
+                    "type": "string",
+                    "example": "example.com"
+                },
+                "valid_days": {
+                    "type": "integer",
+                    "example": 365
+                }
+            }
+        },
+        "certificate.RealityKeypairResponse": {
+            "description": "x25519 key pair for Reality TLS",
+            "type": "object",
+            "properties": {
+                "private_key": {
+                    "type": "string",
+                    "example": "ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ"
+                },
+                "public_key": {
+                    "type": "string",
+                    "example": "9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ"
+                }
+            }
+        },
+        "docs.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "internal server error"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "detailed error description"
+                }
+            }
+        }
+    },
     "tags": [
         {
             "description": "Subscription management",

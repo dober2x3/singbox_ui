@@ -1,11 +1,261 @@
 basePath: /api
+definitions:
+  certificate.CertificateInfo:
+    description: Certificate metadata including validity period and fingerprint
+    properties:
+      cert_path:
+        example: /data/singbox/cert.pem
+        type: string
+      common_name:
+        example: example.com
+        type: string
+      fingerprint:
+        example: SHA256:abc123def456
+        type: string
+      key_path:
+        example: /data/singbox/key.pem
+        type: string
+      valid_from:
+        example: "2026-06-01T00:00:00Z"
+        type: string
+      valid_to:
+        example: "2027-06-01T00:00:00Z"
+        type: string
+    type: object
+  certificate.CheckTLS13Request:
+    description: Request to check if a server supports TLS 1.3 (required for Reality
+      disguise domain)
+    properties:
+      port:
+        example: 443
+        type: integer
+      server:
+        example: example.com
+        type: string
+    required:
+    - server
+    type: object
+  certificate.CheckTLS13Response:
+    description: Result of TLS 1.3 support check
+    properties:
+      error:
+        example: connection failed
+        type: string
+      supported:
+        example: true
+        type: boolean
+      tls_version:
+        example: TLS 1.3
+        type: string
+    type: object
+  certificate.DerivePublicKeyRequest:
+    description: Request to derive a public key from a private key
+    properties:
+      private_key:
+        example: ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+    required:
+    - private_key
+    type: object
+  certificate.GenerateCertRequest:
+    description: Request to generate a self-signed TLS certificate
+    properties:
+      domain:
+        example: example.com
+        type: string
+      valid_days:
+        example: 365
+        type: integer
+    required:
+    - domain
+    - valid_days
+    type: object
+  certificate.RealityKeypairResponse:
+    description: x25519 key pair for Reality TLS
+    properties:
+      private_key:
+        example: ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+      public_key:
+        example: 9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+    type: object
+  docs.ErrorResponse:
+    properties:
+      error:
+        example: internal server error
+        type: string
+      message:
+        example: detailed error description
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
   description: API for managing sing-box, WireGuard, subscriptions, probing, and WARP
   title: Singbox UI API
   version: "1.0"
-paths: {}
+paths:
+  /singbox/certificate:
+    get:
+      description: Returns metadata about the stored TLS certificate including validity
+        and fingerprint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get certificate info
+      tags:
+      - certificate
+    post:
+      consumes:
+      - application/json
+      description: Generates a self-signed TLS certificate for the given domain and
+        validity period, saves it to the singbox directory
+      parameters:
+      - description: Domain and validity period
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.GenerateCertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate self-signed certificate
+      tags:
+      - certificate
+  /singbox/certificate/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads cert.pem and key.pem files as multipart form data
+      parameters:
+      - description: Certificate file (cert.pem)
+        in: formData
+        name: cert
+        required: true
+        type: file
+      - description: Private key file (key.pem)
+        in: formData
+        name: key
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Upload certificate files
+      tags:
+      - certificate
+  /singbox/reality/check-tls:
+    post:
+      consumes:
+      - application/json
+      description: Checks if a remote server supports TLS 1.3 (required for Reality
+        disguise domain)
+      parameters:
+      - description: Server domain and port
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.CheckTLS13Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CheckTLS13Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Check TLS 1.3 support
+      tags:
+      - reality
+  /singbox/reality/keypair:
+    post:
+      description: Generates a random x25519 key pair for use with Reality TLS
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.RealityKeypairResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate Reality key pair
+      tags:
+      - reality
+  /singbox/reality/public-key:
+    post:
+      consumes:
+      - application/json
+      description: Derives the public key from a base64-encoded x25519 private key
+      parameters:
+      - description: Private key
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.DerivePublicKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.RealityKeypairResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Derive Reality public key
+      tags:
+      - reality
 schemes:
 - http
 swagger: "2.0"
