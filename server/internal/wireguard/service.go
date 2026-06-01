@@ -10,12 +10,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/curve25519"
 )
 
 type Service struct {
+	mu      sync.Mutex
 	baseDir string
 }
 
@@ -53,6 +55,9 @@ func (s *Service) GeneratePublicKey(privateKeyStr string) (string, error) {
 }
 
 func (s *Service) GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if ip == "" {
 		return nil, fmt.Errorf("IP address is required")
 	}
@@ -97,6 +102,8 @@ func (s *Service) GenerateWireGuardKeysWithCache(ip string) (*KeyCacheResponse, 
 }
 
 func (s *Service) GetKeysCache() ([]KeyCacheEntry, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.loadKeysCache()
 }
 
@@ -139,7 +146,12 @@ func (s *Service) saveKeysCache(cache []KeyCacheEntry) error {
 		lines = append(lines, fmt.Sprintf("%s %s %s", entry.IP, entry.PublicKey, entry.PrivateKey))
 	}
 	content := strings.Join(lines, "\n") + "\n"
-	return os.WriteFile(s.getKeysCacheFilePath(), []byte(content), 0644)
+	filePath := s.getKeysCacheFilePath()
+	tmpPath := filePath + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte(content), 0600); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, filePath)
 }
 
 func (s *Service) GetPublicIP() (string, error) {
