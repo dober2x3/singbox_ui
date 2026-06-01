@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the BlockTab component. */
 interface BlockTabProps {
   blockDomains: string
   setBlockDomains: (v: string) => void
@@ -13,6 +14,7 @@ interface BlockTabProps {
   setEnableBlockAds: (v: boolean) => void
 }
 
+/** Block list tab for managing block rules in routing config. */
 export function BlockTab({
   blockDomains,
   setBlockDomains,

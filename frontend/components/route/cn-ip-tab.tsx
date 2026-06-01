@@ -3,11 +3,13 @@
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the CnIpTab component. */
 interface CnIpTabProps {
   enableCnIp: boolean
   setEnableCnIp: (v: boolean) => void
 }
 
+/** GeoIP-CN IP routing toggle tab. */
 export function CnIpTab({ enableCnIp, setEnableCnIp }: CnIpTabProps) {
   const { t } = useTranslation("routing")
 

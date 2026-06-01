@@ -9,6 +9,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, TrojanUser, formatListen, parseListen } from "./types"
 
+/** Flat form state for Trojan inbound configuration. */
 interface TrojanFlat {
   listen: string
   listen_port: number
@@ -36,6 +37,7 @@ interface TrojanFlat {
   ws_early_data_header_name: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): TrojanFlat {
   if (!initialConfig || initialConfig.type !== "trojan") {
     return {
@@ -104,6 +106,7 @@ function deriveFlat(initialConfig: any): TrojanFlat {
   }
 }
 
+/** Build the Trojan inbound config object from flat form state. */
 function buildTrojanInbound(flat: TrojanFlat): any {
   const trojanUsersBuilt = flat.users
     .filter((u) => u.password)
@@ -207,6 +210,7 @@ function buildTrojanInbound(flat: TrojanFlat): any {
   return previewConfig
 }
 
+/** Trojan protocol inbound form component. */
 export function TrojanForm({
   initialConfig,
   setInbound,
@@ -232,6 +236,7 @@ export function TrojanForm({
     setInbound(0, buildTrojanInbound(newFlat))
   }
 
+  /** Generate and show a QR code for a Trojan user connection string. */
   const showTrojanQrCode = async (userIndex: number) => {
     try {
       const user = flat.users[userIndex]

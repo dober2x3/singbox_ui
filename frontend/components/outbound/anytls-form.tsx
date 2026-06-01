@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 
+/** Flat form state for AnyTLS outbound configuration. */
 interface AnytlsFlat {
   server: string
   server_port: number
@@ -20,6 +21,7 @@ interface AnytlsFlat {
   utls_fingerprint: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): AnytlsFlat {
   const c = initialConfig?.type === "anytls" ? initialConfig : null
   return {
@@ -37,6 +39,7 @@ function deriveFlat(initialConfig: any): AnytlsFlat {
   }
 }
 
+/** Build the AnyTLS outbound config object from flat form state. */
 function buildAnytlsOutbound(s: AnytlsFlat): any {
   const previewConfig: any = {
     type: "anytls",
@@ -63,6 +66,7 @@ function buildAnytlsOutbound(s: AnytlsFlat): any {
   return previewConfig
 }
 
+/** AnyTLS protocol outbound form component. */
 export function AnytlsForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

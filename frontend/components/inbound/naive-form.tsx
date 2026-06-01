@@ -9,6 +9,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, NaiveUser, formatListen, parseListen } from "./types"
 
+/** Flat form state for Naive inbound configuration. */
 interface NaiveFlat {
   listen: string
   listen_port: number
@@ -21,7 +22,9 @@ interface NaiveFlat {
   quic_congestion_control: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): NaiveFlat {
+  /** Normalize "new_reno" to "reno" for compatibility. */
   const normalizeCongestionControl = (value: string) => {
     if (value === "new_reno") return "reno"
     return value
@@ -57,6 +60,7 @@ function deriveFlat(initialConfig: any): NaiveFlat {
   }
 }
 
+/** Build the Naive inbound config object from flat form state. */
 function buildNaiveInbound(flat: NaiveFlat): any {
   const naiveUsersPreview = flat.users
     .filter((u) => u.username && u.password)
@@ -92,6 +96,7 @@ function buildNaiveInbound(flat: NaiveFlat): any {
   return previewConfig
 }
 
+/** Naive protocol inbound form component. */
 export function NaiveForm({
   initialConfig,
   setInbound,

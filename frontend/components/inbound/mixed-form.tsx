@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, formatListen, parseListen, getPublicIP } from "./types"
 
+/** Flat form state for Mixed (SOCKS5) inbound configuration. */
 interface MixedFlat {
   listen: string
   listen_port: number
@@ -22,6 +23,7 @@ interface MixedFlat {
   tls_key_path: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): MixedFlat {
   const c = initialConfig?.type === "mixed" || initialConfig?.type === "socks" ? initialConfig : null
   // Determine auth mode by whether the users field exists (rather than whether there are valid records),
@@ -44,6 +46,7 @@ function deriveFlat(initialConfig: any): MixedFlat {
   }
 }
 
+/** Build the Mixed inbound config object from flat form state. */
 function buildMixedInbound(f: MixedFlat): any {
   const previewConfig: any = {
     type: "mixed",
@@ -79,6 +82,7 @@ function buildMixedInbound(f: MixedFlat): any {
   return previewConfig
 }
 
+/** Mixed (SOCKS5) protocol inbound form component. */
 export function MixedForm({ initialConfig, setInbound, clearEndpoints, onError, onShowQrCode, serverIP, setServerIP, certLoading, certInfo, onGenerateCert }: ProtocolFormProps) {
   const { t } = useTranslation("inbound")
   const { t: tc } = useTranslation("common")
@@ -91,6 +95,7 @@ export function MixedForm({ initialConfig, setInbound, clearEndpoints, onError, 
     setInbound(0, buildMixedInbound(merged))
   }, [flat, clearEndpoints, setInbound])
 
+  /** Generate and show a QR code for a Mixed inbound connection string. */
   const showQrCode = async (userIndex?: number) => {
     onError("")
     try {

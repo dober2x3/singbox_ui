@@ -32,12 +32,15 @@ import { ShadowtlsForm } from "./shadowtls-form"
 import { AnytlsForm } from "./anytls-form"
 import { HttpForm } from "./http-form"
 
+/** Shared CSS class for tab trigger buttons. */
 const tabTriggerClass = "rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-zinc-100 data-[state=active]:shadow-sm transition-all"
 
+/** Props for the InboundConfig component. */
 interface InboundConfigProps {
   showCard?: boolean
 }
 
+/** Main inbound configuration component with protocol tabs and shared state. */
 export function InboundConfig({ showCard = true }: InboundConfigProps) {
   const { t } = useTranslation("inbound")
   const { config: storeConfig, setInbound, setEndpoint, clearEndpoints, currentInstance } = useSingboxConfigStore()
@@ -74,8 +77,10 @@ export function InboundConfig({ showCard = true }: InboundConfigProps) {
   const [pendingCertFile, setPendingCertFile] = useState<File | null>(null)
 
   // Shared callbacks
+  /** Set the current error message. */
   const handleError = (msg: string) => setError(msg)
 
+  /** Show a QR code dialog with the given content and type. */
   const handleShowQrCode = (content: string, type: QrCodeType, peerIndex?: number) => {
     setQrCodeContent(content)
     setQrCodeType(type)
@@ -83,6 +88,7 @@ export function InboundConfig({ showCard = true }: InboundConfigProps) {
     setShowQrCode(true)
   }
 
+  /** Generate a self-signed TLS certificate for the current instance. */
   const handleGenerateCert = async (domain?: string) => {
     if (!currentInstance) {
       setError(t("selectInstanceFirst"))
@@ -115,10 +121,12 @@ export function InboundConfig({ showCard = true }: InboundConfigProps) {
     }
   }
 
+  /** Trigger the certificate file upload dialog. */
   const handleUploadCert = () => {
     certFileRef.current?.click()
   }
 
+  /** Handle certificate file selection and prompt for key file. */
   const handleCertFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -127,6 +135,7 @@ export function InboundConfig({ showCard = true }: InboundConfigProps) {
     }
   }
 
+  /** Handle key file selection and upload the certificate pair. */
   const handleKeyFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && pendingCertFile) {

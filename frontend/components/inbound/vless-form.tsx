@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api"
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, VLESSUser, formatListen, parseListen, getPublicIP } from "./types"
 
+/** Flat form state for VLESS inbound configuration. */
 interface VlessFlat {
   listen: string
   listen_port: number
@@ -39,6 +40,7 @@ interface VlessFlat {
   ws_early_data_header_name: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): VlessFlat {
   if (!initialConfig || initialConfig.type !== "vless") {
     return {
@@ -107,6 +109,7 @@ function deriveFlat(initialConfig: any): VlessFlat {
   }
 }
 
+/** Build the VLESS inbound config object from flat form state. */
 function buildVlessInbound(flat: VlessFlat): any {
   const vlessUsers = flat.users
     .filter((u) => u.uuid)
@@ -206,6 +209,7 @@ function buildVlessInbound(flat: VlessFlat): any {
   return previewConfig
 }
 
+/** VLESS protocol inbound form component. */
 export function VlessForm({
   initialConfig,
   setInbound,
@@ -245,6 +249,7 @@ export function VlessForm({
     setInbound(0, buildVlessInbound(newFlat))
   }
 
+  /** Generate and show a QR code for a VLESS user connection string. */
   const showVlessQrCode = async (userIndex: number) => {
     try {
       const user = flat.users[userIndex]

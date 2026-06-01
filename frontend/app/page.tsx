@@ -60,6 +60,7 @@ import { useTranslation } from "@/lib/i18n"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import AnsiToHtml from "ansi-to-html"
 
+/** Main application page with sidebar navigation, instance management, and config panels. */
 export default function Home() {
   const { toast } = useToast()
   const { t } = useTranslation("page")
@@ -128,6 +129,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /** Fetches the installed sing-box version from the backend. */
   const checkSingboxVersion = async () => {
     try {
       const response = await fetch("/api/singbox/version")
@@ -140,6 +142,7 @@ export default function Home() {
     }
   }
 
+  /** Loads the selected instance config and persists the choice to localStorage. */
   const handleInstanceSelect = async (instanceName: string) => {
     if (instanceName === currentInstance) return
     const loaded = await loadInstanceConfig(instanceName)
@@ -152,6 +155,7 @@ export default function Home() {
     }
   }
 
+  /** Validates input and creates a new named instance on the backend. */
   const handleCreateInstance = async () => {
     const name = newInstanceName.trim()
     if (!name) {
@@ -183,6 +187,7 @@ export default function Home() {
     }
   }
 
+  /** Saves the current config to the backend and restarts the instance. */
   const handleSaveConfig = async () => {
     if (!currentInstance) {
       toast({ title: tc("error"), description: t("selectOrCreate"), variant: "destructive" })
@@ -213,6 +218,7 @@ export default function Home() {
     }
   }
 
+  /** Starts a named instance container. */
   const handleRunInstance = async (name: string) => {
     setActionLoading(name)
     try {
@@ -226,6 +232,7 @@ export default function Home() {
     }
   }
 
+  /** Stops a named instance container. */
   const handleStopInstance = async (name: string) => {
     setActionLoading(name)
     try {
@@ -239,6 +246,7 @@ export default function Home() {
     }
   }
 
+  /** Deletes the pending instance and removes its localStorage reference. */
   const handleDeleteInstance = async () => {
     if (!instanceToDelete) return
     const success = await deleteInstance(instanceToDelete)
@@ -254,12 +262,14 @@ export default function Home() {
     setInstanceToDelete(null)
   }
 
+  /** Resets the current config to defaults and shows a toast. */
   const handleResetConfig = () => {
     setResetDialogOpen(false)
     resetConfig()
     toast({ title: t("configReset"), description: t("configResetDesc") })
   }
 
+  /** Fetches and displays logs for the current instance. */
   const handleViewLogs = async () => {
     if (!currentInstance) return
     setLogsLoading(true)
@@ -274,6 +284,7 @@ export default function Home() {
     }
   }
 
+  /** Updates the first outbound slot from a subscription node selection. */
   const handleOutboundChange = (outbound: any) => {
     if (outbound) {
       setOutbound(0, outbound)
@@ -293,6 +304,7 @@ export default function Home() {
     { id: "dns" as const, label: t("tabs.dns"), icon: Globe },
   ]
 
+  /** Returns a human-readable string of when the config was last saved. */
   const formatLastSaved = () => {
     if (!lastSavedAt) return null
     const diff = Date.now() - lastSavedAt

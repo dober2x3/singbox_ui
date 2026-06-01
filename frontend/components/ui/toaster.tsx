@@ -10,6 +10,7 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
+/** Toast notification renderer that subscribes to the toast hook and renders active toasts. */
 export function Toaster() {
   const { toasts } = useToast()
 

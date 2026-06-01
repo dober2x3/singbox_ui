@@ -1,3 +1,4 @@
-// Implementation moved to components/dns/
-// This file kept for backward compatibility.
+/**
+ * Re-export of DnsConfigComponent from the dns module for backward compatibility.
+ */
 export { DnsConfigComponent } from "./dns"

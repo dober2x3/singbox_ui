@@ -1,6 +1,6 @@
-// Shared types for inbound protocol form components
+/** Shared types for inbound protocol form components. */
 
-// sing-box format user types
+/** sing-box format user types. */
 export interface VLESSUser {
   uuid: string
   name?: string
@@ -44,7 +44,7 @@ export interface AnyTLSUser {
   password: string
 }
 
-// WireGuard Peer type used by local UI
+/** WireGuard Peer type used by local UI. */
 export interface LocalPeer {
   publicKey: string
   privateKey?: string
@@ -53,10 +53,10 @@ export interface LocalPeer {
   persistentKeepaliveInterval?: number
 }
 
-// QR code types
+/** Supported QR code types for generating share links. */
 export type QrCodeType = "wireguard" | "shadowsocks" | "socks5" | "vless" | "hysteria2" | "vmess" | "trojan" | "tuic"
 
-// Props shared by all protocol form components
+/** Props shared by all inbound protocol form components. */
 export interface ProtocolFormProps {
   initialConfig: any
   initialEndpoint?: any
@@ -81,7 +81,7 @@ export interface ProtocolFormProps {
   onUploadCert: () => void
 }
 
-// Helper: fetch public IP (used by QR code generators)
+/** Fetch the public IP of the server, used by QR code generators. */
 export async function getPublicIP(
   serverIP: string,
   setServerIP: (ip: string) => void
@@ -96,13 +96,13 @@ export async function getPublicIP(
   throw new Error("Cannot get public IP")
 }
 
-// Helper: format listen address to sing-box format
+/** Format a listen address to sing-box format (converts "0.0.0.0" to "::"). */
 export function formatListen(listen: string): string {
   if (listen === "0.0.0.0" || listen === "") return "::"
   return listen
 }
 
-// Helper: parse listen address from sing-box format
+/** Parse a listen address from sing-box format (converts "::" to "0.0.0.0"). */
 export function parseListen(listen?: string): string {
   if (listen === "::" || !listen) return "0.0.0.0"
   return listen

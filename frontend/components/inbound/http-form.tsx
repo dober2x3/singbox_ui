@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, formatListen, parseListen } from "./types"
 
+/** Flat form state for HTTP inbound configuration. */
 interface HttpFlat {
   listen: string
   listen_port: number
@@ -22,6 +23,7 @@ interface HttpFlat {
   tls_key_path: string
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): HttpFlat {
   const c = initialConfig?.type === "http" ? initialConfig : null
   // Determine auth mode by whether the users field exists (rather than whether there are valid records),
@@ -44,6 +46,7 @@ function deriveFlat(initialConfig: any): HttpFlat {
   }
 }
 
+/** Build the HTTP inbound config object from flat form state. */
 function buildHttpInbound(f: HttpFlat): any {
   const previewConfig: any = {
     type: "http",
@@ -79,6 +82,7 @@ function buildHttpInbound(f: HttpFlat): any {
   return previewConfig
 }
 
+/** HTTP protocol inbound form component. */
 export function HttpForm({ initialConfig, setInbound, clearEndpoints, onError, certLoading, certInfo, onGenerateCert }: ProtocolFormProps) {
   const { t } = useTranslation("inbound")
   const { t: tc } = useTranslation("common")

@@ -3,15 +3,16 @@
 // Production: frontend and backend run on the same port
 const API_BASE_URL = '';
 
-// API client class
+/** API client for communicating with the sing-box backend server. */
 class ApiClient {
   private baseUrl: string;
 
+  /** @param baseUrl - Base URL for API requests (empty for same-origin). */
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
-  // Generic request method
+  /** Generic JSON request method with error handling. */
   private async request<T>(
     endpoint: string,
     options?: RequestInit
@@ -225,10 +226,12 @@ class ApiClient {
 
   // ========== Proxy speed test API (starts temporary sing-box instance testing through SOCKS proxy) ==========
 
+  /** Starts a proxy speed test via a temporary SOCKS proxy instance. */
   async startSpeedTest(): Promise<{ message: string }> {
     return this.request('/api/speedtest/start', { method: 'POST' });
   }
 
+  /** Gets the current speed test status including per-node latency and bandwidth results. */
   async getSpeedTestStatus(): Promise<{
     running: boolean;
     total: number;
@@ -248,16 +251,18 @@ class ApiClient {
     return this.request('/api/speedtest/status', { method: 'GET' });
   }
 
+  /** Stops the running speed test. */
   async stopSpeedTest(): Promise<{ message: string }> {
     return this.request('/api/speedtest/stop', { method: 'POST' });
   }
 }
 
-// Export API client instance
+/** Singleton API client instance for backend communication. */
 export const apiClient = new ApiClient(API_BASE_URL);
 
 // Type definitions
 
+/** Result of a self-signed certificate generation request. */
 export interface CertificateInfo {
   cert_path: string;
   key_path: string;
@@ -269,6 +274,7 @@ export interface CertificateInfo {
   fingerprint: string;
 }
 
+/** Metadata for a named sing-box instance. */
 export interface InstanceInfo {
   name: string;
   created_at: number;
@@ -277,6 +283,7 @@ export interface InstanceInfo {
   container_id?: string;
 }
 
+/** Status information for a running sing-box container. */
 export interface ContainerStatus {
   name: string;
   container_id: string;
@@ -285,6 +292,7 @@ export interface ContainerStatus {
   created: number;
 }
 
+/** Result of probing a single proxy node for connectivity. */
 export interface ProbeResult {
   tag: string;
   protocol: string;
@@ -296,6 +304,7 @@ export interface ProbeResult {
   success_rate: number;
 }
 
+/** Statistics and configuration for the prober service. */
 export interface ProberStats {
   running: boolean;
   totalNodes: number;

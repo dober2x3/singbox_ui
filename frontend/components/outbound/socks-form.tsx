@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 
+/** Flat form state for SOCKS outbound configuration. */
 interface SocksFlat {
   server: string
   server_port: number
@@ -16,6 +17,7 @@ interface SocksFlat {
   udp_over_tcp: boolean
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): SocksFlat {
   const c = initialConfig?.type === "socks" ? initialConfig : null
   return {
@@ -29,6 +31,7 @@ function deriveFlat(initialConfig: any): SocksFlat {
   }
 }
 
+/** Build the SOCKS outbound config object from flat form state. */
 function buildSocksOutbound(s: SocksFlat): any {
   const previewConfig: any = {
     type: "socks",
@@ -44,6 +47,7 @@ function buildSocksOutbound(s: SocksFlat): any {
   return previewConfig
 }
 
+/** SOCKS protocol outbound form component. */
 export function SocksForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

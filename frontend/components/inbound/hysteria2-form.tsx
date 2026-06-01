@@ -10,6 +10,7 @@ import { isValidPort, parsePort, isValidListenAddress, generateSecureRandomStrin
 import { useTranslation } from "@/lib/i18n"
 import { ProtocolFormProps, Hysteria2User, formatListen, parseListen } from "./types"
 
+/** Flat form state for Hysteria2 inbound configuration. */
 interface Hy2Flat {
   listen: string
   listen_port: number
@@ -28,6 +29,7 @@ interface Hy2Flat {
   ignore_client_bandwidth: boolean
 }
 
+/** Derive flat form state from an existing inbound config. */
 function deriveFlat(initialConfig: any): Hy2Flat {
   const c = initialConfig?.type === "hysteria2" ? initialConfig : null
   const loadedUsers = (c?.users || []).map((u: any) => ({
@@ -53,6 +55,7 @@ function deriveFlat(initialConfig: any): Hy2Flat {
   }
 }
 
+/** Build the Hysteria2 inbound config object from flat form state. */
 function buildHy2Inbound(f: Hy2Flat): any {
   const hy2Users = f.users
     .filter((u) => u.password)
@@ -97,6 +100,7 @@ function buildHy2Inbound(f: Hy2Flat): any {
   return previewConfig
 }
 
+/** Hysteria2 protocol inbound form component. */
 export function Hysteria2Form({
   initialConfig,
   setInbound,
@@ -121,6 +125,7 @@ export function Hysteria2Form({
     setInbound(0, buildHy2Inbound(merged))
   }, [flat, clearEndpoints, setInbound])
 
+  /** Generate and show a QR code for a Hysteria2 user connection string. */
   const showHysteria2QrCode = async (userIndex: number) => {
     onError("")
     try {

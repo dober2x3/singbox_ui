@@ -4,6 +4,9 @@ import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Globe } from "lucide-react"
 
+/**
+ * Button that toggles between Chinese and English locales.
+ */
 export function LanguageSwitcher() {
   const { locale, setLocale } = useI18n()
 

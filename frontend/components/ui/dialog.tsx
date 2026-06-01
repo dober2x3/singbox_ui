@@ -5,14 +5,19 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cn } from "@/lib/utils"
 import { Cross2Icon } from "@radix-ui/react-icons"
 
+/** Dialog root component. */
 const Dialog = DialogPrimitive.Root
 
+/** Dialog trigger button. */
 const DialogTrigger = DialogPrimitive.Trigger
 
+/** Dialog portal for rendering outside the DOM hierarchy. */
 const DialogPortal = DialogPrimitive.Portal
 
+/** Dialog close trigger. */
 const DialogClose = DialogPrimitive.Close
 
+/** Semi-transparent overlay behind the dialog. */
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -30,6 +35,7 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
+/** Dialog content panel with overlay, close button, and animations. */
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -61,6 +67,7 @@ const DialogContent = React.forwardRef<
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+/** Dialog header container. */
 const DialogHeader = ({
   className,
   ...props
@@ -75,6 +82,7 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
+/** Dialog footer container for action buttons. */
 const DialogFooter = ({
   className,
   ...props
@@ -89,6 +97,7 @@ const DialogFooter = ({
 )
 DialogFooter.displayName = "DialogFooter"
 
+/** Dialog title text. */
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -104,6 +113,7 @@ const DialogTitle = React.forwardRef<
 ))
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 
+/** Dialog description text. */
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>

@@ -25,6 +25,7 @@ const UA_OPTIONS_KEYS = [
   { key: "v2rayng", label: "v2rayNG" },
 ]
 
+/** A single parsed proxy node from a subscription. */
 interface ProxyNode {
   name: string
   protocol: string
@@ -40,6 +41,7 @@ interface ProxyNode {
   speed_kbps?: number
 }
 
+/** A subscription entry with its metadata and parsed nodes. */
 interface SubscriptionEntry {
   id: string
   name: string
@@ -51,11 +53,13 @@ interface SubscriptionEntry {
   nodes: ProxyNode[]
 }
 
+/** Props for the SubscriptionManager component. */
 interface SubscriptionManagerProps {
   onNodeSelect?: (node: ProxyNode) => void
   onNodesLoaded?: (nodes: ProxyNode[]) => void
 }
 
+/** Subscription management panel with add/refresh/delete, probe, and speed test capabilities. */
 export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: SubscriptionManagerProps) {
   const { t } = useTranslation("subscription")
   const { t: tc } = useTranslation("common")
@@ -79,6 +83,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
   const [speedTesting, setSpeedTesting] = useState(false)
   const [speedTestProgress, setSpeedTestProgress] = useState<{ done: number; total: number; current?: string } | null>(null)
 
+  /** Patches the subscription's auto-update settings on the backend. */
   const updateSettings = async (id: string, autoUpdate: boolean, updateInterval: number) => {
     try {
       const response = await fetch(`/api/subscription/${id}/settings`, {
@@ -109,6 +114,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     onNodesLoadedRef.current?.(allNodes)
   }, [subscriptions])
 
+  /** Fetches all subscription entries from the backend. */
   const loadSubscriptions = async () => {
     try {
       const response = await fetch("/api/subscription")
@@ -127,6 +133,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Validates and sends a new subscription URL to the backend for parsing. */
   const addSubscription = async () => {
     if (!newName.trim() || !newUrl.trim()) {
       toast({
@@ -173,6 +180,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Re-fetches a single subscription from its remote URL. */
   const refreshSubscription = async (id: string) => {
     setRefreshingIds(prev => new Set([...prev, id]))
     try {
@@ -209,6 +217,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Removes a subscription entry from the backend. */
   const deleteSubscription = async (id: string) => {
     try {
       const response = await fetch(`/api/subscription/${id}`, {
@@ -234,6 +243,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Re-fetches all subscriptions from their remote URLs. */
   const refreshAll = async () => {
     setLoading(true)
     try {
@@ -264,6 +274,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Toggles the expanded/collapsed state of a subscription entry. */
   const toggleExpand = (id: string) => {
     setExpandedSubs(prev => {
       const next = new Set(prev)
@@ -276,6 +287,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     })
   }
 
+  /** Selects a proxy node and notifies the parent via onNodeSelect callback. */
   const handleNodeSelect = (node: ProxyNode) => {
     setSelectedNode(node)
     onNodeSelect?.(node)
@@ -286,7 +298,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     })
   }
 
-  // Manual probe
+  /** Runs a manual connectivity probe on all subscription nodes. */
   const probeNodes = async () => {
     if (subscriptions.length === 0) {
       toast({
@@ -306,7 +318,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
         description: t("probeStartedDesc", { count: result.nodeCount }),
       })
 
-      // Poll until probing completes
+      /** Polls prober status until completion or max attempts reached. */
       const pollStatus = async (attempts = 0): Promise<void> => {
         if (attempts >= PROBE_POLL_MAX_ATTEMPTS) {
           // After 15 attempts (~15s) without completion, force-save current results
@@ -355,7 +367,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
-  // Proxy speed test: start temp sing-box instance to test node latency & speed via SOCKS proxy
+  /** Starts a proxy speed test via a temporary sing-box instance and polls for completion. */
   const runSpeedTest = async () => {
     if (subscriptions.length === 0) {
       toast({ title: t("noNodesForProbe"), description: t("noNodesForProbeHint"), variant: "destructive" })
@@ -399,6 +411,7 @@ export function SubscriptionManager({ onNodeSelect, onNodesLoaded }: Subscriptio
     }
   }
 
+  /** Cancels the running speed test on the backend. */
   const cancelSpeedTest = async () => {
     try {
       await apiClient.stopSpeedTest()

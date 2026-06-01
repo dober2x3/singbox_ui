@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 import { Server, Settings } from "lucide-react"
 
+/** Flat form state for WireGuard outbound configuration. */
 interface WgFlat {
   private_key: string
   local_address: string
@@ -19,6 +20,7 @@ interface WgFlat {
   reserved: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): WgFlat {
   const c = initialConfig?.type === "wireguard" ? initialConfig : null
   const peer = c?.peers?.[0]
@@ -45,6 +47,7 @@ function deriveFlat(initialConfig: any): WgFlat {
   }
 }
 
+/** Build the WireGuard outbound config object from flat form state. */
 function buildWgOutbound(s: WgFlat): any {
   const peer: any = {
     address: s.peer_address,
@@ -70,6 +73,7 @@ function buildWgOutbound(s: WgFlat): any {
   }
 }
 
+/** WireGuard protocol outbound form component. */
 export function WireguardForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

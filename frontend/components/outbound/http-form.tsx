@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 
+/** Flat form state for HTTP outbound configuration. */
 interface HttpFlat {
   server: string
   server_port: number
@@ -17,6 +18,7 @@ interface HttpFlat {
   headers: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): HttpFlat {
   const c = initialConfig?.type === "http" ? initialConfig : null
   return {
@@ -32,6 +34,7 @@ function deriveFlat(initialConfig: any): HttpFlat {
   }
 }
 
+/** Build the HTTP outbound config object from flat form state. */
 function buildHttpOutbound(s: HttpFlat): any {
   const previewConfig: any = {
     type: "http",
@@ -63,6 +66,7 @@ function buildHttpOutbound(s: HttpFlat): any {
   return previewConfig
 }
 
+/** HTTP proxy outbound form component. */
 export function HttpForm({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

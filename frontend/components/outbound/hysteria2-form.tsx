@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 import { OutboundFormProps } from "./types"
 
+/** Flat form state for Hysteria2 outbound configuration. */
 interface Hy2Flat {
   server: string
   server_port: number
@@ -22,6 +23,7 @@ interface Hy2Flat {
   server_ports: string
 }
 
+/** Derive flat form state from an existing outbound config. */
 function deriveFlat(initialConfig: any): Hy2Flat {
   const c = initialConfig?.type === "hysteria2" ? initialConfig : null
   return {
@@ -41,6 +43,7 @@ function deriveFlat(initialConfig: any): Hy2Flat {
   }
 }
 
+/** Build the Hysteria2 outbound config object from flat form state. */
 function buildHy2Outbound(s: Hy2Flat): any {
   const previewConfig: any = {
     type: "hysteria2",
@@ -70,6 +73,7 @@ function buildHy2Outbound(s: Hy2Flat): any {
   return previewConfig
 }
 
+/** Hysteria2 protocol outbound form component. */
 export function Hysteria2Form({ initialConfig, setOutbound }: OutboundFormProps) {
   const { t } = useTranslation("outbound")
   const { t: tc } = useTranslation("common")

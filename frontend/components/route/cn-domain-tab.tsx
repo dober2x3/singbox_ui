@@ -3,11 +3,13 @@
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the CnDomainTab component. */
 interface CnDomainTabProps {
   enableCnDomain: boolean
   setEnableCnDomain: (v: boolean) => void
 }
 
+/** Geosite-CN domain routing toggle tab. */
 export function CnDomainTab({ enableCnDomain, setEnableCnDomain }: CnDomainTabProps) {
   const { t } = useTranslation("routing")
 

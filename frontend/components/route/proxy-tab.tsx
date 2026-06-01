@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTranslation } from "@/lib/i18n"
 
+/** Props for the ProxyTab component. */
 interface ProxyTabProps {
   proxyDomains: string
   setProxyDomains: (v: string) => void
@@ -11,6 +12,7 @@ interface ProxyTabProps {
   setProxyIps: (v: string) => void
 }
 
+/** Proxy list tab for managing proxy routing rules. */
 export function ProxyTab({ proxyDomains, setProxyDomains, proxyIps, setProxyIps }: ProxyTabProps) {
   const { t } = useTranslation("routing")
 

@@ -1,6 +1,6 @@
 // Helper utilities for routing config
 
-// Parse textarea lines to array (filter empty lines and comments)
+/** Parse textarea lines to array, filtering empty lines and comments. */
 export const parseLines = (text: string): string[] => {
   return text
     .split(/\n/)
@@ -8,7 +8,7 @@ export const parseLines = (text: string): string[] => {
     .filter((line) => line && !line.startsWith("#"))
 }
 
-// Normalize IPs to CIDR (plain IPs get /32 or /128 appended)
+/** Normalize IP addresses to CIDR notation (plain IPs get /32 or /128 appended). */
 export const normalizeIpCidrs = (ips: string[]): string[] => {
   return ips.map((ip) => {
     if (ip.includes("/")) return ip
@@ -16,7 +16,7 @@ export const normalizeIpCidrs = (ips: string[]): string[] => {
   })
 }
 
-// Domain match classification results
+/** Domain match classification results. */
 export interface DomainGroups {
   domain: string[]        // full: exact match
   domain_suffix: string[] // default, suffix match
@@ -24,12 +24,14 @@ export interface DomainGroups {
   domain_regex: string[]  // regex: regex match
 }
 
-// Parse domain lines, classify by prefix:
-//   full:xxx     → domain (exact)
-//   keyword:xxx  → domain_keyword
-//   regex:xxx    → domain_regex
-//   suffix:xxx   → domain_suffix (explicit)
-//   xxx          → domain_suffix (default)
+/**
+ * Parse domain lines and classify by prefix.
+ *   full:xxx     -> domain (exact)
+ *   keyword:xxx  -> domain_keyword
+ *   regex:xxx    -> domain_regex
+ *   suffix:xxx   -> domain_suffix (explicit)
+ *   xxx          -> domain_suffix (default)
+ */
 export const parseDomainLines = (text: string): DomainGroups => {
   const groups: DomainGroups = { domain: [], domain_suffix: [], domain_keyword: [], domain_regex: [] }
   for (const line of parseLines(text)) {
@@ -48,7 +50,7 @@ export const parseDomainLines = (text: string): DomainGroups => {
   return groups
 }
 
-// Restore domain fields from sing-box rules to prefixed text lines
+/** Restore domain fields from sing-box rules to prefixed text lines. */
 export const domainFieldsToLines = (rule: {
   domain?: string[]
   domain_suffix?: string[]
@@ -63,7 +65,7 @@ export const domainFieldsToLines = (rule: {
   return lines
 }
 
-// Merge DomainGroups into RouteRule object (only add non-empty fields)
+/** Merge DomainGroups into a RouteRule object, only adding non-empty fields. */
 export const applyDomainGroups = (rule: Record<string, any>, groups: DomainGroups) => {
   if (groups.domain.length > 0) rule.domain = groups.domain
   if (groups.domain_suffix.length > 0) rule.domain_suffix = groups.domain_suffix
@@ -71,7 +73,7 @@ export const applyDomainGroups = (rule: Record<string, any>, groups: DomainGroup
   if (groups.domain_regex.length > 0) rule.domain_regex = groups.domain_regex
 }
 
-// Whether DomainGroups has any content
+/** Whether DomainGroups has any content. */
 export const hasDomainEntries = (groups: DomainGroups): boolean => {
   return groups.domain.length > 0 || groups.domain_suffix.length > 0 ||
     groups.domain_keyword.length > 0 || groups.domain_regex.length > 0
