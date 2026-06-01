@@ -15,6 +15,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health": {
+            "get": {
+                "description": "Returns the server health status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/prober/best": {
             "get": {
                 "description": "Returns the online node with the lowest measured latency",
@@ -502,6 +525,480 @@ const docTemplate = `{
                 }
             }
         },
+        "/singbox/config": {
+            "get": {
+                "description": "Returns the current sing-box configuration as raw JSON",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get sing-box config",
+                "responses": {
+                    "200": {
+                        "description": "Raw config JSON",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Saves the sing-box configuration from the raw request body",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Save sing-box config",
+                "responses": {
+                    "200": {
+                        "description": "config saved",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/containers": {
+            "get": {
+                "description": "Returns all sing-box Docker containers across all named instances",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "List all containers",
+                "responses": {
+                    "200": {
+                        "description": "list of containers",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/ensure-image": {
+            "post": {
+                "description": "Pulls the sing-box Docker image if not already present",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Ensure sing-box image",
+                "responses": {
+                    "200": {
+                        "description": "image ready",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances": {
+            "get": {
+                "description": "Returns all named configuration instances with their status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "List named configs",
+                "responses": {
+                    "200": {
+                        "description": "list of configs",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}": {
+            "delete": {
+                "description": "Deletes a named configuration and stops its container if running",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Delete named config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "config deleted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/check": {
+            "post": {
+                "description": "Validates the JSON syntax of a named configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Check named config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.CheckConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/config": {
+            "get": {
+                "description": "Returns a named configuration as raw JSON",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get named config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw config JSON",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Saves a named configuration, validates it, and returns the result",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Save named config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name (2-10 chars, start with letter)",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.CheckConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/logs": {
+            "get": {
+                "description": "Returns the logs for a named sing-box container instance",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get named container logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "logs for container",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/run": {
+            "post": {
+                "description": "Starts a named sing-box container instance",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Run named container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.NamedInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/status": {
+            "get": {
+                "description": "Returns the running status and container ID of a named instance",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get named container status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.NamedInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/instances/{name}/stop": {
+            "post": {
+                "description": "Stops a named sing-box container instance",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Stop named container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.NamedInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/logs": {
+            "get": {
+                "description": "Returns the logs from the sing-box Docker container",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get sing-box logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.LogResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/singbox/reality/check-tls": {
             "post": {
                 "description": "Checks if a remote server supports TLS 1.3 (required for Reality disguise domain)",
@@ -607,6 +1104,106 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/run": {
+            "post": {
+                "description": "Starts the sing-box Docker container with the current configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Run sing-box",
+                "responses": {
+                    "200": {
+                        "description": "container started",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/status": {
+            "get": {
+                "description": "Returns whether the sing-box container is currently running",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Check sing-box status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.StatusResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/stop": {
+            "post": {
+                "description": "Stops the running sing-box Docker container",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Stop sing-box",
+                "responses": {
+                    "200": {
+                        "description": "container stopped",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/singbox/version": {
+            "get": {
+                "description": "Returns the version of the installed sing-box Docker image",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singbox"
+                ],
+                "summary": "Get sing-box version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/singbox.VersionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/docs.ErrorResponse"
                         }
@@ -1613,6 +2210,67 @@ const docTemplate = `{
                 "total_probes": {
                     "type": "integer",
                     "example": 42
+                }
+            }
+        },
+        "singbox.CheckConfigResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Config is valid"
+                },
+                "valid": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "singbox.LogResponse": {
+            "type": "object",
+            "properties": {
+                "logs": {
+                    "type": "string",
+                    "example": "2026/06/01 12:00:00 starting..."
+                }
+            }
+        },
+        "singbox.NamedInstanceResponse": {
+            "type": "object",
+            "properties": {
+                "containerId": {
+                    "type": "string",
+                    "example": "abc123def456"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "my-config"
+                }
+            }
+        },
+        "singbox.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "containerId": {
+                    "type": "string",
+                    "example": "abc123def456"
+                },
+                "running": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "singbox.VersionResponse": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "example": "1.10.0"
                 }
             }
         },

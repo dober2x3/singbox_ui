@@ -139,6 +139,48 @@ definitions:
         example: 42
         type: integer
     type: object
+  singbox.CheckConfigResponse:
+    properties:
+      message:
+        example: Config is valid
+        type: string
+      valid:
+        example: true
+        type: boolean
+    type: object
+  singbox.LogResponse:
+    properties:
+      logs:
+        example: 2026/06/01 12:00:00 starting...
+        type: string
+    type: object
+  singbox.NamedInstanceResponse:
+    properties:
+      containerId:
+        example: abc123def456
+        type: string
+      message:
+        example: Operation completed
+        type: string
+      name:
+        example: my-config
+        type: string
+    type: object
+  singbox.StatusResponse:
+    properties:
+      containerId:
+        example: abc123def456
+        type: string
+      running:
+        example: true
+        type: boolean
+    type: object
+  singbox.VersionResponse:
+    properties:
+      version:
+        example: 1.10.0
+        type: string
+    type: object
   speedtest.SpeedTestState:
     properties:
       download_speed:
@@ -410,6 +452,21 @@ info:
   title: Singbox UI API
   version: "1.0"
 paths:
+  /health:
+    get:
+      description: Returns the server health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
   /prober/best:
     get:
       description: Returns the online node with the lowest measured latency
@@ -736,6 +793,320 @@ paths:
       summary: Upload certificate files
       tags:
       - certificate
+  /singbox/config:
+    get:
+      description: Returns the current sing-box configuration as raw JSON
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw config JSON
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get sing-box config
+      tags:
+      - singbox
+    post:
+      consumes:
+      - application/json
+      description: Saves the sing-box configuration from the raw request body
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: config saved
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save sing-box config
+      tags:
+      - singbox
+  /singbox/containers:
+    get:
+      description: Returns all sing-box Docker containers across all named instances
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of containers
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List all containers
+      tags:
+      - singbox
+  /singbox/ensure-image:
+    post:
+      description: Pulls the sing-box Docker image if not already present
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: image ready
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Ensure sing-box image
+      tags:
+      - singbox
+  /singbox/instances:
+    get:
+      description: Returns all named configuration instances with their status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of configs
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List named configs
+      tags:
+      - singbox
+  /singbox/instances/{name}:
+    delete:
+      description: Deletes a named configuration and stops its container if running
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: config deleted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Delete named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/check:
+    post:
+      description: Validates the JSON syntax of a named configuration
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.CheckConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Check named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/config:
+    get:
+      description: Returns a named configuration as raw JSON
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw config JSON
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named config
+      tags:
+      - singbox
+    post:
+      consumes:
+      - application/json
+      description: Saves a named configuration, validates it, and returns the result
+      parameters:
+      - description: Config name (2-10 chars, start with letter)
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.CheckConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/logs:
+    get:
+      description: Returns the logs for a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: logs for container
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named container logs
+      tags:
+      - singbox
+  /singbox/instances/{name}/run:
+    post:
+      description: Starts a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Run named container
+      tags:
+      - singbox
+  /singbox/instances/{name}/status:
+    get:
+      description: Returns the running status and container ID of a named instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named container status
+      tags:
+      - singbox
+  /singbox/instances/{name}/stop:
+    post:
+      description: Stops a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Stop named container
+      tags:
+      - singbox
+  /singbox/logs:
+    get:
+      description: Returns the logs from the sing-box Docker container
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.LogResponse'
+      summary: Get sing-box logs
+      tags:
+      - singbox
   /singbox/reality/check-tls:
     post:
       consumes:
@@ -810,6 +1181,72 @@ paths:
       summary: Derive Reality public key
       tags:
       - reality
+  /singbox/run:
+    post:
+      description: Starts the sing-box Docker container with the current configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: container started
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Run sing-box
+      tags:
+      - singbox
+  /singbox/status:
+    get:
+      description: Returns whether the sing-box container is currently running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.StatusResponse'
+      summary: Check sing-box status
+      tags:
+      - singbox
+  /singbox/stop:
+    post:
+      description: Stops the running sing-box Docker container
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: container stopped
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Stop sing-box
+      tags:
+      - singbox
+  /singbox/version:
+    get:
+      description: Returns the version of the installed sing-box Docker image
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.VersionResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get sing-box version
+      tags:
+      - singbox
   /speedtest/start:
     post:
       description: Starts a speed test for all loaded proxy nodes

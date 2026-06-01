@@ -172,9 +172,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	r.GET("/health", healthCheck)
 
 	// Static file server
 	setupStaticFiles(r)
@@ -185,6 +183,17 @@ func main() {
 	if err := r.Run(listenAddr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+// healthCheck handles GET /health requests
+// @Summary      Health check
+// @Description  Returns the server health status
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Router       /health [get]
+func healthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 // setupStaticFiles configure static file serving
