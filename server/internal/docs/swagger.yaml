@@ -1,0 +1,1804 @@
+basePath: /api
+definitions:
+  certificate.CertificateInfo:
+    description: Certificate metadata including validity period and fingerprint
+    properties:
+      cert_path:
+        example: /data/singbox/cert.pem
+        type: string
+      common_name:
+        example: example.com
+        type: string
+      fingerprint:
+        example: SHA256:abc123def456
+        type: string
+      key_path:
+        example: /data/singbox/key.pem
+        type: string
+      valid_from:
+        example: "2026-06-01T00:00:00Z"
+        type: string
+      valid_to:
+        example: "2027-06-01T00:00:00Z"
+        type: string
+    type: object
+  certificate.CheckTLS13Request:
+    description: Request to check if a server supports TLS 1.3 (required for Reality
+      disguise domain)
+    properties:
+      port:
+        example: 443
+        type: integer
+      server:
+        example: example.com
+        type: string
+    required:
+    - server
+    type: object
+  certificate.CheckTLS13Response:
+    description: Result of TLS 1.3 support check
+    properties:
+      error:
+        example: connection failed
+        type: string
+      supported:
+        example: true
+        type: boolean
+      tls_version:
+        example: TLS 1.3
+        type: string
+    type: object
+  certificate.DerivePublicKeyRequest:
+    description: Request to derive a public key from a private key
+    properties:
+      private_key:
+        example: ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+    required:
+    - private_key
+    type: object
+  certificate.GenerateCertRequest:
+    description: Request to generate a self-signed TLS certificate
+    properties:
+      domain:
+        example: example.com
+        type: string
+      valid_days:
+        example: 365
+        type: integer
+    required:
+    - domain
+    - valid_days
+    type: object
+  certificate.RealityKeypairResponse:
+    description: x25519 key pair for Reality TLS
+    properties:
+      private_key:
+        example: ARVXKXp6V9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+      public_key:
+        example: 9XmXQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQmQ
+        type: string
+    type: object
+  docs.ErrorResponse:
+    properties:
+      error:
+        example: internal server error
+        type: string
+      message:
+        example: detailed error description
+        type: string
+    type: object
+  prober.MessageResponse:
+    properties:
+      message:
+        example: operation completed
+        type: string
+    type: object
+  prober.ProberNodeRequest:
+    properties:
+      address:
+        type: string
+      port:
+        type: integer
+      protocol:
+        type: string
+      tag:
+        type: string
+    required:
+    - address
+    - port
+    - protocol
+    - tag
+    type: object
+  prober.ProberNodesRequest:
+    properties:
+      nodes:
+        items:
+          $ref: '#/definitions/prober.ProberNodeRequest'
+        type: array
+    required:
+    - nodes
+    type: object
+  prober.ProberStatus:
+    description: Current prober engine status
+    properties:
+      last_probe_time:
+        example: "2026-06-01T12:00:00Z"
+        type: string
+      offline_nodes:
+        example: 3
+        type: integer
+      online_nodes:
+        example: 5
+        type: integer
+      running:
+        example: true
+        type: boolean
+      total_probes:
+        example: 42
+        type: integer
+    type: object
+  singbox.CheckConfigResponse:
+    properties:
+      message:
+        example: Config is valid
+        type: string
+      valid:
+        example: true
+        type: boolean
+    type: object
+  singbox.LogResponse:
+    properties:
+      logs:
+        example: 2026/06/01 12:00:00 starting...
+        type: string
+    type: object
+  singbox.NamedInstanceResponse:
+    properties:
+      containerId:
+        example: abc123def456
+        type: string
+      message:
+        example: Operation completed
+        type: string
+      name:
+        example: my-config
+        type: string
+    type: object
+  singbox.StatusResponse:
+    properties:
+      containerId:
+        example: abc123def456
+        type: string
+      running:
+        example: true
+        type: boolean
+    type: object
+  singbox.VersionResponse:
+    properties:
+      version:
+        example: 1.10.0
+        type: string
+    type: object
+  speedtest.SpeedTestState:
+    properties:
+      download_speed:
+        example: 15.5
+        type: number
+      error:
+        example: timeout
+        type: string
+      latency_ms:
+        example: 120
+        type: integer
+      progress:
+        example: 50
+        type: integer
+      running:
+        example: true
+        type: boolean
+      status:
+        example: testing...
+        type: string
+      tag:
+        example: my-proxy
+        type: string
+    type: object
+  subscription.AddSubscriptionRequest:
+    properties:
+      name:
+        example: My VPN Server
+        type: string
+      url:
+        example: https://example.com/sub
+        type: string
+      user_agent:
+        example: clash-meta
+        type: string
+    required:
+    - name
+    - url
+    type: object
+  subscription.UpdateSettingsRequest:
+    properties:
+      auto_update:
+        example: true
+        type: boolean
+      update_interval:
+        example: 12
+        type: integer
+    type: object
+  warp.LicenseBindRequest:
+    properties:
+      license:
+        example: xxxx-xxxx-xxxx-xxxx
+        type: string
+    type: object
+  warp.WarpAccount:
+    properties:
+      account_type:
+        example: free
+        type: string
+      id:
+        example: abcd-1234-ef56-7890
+        type: string
+      license:
+        example: xxxx-xxxx-xxxx-xxxx
+        type: string
+      premium_data:
+        example: 0
+        type: integer
+      warp_plus:
+        example: false
+        type: boolean
+    type: object
+  warp.WarpConfig:
+    properties:
+      client_id:
+        example: abc123
+        type: string
+      interface:
+        $ref: '#/definitions/warp.WarpInterface'
+      peers:
+        items:
+          $ref: '#/definitions/warp.WarpPeer'
+        type: array
+    type: object
+  warp.WarpDevice:
+    properties:
+      account:
+        $ref: '#/definitions/warp.WarpAccount'
+      config:
+        $ref: '#/definitions/warp.WarpConfig'
+      id:
+        example: abcd-1234-ef56-7890
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  warp.WarpEndpointResult:
+    properties:
+      host:
+        example: 162.159.192.1
+        type: string
+      latency_ms:
+        example: 42
+        type: integer
+      loss_pct:
+        example: 0
+        type: integer
+      port:
+        example: 2408
+        type: integer
+      reachable:
+        example: true
+        type: boolean
+    type: object
+  warp.WarpInterface:
+    properties:
+      addresses:
+        $ref: '#/definitions/warp.WarpInterfaceAddr'
+    type: object
+  warp.WarpInterfaceAddr:
+    properties:
+      v4:
+        example: 172.16.0.2
+        type: string
+      v6:
+        example: fd01:5ca1:ab1e:0000:0000:0000:0000:0002
+        type: string
+    type: object
+  warp.WarpPeer:
+    properties:
+      endpoint:
+        $ref: '#/definitions/warp.WarpPeerEndpoint'
+      public_key:
+        example: bmXOC+F1FxEMF9dyiK2H5/1SUtzH0cVo9NFiY5pA0Is=
+        type: string
+    type: object
+  warp.WarpPeerEndpoint:
+    properties:
+      host:
+        example: engage.cloudflareclient.com
+        type: string
+      v4:
+        example: 162.159.192.1
+        type: string
+      v6:
+        example: 2606:4700:100::1
+        type: string
+    type: object
+  warp.WarpRecord:
+    properties:
+      created_at:
+        example: "2026-06-01T00:00:00Z"
+        type: string
+      device:
+        $ref: '#/definitions/warp.WarpDevice'
+      private_key:
+        example: gL7fV/1GkH+3...
+        type: string
+      public_key:
+        example: xTIBdMd5Fq+3...
+        type: string
+      updated_at:
+        example: "2026-06-01T00:00:00Z"
+        type: string
+    type: object
+  warp.WarpRegisterResponse:
+    properties:
+      account:
+        $ref: '#/definitions/warp.WarpAccount'
+      config:
+        $ref: '#/definitions/warp.WarpConfig'
+      id:
+        example: abcd-1234-ef56-7890
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  warp.WarpScanConfig:
+    properties:
+      concurrency:
+        example: 10
+        type: integer
+      max_candidates:
+        example: 10
+        type: integer
+      ping_times:
+        example: 3
+        type: integer
+      sample_per_range:
+        example: 3
+        type: integer
+      timeout_ms:
+        example: 5000
+        type: integer
+      top_n:
+        example: 5
+        type: integer
+    type: object
+  wireguard.ClientConfigFile:
+    description: Saved WireGuard client config file
+    properties:
+      content:
+        example: |-
+          [Interface]
+          PrivateKey = ...
+        type: string
+      name:
+        example: client-0.conf
+        type: string
+    type: object
+  wireguard.DerivePublicKeyRequest:
+    description: Request to derive a WireGuard public key from a private key
+    properties:
+      private_key:
+        example: gL7fV/1GkH+3...
+        type: string
+    required:
+    - private_key
+    type: object
+  wireguard.MessageResponse:
+    description: Generic message response
+    properties:
+      message:
+        example: operation completed
+        type: string
+    type: object
+  wireguard.PublicIPResponse:
+    description: Response containing the server's public IP address
+    properties:
+      ip:
+        example: 203.0.113.1
+        type: string
+    type: object
+  wireguard.SaveClientFileRequest:
+    description: Request to save a WireGuard client .conf file
+    properties:
+      client_index:
+        example: 0
+        type: integer
+      content:
+        example: |-
+          [Interface]
+          PrivateKey = ...
+        type: string
+    type: object
+  wireguard.WireGuardKeyPair:
+    description: WireGuard key pair with private and public keys
+    properties:
+      privateKey:
+        example: gL7fV/1GkH+3...
+        type: string
+      publicKey:
+        example: xTIBdMd5Fq+3...
+        type: string
+    type: object
+  wireguard.WireGuardKeyRequest:
+    description: Request to generate or retrieve cached WireGuard keys
+    properties:
+      ip:
+        example: 10.0.0.1
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for managing sing-box, WireGuard, subscriptions, probing, and WARP
+  title: Singbox UI API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Returns the server health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /prober/best:
+    get:
+      description: Returns the online node with the lowest measured latency
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get best node
+      tags:
+      - prober
+  /prober/nodes:
+    delete:
+      description: Removes all nodes from the prober's node list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Clear prober nodes
+      tags:
+      - prober
+    post:
+      consumes:
+      - application/json
+      description: Adds a single new node to the prober's node list
+      parameters:
+      - description: Node details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/prober.ProberNodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Add prober node
+      tags:
+      - prober
+    put:
+      consumes:
+      - application/json
+      description: Replaces the entire set of probed nodes with the given list
+      parameters:
+      - description: List of nodes
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/prober.ProberNodesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Update prober nodes
+      tags:
+      - prober
+  /prober/nodes/{tag}:
+    delete:
+      description: Removes a single node from the prober's node list by tag
+      parameters:
+      - description: Node tag
+        in: path
+        name: tag
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Remove prober node
+      tags:
+      - prober
+  /prober/online:
+    get:
+      description: Returns all nodes that are currently online
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get online nodes
+      tags:
+      - prober
+  /prober/results:
+    get:
+      description: Returns probe results for all registered nodes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all probe results
+      tags:
+      - prober
+  /prober/results/{tag}:
+    get:
+      description: Returns the probe result for a specific node identified by its
+        tag
+      parameters:
+      - description: Node tag
+        in: path
+        name: tag
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get probe result by tag
+      tags:
+      - prober
+  /prober/save:
+    post:
+      description: Saves probe results to the subscription service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save probe results
+      tags:
+      - prober
+  /prober/start:
+    post:
+      description: Starts the periodic probing loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Start prober
+      tags:
+      - prober
+  /prober/status:
+    get:
+      description: Returns the current prober engine status including running state
+        and probe counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.ProberStatus'
+      summary: Get prober status
+      tags:
+      - prober
+  /prober/stop:
+    post:
+      description: Stops the periodic probing loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Stop prober
+      tags:
+      - prober
+  /prober/sync:
+    post:
+      description: Imports proxy nodes from the subscription service and adds them
+        to the prober
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Sync nodes from subscription
+      tags:
+      - prober
+  /singbox/certificate:
+    get:
+      description: Returns metadata about the stored TLS certificate including validity
+        and fingerprint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get certificate info
+      tags:
+      - certificate
+    post:
+      consumes:
+      - application/json
+      description: Generates a self-signed TLS certificate for the given domain and
+        validity period, saves it to the singbox directory
+      parameters:
+      - description: Domain and validity period
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.GenerateCertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate self-signed certificate
+      tags:
+      - certificate
+  /singbox/certificate/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads cert.pem and key.pem files as multipart form data
+      parameters:
+      - description: Certificate file (cert.pem)
+        in: formData
+        name: cert
+        required: true
+        type: file
+      - description: Private key file (key.pem)
+        in: formData
+        name: key
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CertificateInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Upload certificate files
+      tags:
+      - certificate
+  /singbox/config:
+    get:
+      description: Returns the current sing-box configuration as raw JSON
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw config JSON
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get sing-box config
+      tags:
+      - singbox
+    post:
+      consumes:
+      - application/json
+      description: Saves the sing-box configuration from the raw request body
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: config saved
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save sing-box config
+      tags:
+      - singbox
+  /singbox/containers:
+    get:
+      description: Returns all sing-box Docker containers across all named instances
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of containers
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List all containers
+      tags:
+      - singbox
+  /singbox/ensure-image:
+    post:
+      description: Pulls the sing-box Docker image if not already present
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: image ready
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Ensure sing-box image
+      tags:
+      - singbox
+  /singbox/instances:
+    get:
+      description: Returns all named configuration instances with their status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of configs
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List named configs
+      tags:
+      - singbox
+  /singbox/instances/{name}:
+    delete:
+      description: Deletes a named configuration and stops its container if running
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: config deleted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Delete named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/check:
+    post:
+      description: Validates the JSON syntax of a named configuration
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.CheckConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Check named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/config:
+    get:
+      description: Returns a named configuration as raw JSON
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Raw config JSON
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named config
+      tags:
+      - singbox
+    post:
+      consumes:
+      - application/json
+      description: Saves a named configuration, validates it, and returns the result
+      parameters:
+      - description: Config name (2-10 chars, start with letter)
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.CheckConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save named config
+      tags:
+      - singbox
+  /singbox/instances/{name}/logs:
+    get:
+      description: Returns the logs for a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: logs for container
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named container logs
+      tags:
+      - singbox
+  /singbox/instances/{name}/run:
+    post:
+      description: Starts a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Run named container
+      tags:
+      - singbox
+  /singbox/instances/{name}/status:
+    get:
+      description: Returns the running status and container ID of a named instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get named container status
+      tags:
+      - singbox
+  /singbox/instances/{name}/stop:
+    post:
+      description: Stops a named sing-box container instance
+      parameters:
+      - description: Config name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.NamedInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Stop named container
+      tags:
+      - singbox
+  /singbox/logs:
+    get:
+      description: Returns the logs from the sing-box Docker container
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.LogResponse'
+      summary: Get sing-box logs
+      tags:
+      - singbox
+  /singbox/reality/check-tls:
+    post:
+      consumes:
+      - application/json
+      description: Checks if a remote server supports TLS 1.3 (required for Reality
+        disguise domain)
+      parameters:
+      - description: Server domain and port
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.CheckTLS13Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.CheckTLS13Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Check TLS 1.3 support
+      tags:
+      - reality
+  /singbox/reality/keypair:
+    post:
+      description: Generates a random x25519 key pair for use with Reality TLS
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.RealityKeypairResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate Reality key pair
+      tags:
+      - reality
+  /singbox/reality/public-key:
+    post:
+      consumes:
+      - application/json
+      description: Derives the public key from a base64-encoded x25519 private key
+      parameters:
+      - description: Private key
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.DerivePublicKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/certificate.RealityKeypairResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Derive Reality public key
+      tags:
+      - reality
+  /singbox/run:
+    post:
+      description: Starts the sing-box Docker container with the current configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: container started
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Run sing-box
+      tags:
+      - singbox
+  /singbox/status:
+    get:
+      description: Returns whether the sing-box container is currently running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.StatusResponse'
+      summary: Check sing-box status
+      tags:
+      - singbox
+  /singbox/stop:
+    post:
+      description: Stops the running sing-box Docker container
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: container stopped
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Stop sing-box
+      tags:
+      - singbox
+  /singbox/version:
+    get:
+      description: Returns the version of the installed sing-box Docker image
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/singbox.VersionResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get sing-box version
+      tags:
+      - singbox
+  /speedtest/start:
+    post:
+      description: Starts a speed test for all loaded proxy nodes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: speed test started
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Start speed test
+      tags:
+      - speedtest
+  /speedtest/status:
+    get:
+      description: Returns the current speed test state including progress and results
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/speedtest.SpeedTestState'
+      summary: Get speed test status
+      tags:
+      - speedtest
+  /speedtest/stop:
+    post:
+      description: Stops the currently running speed test if one is in progress
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: stop requested
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Stop speed test
+      tags:
+      - speedtest
+  /subscription:
+    get:
+      description: Returns all subscriptions with total node counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get all subscriptions
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      description: Adds a new subscription by URL and parses its proxy nodes
+      parameters:
+      - description: Subscription details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.AddSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Add a new subscription
+      tags:
+      - subscription
+  /subscription/{id}:
+    delete:
+      description: Removes a subscription by its ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Delete a subscription
+      tags:
+      - subscription
+  /subscription/{id}/refresh:
+    post:
+      description: Re-fetches and parses a subscription by its ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Refresh a single subscription
+      tags:
+      - subscription
+  /subscription/{id}/settings:
+    patch:
+      consumes:
+      - application/json
+      description: Updates auto-update and interval settings for a subscription
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.UpdateSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Update subscription settings
+      tags:
+      - subscription
+  /subscription/nodes:
+    get:
+      description: Returns all proxy nodes across all subscriptions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get all proxy nodes
+      tags:
+      - subscription
+  /subscription/refresh-all:
+    post:
+      description: Re-fetches and parses all subscriptions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Refresh all subscriptions
+      tags:
+      - subscription
+  /subscription/user-agents:
+    get:
+      description: Returns available user-agent presets for subscription fetching
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get user agent presets
+      tags:
+      - subscription
+  /warp/account:
+    delete:
+      description: Deletes the stored WARP device account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Delete WARP account
+      tags:
+      - warp
+    get:
+      description: Returns the stored WARP device account info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/warp.WarpRecord'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get WARP account
+      tags:
+      - warp
+  /warp/license:
+    post:
+      consumes:
+      - application/json
+      description: Binds a WARP+ license key to the registered device
+      parameters:
+      - description: License key
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/warp.LicenseBindRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/warp.WarpRecord'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Bind WARP+ license
+      tags:
+      - warp
+  /warp/register:
+    post:
+      description: Registers a new WARP device with Cloudflare
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/warp.WarpRegisterResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Register WARP device
+      tags:
+      - warp
+  /warp/scan:
+    post:
+      consumes:
+      - application/json
+      description: Scans for available WARP endpoints with best latency
+      parameters:
+      - description: Scan configuration (uses defaults if omitted)
+        in: body
+        name: config
+        schema:
+          $ref: '#/definitions/warp.WarpScanConfig'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/warp.WarpEndpointResult'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Scan WARP endpoints
+      tags:
+      - warp
+  /wireguard/client-config:
+    get:
+      description: Returns the saved WireGuard client configuration as raw JSON
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: client config JSON
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get client config
+      tags:
+      - wireguard
+    post:
+      consumes:
+      - application/json
+      description: Saves raw JSON as the WireGuard client configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save client config
+      tags:
+      - wireguard
+  /wireguard/client-files:
+    get:
+      description: Returns a list of all saved WireGuard .conf files
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/wireguard.ClientConfigFile'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List client config files
+      tags:
+      - wireguard
+  /wireguard/keygen:
+    post:
+      consumes:
+      - application/json
+      description: Generates or retrieves cached WireGuard key pair. Optionally associates
+        with an IP address
+      parameters:
+      - description: Optional IP address
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/wireguard.WireGuardKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.WireGuardKeyPair'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate WireGuard keys
+      tags:
+      - wireguard
+  /wireguard/keys-cache:
+    get:
+      description: Returns all cached WireGuard key entries with their associated
+        IPs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: keyed by IP
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get keys cache
+      tags:
+      - wireguard
+  /wireguard/pubkey:
+    post:
+      consumes:
+      - application/json
+      description: Derives a WireGuard public key from a base64-encoded private key
+      parameters:
+      - description: Private key
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/wireguard.DerivePublicKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: public key
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Derive public key
+      tags:
+      - wireguard
+  /wireguard/public-ip:
+    get:
+      description: Returns the server's detected public IPv4 address
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.PublicIPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get public IP
+      tags:
+      - wireguard
+  /wireguard/save-client-file:
+    post:
+      consumes:
+      - application/json
+      description: Saves a .conf file content for a specific client. Accepts JSON
+        body or multipart form
+      parameters:
+      - description: Client file info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/wireguard.SaveClientFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save client config file
+      tags:
+      - wireguard
+schemes:
+- http
+swagger: "2.0"
+tags:
+- description: Subscription management
+  name: subscription
+- description: sing-box container lifecycle and config management
+  name: singbox
+- description: WireGuard key generation and client configuration
+  name: wireguard
+- description: Self-signed certificate management
+  name: certificate
+- description: REALITY keypair generation and TLS checks
+  name: reality
+- description: Node health probing and latency measurement
+  name: prober
+- description: Proxy speed testing
+  name: speedtest
+- description: WARP registration, licensing, and endpoint scanning
+  name: warp
+- description: System health and status endpoints
+  name: system

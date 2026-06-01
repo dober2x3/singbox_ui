@@ -12,15 +12,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/curve25519"
+
+	"singbox-config-service/internal/docs"
 )
 
 // GenerateRealityKeypair generates a x25519 key pair for Reality TLS
+// @Summary      Generate Reality key pair
+// @Description  Generates a random x25519 key pair for use with Reality TLS
+// @Tags         reality
+// @Produce      json
+// @Success      200  {object}  RealityKeypairResponse
+// @Failure      500  {object}  docs.ErrorResponse
+// @Router       /singbox/reality/keypair [post]
 func GenerateRealityKeypair(c *gin.Context) {
 	var privateKey [32]byte
 	if _, err := rand.Read(privateKey[:]); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Internal Server Error",
-			"message": "Failed to generate private key: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, docs.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to generate private key: " + err.Error(),
 		})
 		return
 	}
@@ -32,9 +41,9 @@ func GenerateRealityKeypair(c *gin.Context) {
 
 	publicKey, err := curve25519.X25519(privateKey[:], curve25519.Basepoint)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Internal Server Error",
-			"message": "Failed to derive public key: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, docs.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to derive public key: " + err.Error(),
 		})
 		return
 	}
@@ -46,31 +55,41 @@ func GenerateRealityKeypair(c *gin.Context) {
 }
 
 // DeriveRealityPublicKey derives a public key from a Reality private key
+// @Summary      Derive Reality public key
+// @Description  Derives the public key from a base64-encoded x25519 private key
+// @Tags         reality
+// @Accept       json
+// @Produce      json
+// @Param        request body DerivePublicKeyRequest true "Private key"
+// @Success      200  {object}  RealityKeypairResponse
+// @Failure      400  {object}  docs.ErrorResponse
+// @Failure      500  {object}  docs.ErrorResponse
+// @Router       /singbox/reality/public-key [post]
 func DeriveRealityPublicKey(c *gin.Context) {
 	var req struct {
 		PrivateKey string `json:"private_key" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "private_key is required",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "private_key is required",
 		})
 		return
 	}
 
 	privateKeyBytes, err := base64.RawURLEncoding.DecodeString(req.PrivateKey)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "Invalid private key encoding",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Invalid private key encoding",
 		})
 		return
 	}
 
 	if len(privateKeyBytes) != 32 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "Invalid private key length",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Invalid private key length",
 		})
 		return
 	}
@@ -82,9 +101,9 @@ func DeriveRealityPublicKey(c *gin.Context) {
 
 	publicKey, err := curve25519.X25519(privateKeyBytes, curve25519.Basepoint)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Internal Server Error",
-			"message": "Failed to derive public key: " + err.Error(),
+		c.JSON(http.StatusInternalServerError, docs.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to derive public key: " + err.Error(),
 		})
 		return
 	}
@@ -94,16 +113,25 @@ func DeriveRealityPublicKey(c *gin.Context) {
 	})
 }
 
-// CheckTLS13Support checks if a server supports TLS 1.3 (Reality disguise domain requirement)
+// CheckTLS13Support checks if a server supports TLS 1.3
+// @Summary      Check TLS 1.3 support
+// @Description  Checks if a remote server supports TLS 1.3 (required for Reality disguise domain)
+// @Tags         reality
+// @Accept       json
+// @Produce      json
+// @Param        request body CheckTLS13Request true "Server domain and port"
+// @Success      200  {object}  CheckTLS13Response
+// @Failure      400  {object}  docs.ErrorResponse
+// @Router       /singbox/reality/check-tls [post]
 func CheckTLS13Support(c *gin.Context) {
 	var req struct {
 		Server string `json:"server" binding:"required"`
 		Port   int    `json:"port"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "server is required",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "server is required",
 		})
 		return
 	}
@@ -113,17 +141,17 @@ func CheckTLS13Support(c *gin.Context) {
 
 	// Security check: reject IP addresses (Reality target must be a domain name)
 	if ip := net.ParseIP(req.Server); ip != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "IP addresses not allowed, use a domain name",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "IP addresses not allowed, use a domain name",
 		})
 		return
 	}
 
 	if req.Port < 1 || req.Port > 65535 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Bad Request",
-			"message": "port must be between 1 and 65535",
+		c.JSON(http.StatusBadRequest, docs.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "port must be between 1 and 65535",
 		})
 		return
 	}
