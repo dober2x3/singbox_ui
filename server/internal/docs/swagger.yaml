@@ -89,6 +89,56 @@ definitions:
         example: detailed error description
         type: string
     type: object
+  prober.MessageResponse:
+    properties:
+      message:
+        example: operation completed
+        type: string
+    type: object
+  prober.ProberNodeRequest:
+    properties:
+      address:
+        type: string
+      port:
+        type: integer
+      protocol:
+        type: string
+      tag:
+        type: string
+    required:
+    - address
+    - port
+    - protocol
+    - tag
+    type: object
+  prober.ProberNodesRequest:
+    properties:
+      nodes:
+        items:
+          $ref: '#/definitions/prober.ProberNodeRequest'
+        type: array
+    required:
+    - nodes
+    type: object
+  prober.ProberStatus:
+    description: Current prober engine status
+    properties:
+      last_probe_time:
+        example: "2026-06-01T12:00:00Z"
+        type: string
+      offline_nodes:
+        example: 3
+        type: integer
+      online_nodes:
+        example: 5
+        type: integer
+      running:
+        example: true
+        type: boolean
+      total_probes:
+        example: 42
+        type: integer
+    type: object
   speedtest.SpeedTestState:
     properties:
       download_speed:
@@ -360,6 +410,246 @@ info:
   title: Singbox UI API
   version: "1.0"
 paths:
+  /prober/best:
+    get:
+      description: Returns the online node with the lowest measured latency
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get best node
+      tags:
+      - prober
+  /prober/nodes:
+    delete:
+      description: Removes all nodes from the prober's node list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Clear prober nodes
+      tags:
+      - prober
+    post:
+      consumes:
+      - application/json
+      description: Adds a single new node to the prober's node list
+      parameters:
+      - description: Node details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/prober.ProberNodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Add prober node
+      tags:
+      - prober
+    put:
+      consumes:
+      - application/json
+      description: Replaces the entire set of probed nodes with the given list
+      parameters:
+      - description: List of nodes
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/prober.ProberNodesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Update prober nodes
+      tags:
+      - prober
+  /prober/nodes/{tag}:
+    delete:
+      description: Removes a single node from the prober's node list by tag
+      parameters:
+      - description: Node tag
+        in: path
+        name: tag
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Remove prober node
+      tags:
+      - prober
+  /prober/online:
+    get:
+      description: Returns all nodes that are currently online
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get online nodes
+      tags:
+      - prober
+  /prober/results:
+    get:
+      description: Returns probe results for all registered nodes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all probe results
+      tags:
+      - prober
+  /prober/results/{tag}:
+    get:
+      description: Returns the probe result for a specific node identified by its
+        tag
+      parameters:
+      - description: Node tag
+        in: path
+        name: tag
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get probe result by tag
+      tags:
+      - prober
+  /prober/save:
+    post:
+      description: Saves probe results to the subscription service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save probe results
+      tags:
+      - prober
+  /prober/start:
+    post:
+      description: Starts the periodic probing loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Start prober
+      tags:
+      - prober
+  /prober/status:
+    get:
+      description: Returns the current prober engine status including running state
+        and probe counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.ProberStatus'
+      summary: Get prober status
+      tags:
+      - prober
+  /prober/stop:
+    post:
+      description: Stops the periodic probing loop
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+      summary: Stop prober
+      tags:
+      - prober
+  /prober/sync:
+    post:
+      description: Imports proxy nodes from the subscription service and adds them
+        to the prober
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/prober.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Sync nodes from subscription
+      tags:
+      - prober
   /singbox/certificate:
     get:
       description: Returns metadata about the stored TLS certificate including validity

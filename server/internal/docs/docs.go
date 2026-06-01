@@ -15,6 +15,366 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/prober/best": {
+            "get": {
+                "description": "Returns the online node with the lowest measured latency",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Get best node",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/nodes": {
+            "put": {
+                "description": "Replaces the entire set of probed nodes with the given list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Update prober nodes",
+                "parameters": [
+                    {
+                        "description": "List of nodes",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/prober.ProberNodesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Adds a single new node to the prober's node list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Add prober node",
+                "parameters": [
+                    {
+                        "description": "Node details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/prober.ProberNodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes all nodes from the prober's node list",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Clear prober nodes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/nodes/{tag}": {
+            "delete": {
+                "description": "Removes a single node from the prober's node list by tag",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Remove prober node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node tag",
+                        "name": "tag",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/online": {
+            "get": {
+                "description": "Returns all nodes that are currently online",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Get online nodes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/results": {
+            "get": {
+                "description": "Returns probe results for all registered nodes",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Get all probe results",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/results/{tag}": {
+            "get": {
+                "description": "Returns the probe result for a specific node identified by its tag",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Get probe result by tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node tag",
+                        "name": "tag",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/save": {
+            "post": {
+                "description": "Saves probe results to the subscription service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Save probe results",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/start": {
+            "post": {
+                "description": "Starts the periodic probing loop",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Start prober",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/status": {
+            "get": {
+                "description": "Returns the current prober engine status including running state and probe counts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Get prober status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.ProberStatus"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/stop": {
+            "post": {
+                "description": "Stops the periodic probing loop",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Stop prober",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/prober/sync": {
+            "post": {
+                "description": "Imports proxy nodes from the subscription service and adds them to the prober",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "prober"
+                ],
+                "summary": "Sync nodes from subscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/prober.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/singbox/certificate": {
             "get": {
                 "description": "Returns metadata about the stored TLS certificate including validity and fingerprint",
@@ -1181,6 +1541,78 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "detailed error description"
+                }
+            }
+        },
+        "prober.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "operation completed"
+                }
+            }
+        },
+        "prober.ProberNodeRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "port",
+                "protocol",
+                "tag"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "prober.ProberNodesRequest": {
+            "type": "object",
+            "required": [
+                "nodes"
+            ],
+            "properties": {
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/prober.ProberNodeRequest"
+                    }
+                }
+            }
+        },
+        "prober.ProberStatus": {
+            "description": "Current prober engine status",
+            "type": "object",
+            "properties": {
+                "last_probe_time": {
+                    "type": "string",
+                    "example": "2026-06-01T12:00:00Z"
+                },
+                "offline_nodes": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "online_nodes": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "running": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "total_probes": {
+                    "type": "integer",
+                    "example": 42
                 }
             }
         },
