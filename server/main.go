@@ -1,5 +1,31 @@
 // Package main is the entry point for the sing-box config service HTTP server.
 // It initializes all domain services, sets up Gin routes, and starts the HTTP listener.
+//
+// @title           Singbox UI API
+// @version         1.0
+// @description     API for managing sing-box, WireGuard, subscriptions, probing, and WARP
+// @host            localhost:8080
+// @BasePath        /api
+// @schemes         http
+//
+// @tag.name        subscription
+// @tag.description Subscription management
+// @tag.name        singbox
+// @tag.description sing-box container lifecycle and config management
+// @tag.name        wireguard
+// @tag.description WireGuard key generation and client configuration
+// @tag.name        certificate
+// @tag.description Self-signed certificate management
+// @tag.name        reality
+// @tag.description REALITY keypair generation and TLS checks
+// @tag.name        prober
+// @tag.description Node health probing and latency measurement
+// @tag.name        speedtest
+// @tag.description Proxy speed testing
+// @tag.name        warp
+// @tag.description WARP registration, licensing, and endpoint scanning
+// @tag.name        system
+// @tag.description System health and status endpoints
 package main
 
 import (
@@ -21,6 +47,9 @@ import (
 	"singbox-config-service/internal/wireguard"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	_ "singbox-config-service/internal/docs"
 )
 
 // distFS embeds the compiled frontend dist directory for static file serving.
@@ -138,6 +167,9 @@ func main() {
 		warpGroup := api.Group("/warp")
 		warpHandler.RegisterRoutes(warpGroup)
 	}
+
+	// Swagger API documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {

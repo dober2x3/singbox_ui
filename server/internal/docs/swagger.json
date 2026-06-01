@@ -1,0 +1,53 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "API for managing sing-box, WireGuard, subscriptions, probing, and WARP",
+        "title": "Singbox UI API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {},
+    "tags": [
+        {
+            "description": "Subscription management",
+            "name": "subscription"
+        },
+        {
+            "description": "sing-box container lifecycle and config management",
+            "name": "singbox"
+        },
+        {
+            "description": "WireGuard key generation and client configuration",
+            "name": "wireguard"
+        },
+        {
+            "description": "Self-signed certificate management",
+            "name": "certificate"
+        },
+        {
+            "description": "REALITY keypair generation and TLS checks",
+            "name": "reality"
+        },
+        {
+            "description": "Node health probing and latency measurement",
+            "name": "prober"
+        },
+        {
+            "description": "Proxy speed testing",
+            "name": "speedtest"
+        },
+        {
+            "description": "WARP registration, licensing, and endpoint scanning",
+            "name": "warp"
+        },
+        {
+            "description": "System health and status endpoints",
+            "name": "system"
+        }
+    ]
+}
