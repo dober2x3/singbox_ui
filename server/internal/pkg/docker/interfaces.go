@@ -11,7 +11,7 @@ type ContainerAPI interface {
 	ContainerStop(ctx context.Context, containerID string, timeout *int) error
 	ContainerRemove(ctx context.Context, containerID string, force bool) error
 	ContainerLogs(ctx context.Context, containerID string, tail string) (string, error)
-	ContainerInspect(ctx context.Context, containerID string) (state string, err error)
+	GetContainerState(ctx context.Context, containerName string) (state string, err error)
 	ImagePull(ctx context.Context, image string) (io.ReadCloser, error)
 	ImageList(ctx context.Context, image string) (bool, error)
 	Close() error

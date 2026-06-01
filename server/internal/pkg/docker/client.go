@@ -17,7 +17,6 @@ import (
 
 type Client struct {
 	cli *client.Client
-	ctx context.Context
 }
 
 func NewClient() (*Client, error) {
@@ -27,7 +26,6 @@ func NewClient() (*Client, error) {
 	}
 	return &Client{
 		cli: cli,
-		ctx: context.Background(),
 	}, nil
 }
 
@@ -39,10 +37,10 @@ func (d *Client) Close() error {
 }
 
 // EnsureImage ensures the image exists, trying load from tar first then pull
-func (d *Client) EnsureImage(imageName, tarPath string) error {
+func (d *Client) EnsureImage(ctx context.Context, imageName, tarPath string) error {
 	log.Printf("Checking if image %s exists...", imageName)
 
-	images, err := d.cli.ImageList(d.ctx, types.ImageListOptions{
+	images, err := d.cli.ImageList(ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", imageName)),
 	})
 	if err != nil {
@@ -56,7 +54,7 @@ func (d *Client) EnsureImage(imageName, tarPath string) error {
 	// Try loading from tar
 	if tarPath != "" {
 		if _, err := os.Stat(tarPath); err == nil {
-			if err := d.loadImageFromFile(tarPath, imageName); err == nil {
+			if err := d.loadImageFromFile(ctx, tarPath, imageName); err == nil {
 				return nil
 			} else {
 				log.Printf("Embedded image load failed: %v, falling back to pull", err)
@@ -66,7 +64,7 @@ func (d *Client) EnsureImage(imageName, tarPath string) error {
 
 	// Pull from registry
 	log.Printf("Pulling image %s...", imageName)
-	reader, err := d.cli.ImagePull(d.ctx, imageName, types.ImagePullOptions{})
+	reader, err := d.cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to pull image: %w", err)
 	}
@@ -79,14 +77,14 @@ func (d *Client) EnsureImage(imageName, tarPath string) error {
 	return nil
 }
 
-func (d *Client) loadImageFromFile(tarPath, imageName string) error {
+func (d *Client) loadImageFromFile(ctx context.Context, tarPath, imageName string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	resp, err := d.cli.ImageLoad(d.ctx, file, true)
+	resp, err := d.cli.ImageLoad(ctx, file, true)
 	if err != nil {
 		return fmt.Errorf("failed to load image: %w", err)
 	}
@@ -94,12 +92,12 @@ func (d *Client) loadImageFromFile(tarPath, imageName string) error {
 	_, _ = io.Copy(io.Discard, resp.Body)
 
 	// Re-tag CI temp tag if needed
-	images, err := d.cli.ImageList(d.ctx, types.ImageListOptions{})
+	images, err := d.cli.ImageList(ctx, types.ImageListOptions{})
 	if err == nil {
 		for _, img := range images {
 			for _, tag := range img.RepoTags {
 				if strings.HasPrefix(tag, "singbox:") {
-					if err := d.cli.ImageTag(d.ctx, img.ID, imageName); err != nil {
+					if err := d.cli.ImageTag(ctx, img.ID, imageName); err != nil {
 						log.Printf("Warning: failed to re-tag image: %v", err)
 					}
 					break
@@ -109,7 +107,7 @@ func (d *Client) loadImageFromFile(tarPath, imageName string) error {
 	}
 
 	// Verify
-	verifyImages, err := d.cli.ImageList(d.ctx, types.ImageListOptions{
+	verifyImages, err := d.cli.ImageList(ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", imageName)),
 	})
 	if err != nil || len(verifyImages) == 0 {
@@ -192,7 +190,7 @@ func (d *Client) ContainerLogs(ctx context.Context, containerID, tail string) (s
 	return logs, nil
 }
 
-func (d *Client) ContainerInspect(ctx context.Context, containerName string) (state string, err error) {
+func (d *Client) GetContainerState(ctx context.Context, containerName string) (state string, err error) {
 	containers, err := d.cli.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("name", containerName)),
@@ -206,8 +204,8 @@ func (d *Client) ContainerInspect(ctx context.Context, containerName string) (st
 	return containers[0].State, nil
 }
 
-func (d *Client) ListContainers(prefix string) ([]ContainerInfo, error) {
-	containers, err := d.cli.ContainerList(d.ctx, container.ListOptions{
+func (d *Client) ListContainers(ctx context.Context, prefix string) ([]ContainerInfo, error) {
+	containers, err := d.cli.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("name", prefix)),
 	})
