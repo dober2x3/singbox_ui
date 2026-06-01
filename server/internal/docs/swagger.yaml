@@ -113,6 +113,70 @@ definitions:
         example: my-proxy
         type: string
     type: object
+  wireguard.ClientConfigFile:
+    description: Saved WireGuard client config file
+    properties:
+      content:
+        example: |-
+          [Interface]
+          PrivateKey = ...
+        type: string
+      name:
+        example: client-0.conf
+        type: string
+    type: object
+  wireguard.DerivePublicKeyRequest:
+    description: Request to derive a WireGuard public key from a private key
+    properties:
+      private_key:
+        example: gL7fV/1GkH+3...
+        type: string
+    required:
+    - private_key
+    type: object
+  wireguard.MessageResponse:
+    description: Generic message response
+    properties:
+      message:
+        example: operation completed
+        type: string
+    type: object
+  wireguard.PublicIPResponse:
+    description: Response containing the server's public IP address
+    properties:
+      ip:
+        example: 203.0.113.1
+        type: string
+    type: object
+  wireguard.SaveClientFileRequest:
+    description: Request to save a WireGuard client .conf file
+    properties:
+      client_index:
+        example: 0
+        type: integer
+      content:
+        example: |-
+          [Interface]
+          PrivateKey = ...
+        type: string
+    type: object
+  wireguard.WireGuardKeyPair:
+    description: WireGuard key pair with private and public keys
+    properties:
+      privateKey:
+        example: gL7fV/1GkH+3...
+        type: string
+      publicKey:
+        example: xTIBdMd5Fq+3...
+        type: string
+    type: object
+  wireguard.WireGuardKeyRequest:
+    description: Request to generate or retrieve cached WireGuard keys
+    properties:
+      ip:
+        example: 10.0.0.1
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -327,6 +391,189 @@ paths:
       summary: Stop speed test
       tags:
       - speedtest
+  /wireguard/client-config:
+    get:
+      description: Returns the saved WireGuard client configuration as raw JSON
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: client config JSON
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get client config
+      tags:
+      - wireguard
+    post:
+      consumes:
+      - application/json
+      description: Saves raw JSON as the WireGuard client configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save client config
+      tags:
+      - wireguard
+  /wireguard/client-files:
+    get:
+      description: Returns a list of all saved WireGuard .conf files
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/wireguard.ClientConfigFile'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: List client config files
+      tags:
+      - wireguard
+  /wireguard/keygen:
+    post:
+      consumes:
+      - application/json
+      description: Generates or retrieves cached WireGuard key pair. Optionally associates
+        with an IP address
+      parameters:
+      - description: Optional IP address
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/wireguard.WireGuardKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.WireGuardKeyPair'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Generate WireGuard keys
+      tags:
+      - wireguard
+  /wireguard/keys-cache:
+    get:
+      description: Returns all cached WireGuard key entries with their associated
+        IPs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: keyed by IP
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get keys cache
+      tags:
+      - wireguard
+  /wireguard/pubkey:
+    post:
+      consumes:
+      - application/json
+      description: Derives a WireGuard public key from a base64-encoded private key
+      parameters:
+      - description: Private key
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/wireguard.DerivePublicKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: public key
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Derive public key
+      tags:
+      - wireguard
+  /wireguard/public-ip:
+    get:
+      description: Returns the server's detected public IPv4 address
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.PublicIPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Get public IP
+      tags:
+      - wireguard
+  /wireguard/save-client-file:
+    post:
+      consumes:
+      - application/json
+      description: Saves a .conf file content for a specific client. Accepts JSON
+        body or multipart form
+      parameters:
+      - description: Client file info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/wireguard.SaveClientFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wireguard.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/docs.ErrorResponse'
+      summary: Save client config file
+      tags:
+      - wireguard
 schemes:
 - http
 swagger: "2.0"

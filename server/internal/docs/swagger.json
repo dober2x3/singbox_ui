@@ -322,6 +322,281 @@
                     }
                 }
             }
+        },
+        "/wireguard/client-config": {
+            "get": {
+                "description": "Returns the saved WireGuard client configuration as raw JSON",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Get client config",
+                "responses": {
+                    "200": {
+                        "description": "client config JSON",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Saves raw JSON as the WireGuard client configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Save client config",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/client-files": {
+            "get": {
+                "description": "Returns a list of all saved WireGuard .conf files",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "List client config files",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/wireguard.ClientConfigFile"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/keygen": {
+            "post": {
+                "description": "Generates or retrieves cached WireGuard key pair. Optionally associates with an IP address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Generate WireGuard keys",
+                "parameters": [
+                    {
+                        "description": "Optional IP address",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.WireGuardKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.WireGuardKeyPair"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/keys-cache": {
+            "get": {
+                "description": "Returns all cached WireGuard key entries with their associated IPs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Get keys cache",
+                "responses": {
+                    "200": {
+                        "description": "keyed by IP",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/pubkey": {
+            "post": {
+                "description": "Derives a WireGuard public key from a base64-encoded private key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Derive public key",
+                "parameters": [
+                    {
+                        "description": "Private key",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.DerivePublicKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "public key",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/public-ip": {
+            "get": {
+                "description": "Returns the server's detected public IPv4 address",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Get public IP",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.PublicIPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wireguard/save-client-file": {
+            "post": {
+                "description": "Saves a .conf file content for a specific client. Accepts JSON body or multipart form",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wireguard"
+                ],
+                "summary": "Save client config file",
+                "parameters": [
+                    {
+                        "description": "Client file info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.SaveClientFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/wireguard.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -478,6 +753,91 @@
                 "tag": {
                     "type": "string",
                     "example": "my-proxy"
+                }
+            }
+        },
+        "wireguard.ClientConfigFile": {
+            "description": "Saved WireGuard client config file",
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "[Interface]\nPrivateKey = ..."
+                },
+                "name": {
+                    "type": "string",
+                    "example": "client-0.conf"
+                }
+            }
+        },
+        "wireguard.DerivePublicKeyRequest": {
+            "description": "Request to derive a WireGuard public key from a private key",
+            "type": "object",
+            "required": [
+                "private_key"
+            ],
+            "properties": {
+                "private_key": {
+                    "type": "string",
+                    "example": "gL7fV/1GkH+3..."
+                }
+            }
+        },
+        "wireguard.MessageResponse": {
+            "description": "Generic message response",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "operation completed"
+                }
+            }
+        },
+        "wireguard.PublicIPResponse": {
+            "description": "Response containing the server's public IP address",
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string",
+                    "example": "203.0.113.1"
+                }
+            }
+        },
+        "wireguard.SaveClientFileRequest": {
+            "description": "Request to save a WireGuard client .conf file",
+            "type": "object",
+            "properties": {
+                "client_index": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "content": {
+                    "type": "string",
+                    "example": "[Interface]\nPrivateKey = ..."
+                }
+            }
+        },
+        "wireguard.WireGuardKeyPair": {
+            "description": "WireGuard key pair with private and public keys",
+            "type": "object",
+            "properties": {
+                "privateKey": {
+                    "type": "string",
+                    "example": "gL7fV/1GkH+3..."
+                },
+                "publicKey": {
+                    "type": "string",
+                    "example": "xTIBdMd5Fq+3..."
+                }
+            }
+        },
+        "wireguard.WireGuardKeyRequest": {
+            "description": "Request to generate or retrieve cached WireGuard keys",
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string",
+                    "example": "10.0.0.1"
                 }
             }
         }
