@@ -49,6 +49,11 @@ func (h *Handler) GetCertificateInfo(c *gin.Context) {
 }
 
 func (h *Handler) UploadCertificate(c *gin.Context) {
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+		return
+	}
+
 	certFile, _, err := c.Request.FormFile("cert")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cert file required"})
@@ -63,8 +68,16 @@ func (h *Handler) UploadCertificate(c *gin.Context) {
 	}
 	defer keyFile.Close()
 
-	certData, _ := io.ReadAll(certFile)
-	keyData, _ := io.ReadAll(keyFile)
+	certData, err := io.ReadAll(certFile)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read cert file"})
+		return
+	}
+	keyData, err := io.ReadAll(keyFile)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read key file"})
+		return
+	}
 
 	certPath := filepath.Join(h.svc.certDir, "cert.pem")
 	if err := os.WriteFile(certPath, certData, 0644); err != nil {
@@ -79,7 +92,7 @@ func (h *Handler) UploadCertificate(c *gin.Context) {
 
 	info, err := h.svc.GetCertificateInfo(certPath)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "Files saved but could not read info"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, info)
