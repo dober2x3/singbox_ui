@@ -334,19 +334,19 @@ func main() {
 
 ## 8. Migration Plan
 
-| Step | Action | Verification |
-|------|--------|-------------|
-| 1 | Create `internal/pkg/{docker,config,types}` — extract shared code | `go build ./...` |
-| 2 | Create `internal/{wireguard,certificate,warp}` — independent slices | `go build ./...` |
-| 3 | Create `internal/subscription/` — extract parsing + CRUD | `go build ./...` |
-| 4 | Create `internal/singbox/` — extract container management | `go build ./...` |
-| 5 | Create `internal/{prober,speedtest}/` — extract probing + speed test | `go build ./...` |
-| 6 | Create `internal/scheduler/` — extract auto-update scheduler | `go build ./...` |
-| 7 | Rewrite `main.go` — new DI, route registration | `go run .` |
-| 8 | Delete `handlers/` and `services/` directories | `go build ./...` |
-| 9 | Run linter | `golangci-lint run ./...` |
-| 10 | Run tests | `go test ./...` |
-| 11 | Build full binary | `go build -o sing-box-ui .` |
+| Step | Action | Tests Written | Verification |
+|------|--------|-------------|-------------|
+| 1 | Create `internal/pkg/{docker,config,types}` — extract shared code | `pkg/types/*_test.go`, `pkg/config/*_test.go` | `go build ./...` + `go test ./internal/pkg/...` |
+| 2 | Create `internal/{wireguard,certificate,warp}` — independent slices | Full coverage of all public methods in each package | `go build ./...` + `go test ./internal/...` |
+| 3 | Create `internal/subscription/` — extract parsing + CRUD | `parser_*_test.go`, `service_test.go`, `store_test.go` | `go build ./...` + `go test ./internal/subscription/...` |
+| 4 | Create `internal/singbox/` — extract container management | `service_test.go` (with docker mock) | `go build ./...` + `go test ./internal/singbox/...` |
+| 5 | Create `internal/{prober,speedtest}/` — extract probing + speed test | `engine_test.go`, `service_test.go` (adapt existing) | `go build ./...` + `go test ./internal/prober/... ./internal/speedtest/...` |
+| 6 | Create `internal/scheduler/` — extract auto-update scheduler | `service_test.go` (full mock of both dependencies) | `go build ./...` + `go test ./internal/scheduler/...` |
+| 7 | Rewrite `main.go` — new DI, route registration | — | `go run .` (manual smoke test) |
+| 8 | Delete `handlers/` and `services/` directories | — | `go build ./...` |
+| 9 | Run all tests + race detector | — | `go test -race -cover ./...` |
+| 10 | Run linter | — | `golangci-lint run ./...` |
+| 11 | Build full binary + frontend | — | `npm run build` + `go build -o sing-box-ui .` |
 
 **Rollback strategy:** Each step compiles independently. Old `handlers/` and `services/` are only deleted on step 8. If something breaks, step 7's `main.go` can fall back to the old packages temporarily.
 
@@ -368,13 +368,130 @@ func main() {
 | `main.go` | ~200 | ~150 |
 | **Total** | **~5500** | **~4500** |
 
-## 10. Testing Strategy
+## 10. Testing Strategy — 100% Coverage of All Public Methods
 
-- **Unit tests per slice:** Each slice's `service.go` can be tested with mocked interfaces
-- **Docker mock:** `internal/pkg/docker` provides `ContainerAPI` interface → mock for singbox/speedtest tests
-- **File store mock:** `subscription/store.go` can have an in-memory implementation for tests
-- **Prober tests:** Already has `prober_test.go` — adapt to new package structure
-- **WARP scanner tests:** Already has `warp_scanner_test.go` — adapt to new package structure
+### 10.1 Mandate
+
+Every exported function, method, type, and interface in every package MUST have corresponding tests. No public API is considered complete without tests.
+
+Exceptions (must be explicitly documented in code):
+- Methods that require real Docker daemon (marked `// TestRequiresDocker`)
+- Methods that require real network access (marked `// TestRequiresNetwork`)
+- These exceptions still need a unit test with mocked dependencies that validates logic
+
+### 10.2 Test Layers
+
+#### Layer 1: Pure Logic Tests (no mocks needed)
+
+Applies to: `pkg/types`, `internal/subscription/parser_*`, `internal/wireguard/`, `internal/certificate/`
+
+These are deterministic, side-effect-free functions. Every public function gets:
+- **Happy path** — normal input → expected output
+- **Edge cases** — empty strings, zero values, extreme values
+- **Error cases** — invalid input → expected error
+- **Special formats** — IPv4, IPv6, URL-encoded, base64 variants
+
+```go
+// Example: pkg/types/sanitize_tag_test.go
+func TestSanitizeTag_ipv4(t *testing.T)
+func TestSanitizeTag_ipv6(t *testing.T)
+func TestSanitizeTag_specialChars(t *testing.T)
+func TestSanitizeTag_emptyAddress(t *testing.T)
+
+// Example: subscription/parser_vmess_test.go
+func TestParseVMessNode_standard(t *testing.T)
+func TestParseVMessNode_withTLS(t *testing.T)
+func TestParseVMessNode_withWSTransport(t *testing.T)
+func TestParseVMessNode_invalidBase64(t *testing.T)
+func TestParseVMessNode_missingFields(t *testing.T)
+```
+
+#### Layer 2: Service Logic Tests (mocked dependencies)
+
+Applies to: `internal/subscription/service.go`, `internal/prober/service.go`, `internal/speedtest/service.go`,
+`internal/singbox/service.go`, `internal/scheduler/service.go`, `internal/warp/service.go`
+
+Each service's public methods are tested with every dependency mocked via the interface contracts:
+
+```go
+// For each public method:
+func TestSubscriptionService_Add(t *testing.T)    // mock store
+func TestSubscriptionService_Add_invalidURL(t *testing.T)
+func TestSubscriptionService_Refresh(t *testing.T)  // mock HTTP fetcher
+func TestSubscriptionService_Delete_notFound(t *testing.T)
+
+func TestProberService_AddNode(t *testing.T)
+func TestProberService_GetResults_empty(t *testing.T)
+func TestProberService_SaveResults(t *testing.T)   // mock ProbeResultSaver
+```
+
+#### Layer 3: Engine/Stateful Tests
+
+Applies to: `internal/prober/engine.go`, `internal/warp/scanner.go`
+
+Tests for goroutine lifecycle, concurrency, context cancellation:
+
+```go
+func TestProberEngine_StartStop(t *testing.T)
+func TestProberEngine_ContextCancellation(t *testing.T)
+func TestProberEngine_ConcurrentAccess(t *testing.T)
+func TestWarpHandshakeProbe_success(t *testing.T)
+func TestWarpHandshakeProbe_timeout(t *testing.T)
+```
+
+#### Layer 4: Handler Tests (Gin test framework)
+
+Applies to: `internal/*/handler.go`
+
+Each handler is tested with `httptest.NewRecorder()` + `gin.CreateTestContext()`:
+
+```go
+func TestSingboxHandler_GetConfig(t *testing.T)
+func TestSubscriptionHandler_Add(t *testing.T)
+func TestProberHandler_GetStatus(t *testing.T)
+```
+
+### 10.3 Mock Strategy
+
+| Dependency | How to mock |
+|------------|-------------|
+| Docker client (`ContainerAPI`) | Generate mock via `go:generate` or hand-written in `internal/pkg/docker/mock_test.go` |
+| File system | In-memory implementations of store interfaces (e.g. `memStore` for subscription) |
+| HTTP fetcher | `SubscriptionFetcher` interface — mock returns canned data |
+| Time | Use `clock.Clock` interface or accept `time.Now` as parameter in testable code |
+| Prober network probes | Replace `tcpProbe`/`httpProbe` methods with overridable function fields in tests |
+
+### 10.4 Coverage Target
+
+| Package | Target | Method |
+|---------|--------|--------|
+| `pkg/types` | 100% | Table-driven tests for all exported functions |
+| `pkg/config` | 100% | Tests with env var setup/teardown |
+| `pkg/docker` | 100% | Interface mock; real client only if Docker present |
+| `internal/subscription/` | 100% | All parsers + service methods |
+| `internal/prober/` | 100% | Engine + service + CRUD |
+| `internal/singbox/` | 100% | Service with docker mock |
+| `internal/speedtest/` | 100% | Service with docker mock |
+| `internal/certificate/` | 100% | Pure crypto tests |
+| `internal/wireguard/` | 100% | Key generation + cache tests |
+| `internal/warp/` | 100% | Registration mock + scanner |
+| `internal/scheduler/` | 100% | Full mock of both dependencies |
+| **Total** | **100% of public API** | |
+
+### 10.5 Tooling
+
+- `go test -coverprofile=coverage.out ./...` — run all tests
+- `go tool cover -html=coverage.out` — visual coverage report
+- Table-driven tests (`t.Run()`) for all pure logic
+- Test helpers in `internal/testutil/` for common mocks
+- Race detector: `go test -race ./...` must pass
+
+### 10.6 Migration — Keeping Old Tests Green
+
+During migration, old tests continue to exist until step 8 (when `services/` is deleted). New tests are written alongside new code. The final state:
+- Old tests deleted with `services/` and `handlers/`
+- New tests cover all public methods in all new packages
+- CI pipeline runs `go test -cover ./...` and enforces coverage
 
 ## 11. Key Decisions
 
