@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -29,20 +28,11 @@ const (
 	speedTestDownloadURL = "https://speed.cloudflare.com/__down?bytes=10000000"
 	// speedTestDuration is the maximum time allowed for a download speed test.
 	speedTestDuration = 10 * time.Second
-
-	// speedTestContainerName is the name of the sing-box container used for testing.
-	speedTestContainerName = "sing-box-speedtest"
-	// containerConfigDir is the config directory path inside the container.
-	containerConfigDir = "/etc/sing-box"
-	// containerDataDir is the data directory path inside the container.
-	containerDataDir = "/var/lib/sing-box"
-	// singBoxImage is the Docker image tag for the sing-box container.
-	singBoxImage = "ghcr.io/sagernet/sing-box:v1.13.5"
 )
 
-// Service orchestrates speed tests against proxy nodes using sing-box containers.
+// Service orchestrates speed tests against proxy nodes using sing-box instances.
 type Service struct {
-	docker       ContainerManager
+	tempRuntime  TempRuntime
 	cfg          *config.Config
 	nodeProvider NodeProvider
 	resultSaver  SpeedTestResultSaver
@@ -51,12 +41,12 @@ type Service struct {
 	cancel       context.CancelFunc
 }
 
-// NewService creates a new Service with the given Docker manager and config.
-func NewService(docker ContainerManager, cfg *config.Config) *Service {
+// NewService creates a new Service with the given TempRuntime and config.
+func NewService(tempRuntime TempRuntime, cfg *config.Config) *Service {
 	return &Service{
-		docker: docker,
-		cfg:    cfg,
-		state:  &SpeedTestState{},
+		tempRuntime: tempRuntime,
+		cfg:         cfg,
+		state:       &SpeedTestState{},
 	}
 }
 
@@ -129,7 +119,6 @@ func (s *Service) runSpeedTest(ctx context.Context, cancel context.CancelFunc, n
 		if r := recover(); r != nil {
 			log.Printf("[speedtest] PANIC: %v", r)
 		}
-		s.cleanupContainer()
 		s.mu.Lock()
 		s.state.Running = false
 		if s.state.Status == "testing" {
@@ -229,50 +218,17 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 	}
 	defer os.Remove(cfgPath)
 
-	hostConfigPath := cfgPath
-	if resolved, err := s.cfg.ResolveHostConfigDir(cfgPath); err == nil {
-		hostConfigPath = resolved
-	}
-
-	s.cleanupContainer()
-
-	containerConfig := map[string]interface{}{
-		"Image": singBoxImage,
-		"Cmd":   []string{"-D", containerDataDir, "-C", containerConfigDir + "/", "run"},
-	}
-	hostConfig := map[string]interface{}{
-		"Binds":       []string{hostConfigPath + ":" + containerConfigDir + "/config.json:ro"},
-		"NetworkMode": "host",
-		"CapAdd":      []string{"NET_ADMIN"},
-	}
-
-	var id string
-	for attempt := 0; attempt < 5; attempt++ {
-		id, err = s.docker.ContainerCreate(ctx, containerConfig, hostConfig, speedTestContainerName)
-		if err == nil {
-			break
-		}
-		if !strings.Contains(err.Error(), "already in use") && !strings.Contains(err.Error(), "Conflict") {
-			return 0, 0, "", fmt.Errorf("container create: %w", err)
-		}
-		s.cleanupContainer()
-		time.Sleep(200 * time.Millisecond)
-	}
+	id, err := s.tempRuntime.StartTemp(ctx, cfgPath)
 	if err != nil {
-		return 0, 0, "", fmt.Errorf("container create after retries: %w", err)
-	}
-
-	if err := s.docker.ContainerStart(ctx, id); err != nil {
-		_ = s.docker.ContainerRemove(ctx, id, true)
-		return 0, 0, "", fmt.Errorf("container start: %w", err)
+		return 0, 0, "", fmt.Errorf("start temp instance: %w", err)
 	}
 
 	defer func() {
-		s.cleanupContainer()
+		_ = s.tempRuntime.StopTemp(ctx, id)
 	}()
 
-	if err := waitProxyReady(ctx, port, 10*time.Second); err != nil {
-		logs := s.getContainerLogs()
+	if err := s.tempRuntime.WaitTempReady(ctx, id, port, 10*time.Second); err != nil {
+		logs := s.tempRuntime.GetTempLogs(ctx, id)
 		return 0, 0, "", fmt.Errorf("proxy not ready (port %d): %s", port, logs)
 	}
 
@@ -320,16 +276,6 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 		speed = float64(n) / 1024.0 / elapsed
 	}
 	return minLatency, speed, "", nil
-}
-
-// cleanupContainer removes the speed test container forcefully.
-func (s *Service) cleanupContainer() {
-	_ = s.docker.ContainerRemove(context.Background(), speedTestContainerName, true)
-}
-
-// getContainerLogs is a stub that returns an empty string.
-func (s *Service) getContainerLogs() string {
-	return ""
 }
 
 // pickFreePort finds a free TCP port on localhost.

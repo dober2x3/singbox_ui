@@ -9,20 +9,19 @@ import (
 	"path/filepath"
 
 	"singbox-config-service/internal/pkg/config"
-	"singbox-config-service/internal/pkg/docker"
 )
 
-// Service provides business logic for sing-box configuration and container management.
+// Service provides business logic for sing-box configuration and instance management.
 type Service struct {
-	docker ContainerManager
-	cfg    *config.Config
+	runtime Runtime
+	cfg     *config.Config
 }
 
-// NewService creates a new Service with the given ContainerManager and Config.
-func NewService(docker ContainerManager, cfg *config.Config) *Service {
+// NewService creates a new Service with the given Runtime and Config.
+func NewService(runtime Runtime, cfg *config.Config) *Service {
 	return &Service{
-		docker: docker,
-		cfg:    cfg,
+		runtime: runtime,
+		cfg:     cfg,
 	}
 }
 
@@ -48,81 +47,43 @@ func (s *Service) GetConfig() ([]byte, error) {
 	return data, nil
 }
 
-// RunContainer creates and starts a sing-box Docker container.
+// RunContainer creates and starts a sing-box instance (Docker container or native process).
 func (s *Service) RunContainer() (string, error) {
 	configPath := filepath.Join(s.cfg.GetSingboxDir(), "config.json")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("config file not found, please save config first")
 	}
 
-	hostConfigPath := configPath
-	if s.cfg != nil {
-		if resolved, err := s.cfg.ResolveHostConfigDir(configPath); err == nil {
-			hostConfigPath = resolved
-		}
-	}
-
-	containerConfig := map[string]interface{}{
-		"Image": "sing-box",
-		"Cmd":   []string{"run", "-c", "/etc/sing-box/config.json"},
-		"ExposedPorts": map[string]interface{}{
-			"1080/tcp": struct{}{},
-			"1080/udp": struct{}{},
-		},
-	}
-	hostConfig := map[string]interface{}{
-		"Binds":        []string{hostConfigPath + ":/etc/sing-box/config.json:ro"},
-		"NetworkMode":  "host",
-		"CapAdd":       []string{"NET_ADMIN", "SYS_MODULE"},
-		"PortBindings": map[string]interface{}{},
-	}
-
-	id, err := s.docker.ContainerCreate(context.TODO(), containerConfig, hostConfig, "singbox")
-	if err != nil {
-		return "", fmt.Errorf("failed to create container: %w", err)
-	}
-
-	if err := s.docker.ContainerStart(context.TODO(), id); err != nil {
-		return "", fmt.Errorf("failed to start container: %w", err)
-	}
-
-	return id, nil
+	return s.runtime.Start(context.TODO(), "default", configPath)
 }
 
-// StopContainer stops the sing-box container.
+// StopContainer stops the sing-box instance.
 func (s *Service) StopContainer() error {
-	state, err := s.docker.GetContainerState(context.TODO(), "singbox")
-	if err != nil {
-		return err
-	}
-	if state == "" {
-		return nil
-	}
 	timeout := 10
-	return s.docker.ContainerStop(context.TODO(), "singbox", &timeout)
+	return s.runtime.Stop(context.TODO(), "default", &timeout)
 }
 
-// ContainerStatus returns whether the sing-box container is running and its ID.
+// ContainerStatus returns whether the sing-box instance is running and its identifier.
 func (s *Service) ContainerStatus() (running bool, containerID string) {
-	state, err := s.docker.GetContainerState(context.TODO(), "singbox")
-	if err != nil || state == "" {
+	running, id, err := s.runtime.Status(context.TODO(), "default")
+	if err != nil {
 		return false, ""
 	}
-	return state == "running", state
+	return running, id
 }
 
-// ContainerLogs returns the last 100 log lines from the sing-box container.
+// ContainerLogs returns the last log lines from the sing-box instance.
 func (s *Service) ContainerLogs() string {
-	logs, err := s.docker.ContainerLogs(context.TODO(), "singbox", "100")
+	logs, err := s.runtime.Logs(context.TODO(), "default", "100")
 	if err != nil {
 		return fmt.Sprintf("Error getting logs: %v", err)
 	}
 	return logs
 }
 
-// EnsureImage ensures the sing-box Docker image is pulled and available.
+// EnsureImage is a no-op — image/process readiness is handled by the Runtime implementation.
 func (s *Service) EnsureImage() error {
-	return s.docker.EnsureImage(context.Background(), "ghcr.io/sagernet/sing-box:latest", "")
+	return nil
 }
 
 // GetVersion returns the sing-box version string.
@@ -179,75 +140,39 @@ func (s *Service) ListNamedConfigs() ([]NamedConfigInfo, error) {
 	return configs, nil
 }
 
-// RunNamedContainer creates and starts a named sing-box container.
+// RunNamedContainer creates and starts a named sing-box instance.
 func (s *Service) RunNamedContainer(name string) (string, error) {
 	configPath := s.getNamedConfigPath(name)
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("config for '%s' not found", name)
 	}
 
-	hostConfigPath := configPath
-	if resolved, err := s.cfg.ResolveHostConfigDir(configPath); err == nil {
-		hostConfigPath = resolved
+	running, _, err := s.runtime.Status(context.TODO(), name)
+	if err == nil && running {
+		return "", fmt.Errorf("container '%s' is already running", name)
 	}
 
-	containerName := "singbox-" + name
-	state, _ := s.docker.GetContainerState(context.TODO(), containerName)
-	if state == "running" {
-		return state, fmt.Errorf("container %s is already running", containerName)
-	}
-	if state != "" {
-		_ = s.docker.ContainerRemove(context.TODO(), containerName, true)
-	}
-
-	containerConfig := map[string]interface{}{
-		"Image": "sing-box",
-		"Cmd":   []string{"run", "-c", "/etc/sing-box/config.json"},
-	}
-	hostConfig := map[string]interface{}{
-		"Binds":       []string{hostConfigPath + ":/etc/sing-box/config.json:ro"},
-		"NetworkMode": "host",
-		"CapAdd":      []string{"NET_ADMIN", "SYS_MODULE"},
-	}
-
-	id, err := s.docker.ContainerCreate(context.TODO(), containerConfig, hostConfig, containerName)
-	if err != nil {
-		return "", fmt.Errorf("failed to create container: %w", err)
-	}
-	if err := s.docker.ContainerStart(context.TODO(), id); err != nil {
-		return "", fmt.Errorf("failed to start container: %w", err)
-	}
-	return id, nil
+	return s.runtime.Start(context.TODO(), name, configPath)
 }
 
-// StopNamedContainer stops a named sing-box container.
+// StopNamedContainer stops a named sing-box instance.
 func (s *Service) StopNamedContainer(name string) error {
-	containerName := "singbox-" + name
-	state, err := s.docker.GetContainerState(context.TODO(), containerName)
-	if err != nil {
-		return err
-	}
-	if state == "" {
-		return nil
-	}
 	timeout := 10
-	return s.docker.ContainerStop(context.TODO(), containerName, &timeout)
+	return s.runtime.Stop(context.TODO(), name, &timeout)
 }
 
-// NamedContainerStatus returns whether a named container is running and its ID.
+// NamedContainerStatus returns whether a named instance is running and its identifier.
 func (s *Service) NamedContainerStatus(name string) (running bool, containerID string) {
-	containerName := "singbox-" + name
-	state, err := s.docker.GetContainerState(context.TODO(), containerName)
-	if err != nil || state == "" {
+	running, id, err := s.runtime.Status(context.TODO(), name)
+	if err != nil {
 		return false, ""
 	}
-	return state == "running", state
+	return running, id
 }
 
-// NamedContainerLogs returns the last 100 log lines from a named container.
+// NamedContainerLogs returns the last log lines from a named instance.
 func (s *Service) NamedContainerLogs(name string) string {
-	containerName := "singbox-" + name
-	logs, err := s.docker.ContainerLogs(context.TODO(), containerName, "100")
+	logs, err := s.runtime.Logs(context.TODO(), name, "100")
 	if err != nil {
 		return fmt.Sprintf("Error getting logs: %v", err)
 	}
@@ -268,7 +193,7 @@ func (s *Service) CheckNamedConfig(name string) (valid bool, output string) {
 	return true, "Config is valid JSON"
 }
 
-// ListAllContainers returns all containers with the "singbox" prefix.
-func (s *Service) ListAllContainers() ([]docker.ContainerInfo, error) {
-	return s.docker.ListContainers(context.TODO(), "singbox")
+// ListAllContainers returns all instances with their status.
+func (s *Service) ListAllContainers() ([]InstanceInfo, error) {
+	return s.runtime.List(context.TODO())
 }

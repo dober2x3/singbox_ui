@@ -25,6 +25,7 @@ server/*.out
 server/go.work
 server/dist/
 server/sing-box-ui
+server/bin/
 
 # sing-box
 server/singbox/

@@ -29,7 +29,6 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"flag"
 	"io/fs"
@@ -37,7 +36,6 @@ import (
 	"net/http"
 
 	"singbox-config-service/internal/pkg/config"
-	"singbox-config-service/internal/pkg/docker"
 	"singbox-config-service/internal/certificate"
 	"singbox-config-service/internal/prober"
 	"singbox-config-service/internal/scheduler"
@@ -63,34 +61,32 @@ var distFS embed.FS
 func main() {
 	// Parse CLI flags
 	serveDashboard := flag.Bool("dashboard", false, "Serve embedded frontend dashboard")
+	singboxBin := flag.String("singbox-bin", "", "Path to sing-box binary (native/OpenWrt mode)")
 	flag.Parse()
 
 	// Initialize config
 	cfg, err := config.Init()
+	cfg.SetSingboxBinPath(*singboxBin)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize config: %v", err)
 		log.Println("Some features may not work properly")
 	}
 
-	// Initialize Docker client
-	dockerClient, err := docker.NewClient()
-	if err != nil {
-		log.Printf("Warning: Failed to create Docker client: %v", err)
-		log.Println("Docker-dependent features will not be available")
-	}
-	if dockerClient != nil {
-		defer dockerClient.Close()
-	}
-
 	// Create domain services
-	singboxSvc := singbox.NewService(dockerClient, cfg)
+	rt, err := singbox.NewRuntime(cfg)
+	if err != nil {
+		log.Printf("Warning: Failed to create sing-box runtime: %v", err)
+		log.Println("sing-box features will not be available")
+		rt = &singbox.NoopRuntime{}
+	}
+	singboxSvc := singbox.NewService(rt, cfg)
 	wgSvc := wireguard.NewService(cfg.GetDataDir())
 	warpSvc := warp.NewService(cfg.GetDataDir())
 	certSvc := certificate.NewService(cfg.GetSingboxDir())
 	subStore := subscription.NewFileStore(cfg.GetDataDir())
 	subSvc := subscription.NewService(subStore)
 	proberSvc := prober.NewService(cfg.GetDataDir(), subSvc)
-	speedtestSvc := speedtest.NewService(dockerClient, cfg)
+	speedtestSvc := speedtest.NewService(speedtest.NewTempRuntime(cfg), cfg)
 
 	// Create auto-update scheduler
 	sched := scheduler.New(subSvc, nil)
@@ -103,18 +99,6 @@ func main() {
 	subHandler := subscription.NewHandler(subSvc)
 	proberHandler := prober.NewHandler(proberSvc)
 	speedtestHandler := speedtest.NewHandler(speedtestSvc)
-
-	// Pull sing-box image in background
-	if dockerClient != nil {
-		go func() {
-			log.Println("Pulling sing-box image in background...")
-			if err := dockerClient.EnsureImage(context.Background(), "ghcr.io/sagernet/sing-box:latest", ""); err != nil {
-				log.Printf("Warning: Failed to pull sing-box image: %v", err)
-			} else {
-				log.Println("sing-box image is ready")
-			}
-		}()
-	}
 
 	// Initialize prober
 	if err := proberSvc.Init(); err != nil {

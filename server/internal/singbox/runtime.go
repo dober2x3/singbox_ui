@@ -1,7 +1,10 @@
 // Package singbox provides services for managing sing-box configuration and containers.
 package singbox
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // Runtime abstracts the lifecycle of a sing-box instance.
 // Implementations: DockerRuntime (via Docker SDK), NativeRuntime (via os/exec).
@@ -37,4 +40,36 @@ type InstanceInfo struct {
 	ID      string `json:"containerId,omitempty"`
 	Running bool   `json:"running"`
 	State   string `json:"state,omitempty"`
+}
+
+// NoopRuntime is a Runtime implementation that returns errors for all operations.
+// Used when no real runtime (Docker/native) is available.
+type NoopRuntime struct{}
+
+func (n *NoopRuntime) Start(_ context.Context, _, _ string) (string, error) {
+	return "", fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) Stop(_ context.Context, _ string, _ *int) error {
+	return fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) Status(_ context.Context, _ string) (bool, string, error) {
+	return false, "", fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) Logs(_ context.Context, _, _ string) (string, error) {
+	return "", fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) Version(_ context.Context) (string, error) {
+	return "", fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) List(_ context.Context) ([]InstanceInfo, error) {
+	return nil, fmt.Errorf("runtime not available")
+}
+
+func (n *NoopRuntime) Close() error {
+	return nil
 }
