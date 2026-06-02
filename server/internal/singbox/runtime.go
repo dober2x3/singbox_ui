@@ -34,7 +34,7 @@ type Runtime interface {
 // InstanceInfo describes a sing-box instance.
 type InstanceInfo struct {
 	Name    string `json:"name"`
-	ID      string `json:"container_id,omitempty"`
+	ID      string `json:"containerId,omitempty"`
 	Running bool   `json:"running"`
 	State   string `json:"state,omitempty"`
 }
