@@ -31,6 +31,7 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"io/fs"
 	"log"
 	"net/http"
@@ -60,6 +61,10 @@ var distFS embed.FS
 // main is the application entry point. It initializes configuration, domain services,
 // HTTP handlers, the background task scheduler, and finally starts the Gin HTTP server.
 func main() {
+	// Parse CLI flags
+	serveDashboard := flag.Bool("dashboard", false, "Serve embedded frontend dashboard")
+	flag.Parse()
+
 	// Initialize config
 	cfg, err := config.Init()
 	if err != nil {
@@ -174,8 +179,13 @@ func main() {
 	// Health check
 	r.GET("/health", healthCheck)
 
-	// Static file server
-	setupStaticFiles(r)
+	// Static file server (optional, controlled by --dashboard flag)
+	if *serveDashboard {
+		setupStaticFiles(r)
+		log.Println("Dashboard static files are being served")
+	} else {
+		log.Println("Dashboard serving disabled (use --dashboard to enable)")
+	}
 
 	// Start server
 	listenAddr := cfg.GetListenAddr()

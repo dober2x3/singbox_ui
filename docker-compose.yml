@@ -10,5 +10,8 @@ services:
     environment:
       - DATA_DIR=/home/data
       - HOST_DATA_DIR=${PWD}/data
-      - LISTEN_ADDR=127.0.0.1:7000
+      - LISTEN_ADDR=0.0.0.0:7000
       - TZ=Asia/Shanghai
+    # Default: backend only (TUI connects from another machine).
+    # For frontend+backend on same machine, uncomment:
+    # command: ["./sing-box-ui", "--dashboard"]
