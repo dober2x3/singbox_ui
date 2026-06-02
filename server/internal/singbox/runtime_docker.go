@@ -91,11 +91,14 @@ func (d *DockerRuntime) Stop(ctx context.Context, name string, timeout *int) err
 
 func (d *DockerRuntime) Status(ctx context.Context, name string) (bool, string, error) {
 	containerName := "singbox-" + name
-	state, err := d.client.GetContainerState(ctx, containerName)
-	if err != nil || state == "" {
+	containers, err := d.client.ListContainers(ctx, containerName)
+	if err != nil {
 		return false, "", err
 	}
-	return state == "running", state, nil
+	if len(containers) == 0 {
+		return false, "", nil
+	}
+	return containers[0].State == "running", containers[0].ContainerID, nil
 }
 
 func (d *DockerRuntime) Logs(ctx context.Context, name, tail string) (string, error) {
