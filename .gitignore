@@ -24,7 +24,7 @@ server/*.test
 server/*.out
 server/go.work
 server/dist/
-server/sign-box-ui
+server/sing-box-ui
 
 # sing-box
 server/singbox/
