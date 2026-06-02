@@ -18,3 +18,16 @@ If `golangci-lint` is not installed, install it rather than skipping the check:
 ```bash
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 ```
+
+## Branch Before Spec
+
+Before writing a design specification (under `docs/superpowers/specs/`), create a new
+git branch named after the feature:
+
+```bash
+git checkout -b feat/<short-description>
+```
+
+This ensures the spec document and all subsequent implementation commits live on a
+dedicated branch and can be reviewed/merged as a unit. Do not write specs on `main`
+or `master`.
