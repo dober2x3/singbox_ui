@@ -2,117 +2,72 @@ package singbox
 
 import (
 	"context"
-	"io"
 	"os"
 	"strings"
 	"testing"
 
 	"singbox-config-service/internal/pkg/config"
-	"singbox-config-service/internal/pkg/docker"
 )
 
-// mockContainerManager implements ContainerManager for testing.
-type mockContainerManager struct {
-	createContainerFn   func(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error)
-	startContainerFn    func(ctx context.Context, containerID string) error
-	stopContainerFn     func(ctx context.Context, containerID string, timeout *int) error
-	removeContainerFn   func(ctx context.Context, containerID string, force bool) error
-	containerLogsFn     func(ctx context.Context, containerID string, tail string) (string, error)
-	getContainerStateFn func(ctx context.Context, containerName string) (string, error)
-	imagePullFn         func(ctx context.Context, image string) (io.ReadCloser, error)
-	imageListFn         func(ctx context.Context, image string) (bool, error)
-	listContainersFn    func(ctx context.Context, prefix string) ([]docker.ContainerInfo, error)
-	ensureImageFn       func(ctx context.Context, imageName, tarPath string) error
-	closeFn             func() error
+// mockRuntime implements Runtime for testing.
+type mockRuntime struct {
+	startFn   func(ctx context.Context, name string, configPath string) (string, error)
+	stopFn    func(ctx context.Context, name string, timeout *int) error
+	statusFn  func(ctx context.Context, name string) (running bool, id string, err error)
+	logsFn    func(ctx context.Context, name string, tail string) (string, error)
+	versionFn func(ctx context.Context) (string, error)
+	listFn    func(ctx context.Context) ([]InstanceInfo, error)
+	closeFn   func() error
 }
 
-// ContainerCreate mocks container creation.
-func (m *mockContainerManager) ContainerCreate(ctx context.Context, config interface{}, hostConfig interface{}, name string) (string, error) {
-	return m.createContainerFn(ctx, config, hostConfig, name)
+func (m *mockRuntime) Start(ctx context.Context, name string, configPath string) (string, error) {
+	return m.startFn(ctx, name, configPath)
 }
 
-// ContainerStart mocks starting a container.
-func (m *mockContainerManager) ContainerStart(ctx context.Context, containerID string) error {
-	return m.startContainerFn(ctx, containerID)
+func (m *mockRuntime) Stop(ctx context.Context, name string, timeout *int) error {
+	return m.stopFn(ctx, name, timeout)
 }
 
-// ContainerStop mocks stopping a container.
-func (m *mockContainerManager) ContainerStop(ctx context.Context, containerID string, timeout *int) error {
-	return m.stopContainerFn(ctx, containerID, timeout)
+func (m *mockRuntime) Status(ctx context.Context, name string) (running bool, id string, err error) {
+	return m.statusFn(ctx, name)
 }
 
-// ContainerRemove mocks removing a container.
-func (m *mockContainerManager) ContainerRemove(ctx context.Context, containerID string, force bool) error {
-	return m.removeContainerFn(ctx, containerID, force)
+func (m *mockRuntime) Logs(ctx context.Context, name string, tail string) (string, error) {
+	return m.logsFn(ctx, name, tail)
 }
 
-// ContainerLogs mocks fetching container logs.
-func (m *mockContainerManager) ContainerLogs(ctx context.Context, containerID string, tail string) (string, error) {
-	return m.containerLogsFn(ctx, containerID, tail)
+func (m *mockRuntime) Version(ctx context.Context) (string, error) {
+	return m.versionFn(ctx)
 }
 
-// GetContainerState mocks getting container state.
-func (m *mockContainerManager) GetContainerState(ctx context.Context, containerName string) (string, error) {
-	return m.getContainerStateFn(ctx, containerName)
+func (m *mockRuntime) List(ctx context.Context) ([]InstanceInfo, error) {
+	return m.listFn(ctx)
 }
 
-// ImagePull mocks pulling a Docker image.
-func (m *mockContainerManager) ImagePull(ctx context.Context, image string) (io.ReadCloser, error) {
-	return m.imagePullFn(ctx, image)
-}
-
-// ImageList mocks listing Docker images.
-func (m *mockContainerManager) ImageList(ctx context.Context, image string) (bool, error) {
-	return m.imageListFn(ctx, image)
-}
-
-// ListContainers mocks listing containers by prefix.
-func (m *mockContainerManager) ListContainers(ctx context.Context, prefix string) ([]docker.ContainerInfo, error) {
-	return m.listContainersFn(ctx, prefix)
-}
-
-// EnsureImage mocks ensuring a Docker image is available.
-func (m *mockContainerManager) EnsureImage(ctx context.Context, imageName, tarPath string) error {
-	return m.ensureImageFn(ctx, imageName, tarPath)
-}
-
-// Close mocks closing the container manager connection.
-func (m *mockContainerManager) Close() error {
+func (m *mockRuntime) Close() error {
 	return m.closeFn()
 }
 
-// newMockManager creates a mockContainerManager with default success responses.
-func newMockManager() *mockContainerManager {
-	return &mockContainerManager{
-		createContainerFn: func(_ context.Context, _ interface{}, _ interface{}, _ string) (string, error) {
+// newMockRuntime creates a mockRuntime with default success responses.
+func newMockRuntime() *mockRuntime {
+	return &mockRuntime{
+		startFn: func(_ context.Context, _ string, _ string) (string, error) {
 			return "mock-container-id", nil
 		},
-		startContainerFn: func(_ context.Context, _ string) error {
+		stopFn: func(_ context.Context, _ string, _ *int) error {
 			return nil
 		},
-		stopContainerFn: func(_ context.Context, _ string, _ *int) error {
-			return nil
+		statusFn: func(_ context.Context, _ string) (bool, string, error) {
+			return false, "", nil
 		},
-		removeContainerFn: func(_ context.Context, _ string, _ bool) error {
-			return nil
-		},
-		containerLogsFn: func(_ context.Context, _ string, _ string) (string, error) {
+		logsFn: func(_ context.Context, _ string, _ string) (string, error) {
 			return "", nil
 		},
-		getContainerStateFn: func(_ context.Context, containerName string) (string, error) {
-			return "", nil
+		versionFn: func(_ context.Context) (string, error) {
+			return "sing-box 1.10.0", nil
 		},
-		imagePullFn: func(_ context.Context, _ string) (io.ReadCloser, error) {
-			return io.NopCloser(strings.NewReader("")), nil
-		},
-		imageListFn: func(_ context.Context, _ string) (bool, error) {
-			return true, nil
-		},
-		listContainersFn: func(_ context.Context, _ string) ([]docker.ContainerInfo, error) {
-			return []docker.ContainerInfo{}, nil
-		},
-		ensureImageFn: func(_ context.Context, _, _ string) error {
-			return nil
+		listFn: func(_ context.Context) ([]InstanceInfo, error) {
+			return []InstanceInfo{}, nil
 		},
 		closeFn: func() error {
 			return nil
@@ -120,7 +75,7 @@ func newMockManager() *mockContainerManager {
 	}
 }
 
-// newTestService creates a Service with a mock manager and temporary directory for testing.
+// newTestService creates a Service with a mock runtime and temporary directory for testing.
 func newTestService(t *testing.T) (*Service, *config.Config, func()) {
 	t.Helper()
 	dir := t.TempDir()
@@ -132,8 +87,8 @@ func newTestService(t *testing.T) (*Service, *config.Config, func()) {
 	cleanup := func() {
 		os.Unsetenv("DATA_DIR")
 	}
-	mgr := newMockManager()
-	return NewService(mgr, cfg), cfg, cleanup
+	mock := newMockRuntime()
+	return NewService(mock, cfg), cfg, cleanup
 }
 
 // TestNewService verifies that NewService returns a non-nil Service.
@@ -173,7 +128,7 @@ func TestContainerLifecycle(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
 
-	mgr := svc.docker.(*mockContainerManager)
+	mock := svc.runtime.(*mockRuntime)
 
 	cfgData := []byte(`{"log":{"level":"debug"}}`)
 	_, err := svc.SaveConfig(cfgData)
@@ -189,8 +144,8 @@ func TestContainerLifecycle(t *testing.T) {
 		t.Error("RunContainer() returned empty id")
 	}
 
-	mgr.getContainerStateFn = func(_ context.Context, containerName string) (string, error) {
-		return "running", nil
+	mock.statusFn = func(_ context.Context, _ string) (bool, string, error) {
+		return true, "mock-container-id", nil
 	}
 
 	running, cid := svc.ContainerStatus()
@@ -226,7 +181,7 @@ func TestNamedConfigs(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
 
-	mgr := svc.docker.(*mockContainerManager)
+	mock := svc.runtime.(*mockRuntime)
 	name := "test-instance"
 	data := []byte(`{"outbounds":[]}`)
 
@@ -264,8 +219,8 @@ func TestNamedConfigs(t *testing.T) {
 		t.Fatalf("RunNamedContainer() error = %v", err)
 	}
 
-	mgr.getContainerStateFn = func(_ context.Context, containerName string) (string, error) {
-		return "running", nil
+	mock.statusFn = func(_ context.Context, _ string) (bool, string, error) {
+		return true, "mock-container-id", nil
 	}
 
 	running, _ := svc.NamedContainerStatus(name)
@@ -421,9 +376,9 @@ func TestRunNamedContainer_AlreadyRunning(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
 
-	mgr := svc.docker.(*mockContainerManager)
-	mgr.getContainerStateFn = func(_ context.Context, containerName string) (string, error) {
-		return "running", nil
+	mock := svc.runtime.(*mockRuntime)
+	mock.statusFn = func(_ context.Context, _ string) (bool, string, error) {
+		return true, "mock-id", nil
 	}
 
 	_ = svc.SaveNamedConfig("test-instance", []byte(`{}`))
@@ -505,8 +460,8 @@ func TestContainerLogs_Error(t *testing.T) {
 	svc, _, cleanup := newTestService(t)
 	defer cleanup()
 
-	mgr := svc.docker.(*mockContainerManager)
-	mgr.containerLogsFn = func(_ context.Context, _ string, _ string) (string, error) {
+	mock := svc.runtime.(*mockRuntime)
+	mock.logsFn = func(_ context.Context, _ string, _ string) (string, error) {
 		return "", nil
 	}
 

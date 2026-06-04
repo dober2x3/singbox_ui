@@ -12,17 +12,17 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
-// newTestHandler creates a Handler backed by a mock ContainerManager for testing.
+// newTestHandler creates a Handler backed by a mock TempRuntime for testing.
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
-	mockDocker := newMockContainerAPI()
+	mockRT := newMockTempRuntime()
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
 	cfg, err := config.Init()
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockDocker, cfg)
+	svc := NewService(mockRT, cfg)
 	return NewHandler(svc)
 }
 
@@ -84,14 +84,14 @@ func TestHandler_StopSpeedTest(t *testing.T) {
 
 // TestHandler_WithRunningService verifies start/status/stop flow with a real node provider.
 func TestHandler_WithRunningService(t *testing.T) {
-	mockDocker := newMockContainerAPI()
+	mockRT := newMockTempRuntime()
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
 	cfg, err := config.Init()
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockDocker, cfg)
+	svc := NewService(mockRT, cfg)
 	svc.WithNodeProvider(&mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443,

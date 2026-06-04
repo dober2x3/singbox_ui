@@ -14,10 +14,11 @@ import (
 // Config holds application configuration values derived from environment variables
 // and the runtime environment. All fields are unexported; access via getter methods.
 type Config struct {
-	dataDir     string
-	hostDataDir string
-	listenAddr  string
-	singboxDir  string
+	dataDir        string
+	hostDataDir    string
+	listenAddr     string
+	singboxDir     string
+	singboxBinPath string // path to sing-box binary for native runtime
 }
 
 // Init initializes a Config from environment variables. It reads DATA_DIR, LISTEN_ADDR,
@@ -72,6 +73,16 @@ func (c *Config) GetSingboxDir() string {
 // GetListenAddr returns the HTTP server listen address (host:port).
 func (c *Config) GetListenAddr() string {
 	return c.listenAddr
+}
+
+// SetSingboxBinPath sets the path to the sing-box binary.
+func (c *Config) SetSingboxBinPath(p string) {
+	c.singboxBinPath = p
+}
+
+// GetSingboxBinPath returns the path to the sing-box binary.
+func (c *Config) GetSingboxBinPath() string {
+	return c.singboxBinPath
 }
 
 // ResolveHostConfigDir converts a container-internal path under DATA_DIR to the
