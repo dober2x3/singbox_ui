@@ -1,37 +1,37 @@
 # Sing-box UI
+
 > **Fork notice**: This is a fork of [SpadesA/singbox_ui](https://github.com/SpadesA99/singbox_ui) — a modern web-based configuration management tool for sing-box.
 
-**[English](README_EN.md) | 中文**
+**English** | [中文](README_ZH.md)
 
 <div align="center">
 
 [![Docker Image](https://img.shields.io/badge/ghcr.io-singbox__ui-blue?logo=docker)](https://github.com/SpadesA99/singbox_ui/pkgs/container/singbox_ui)
 [![Build Status](https://github.com/SpadesA99/singbox_ui/actions/workflows/docker-build.yml/badge.svg)](https://github.com/SpadesA99/singbox_ui/actions)
-[![GitHub Stars](https://img.shields.io/github/stars/SpadesA99/singbox_ui?style=flat&logo=github)](https://github.com/SpadesA99/singbox_ui/stargazers)
 [![License](https://img.shields.io/github/license/SpadesA99/singbox_ui)](LICENSE)
 
-**现代化的 sing-box 配置管理工具**
+**A modern web-based configuration management tool for sing-box**
 
-基于 Go 1.24 + Next.js 16 构建，通过 Docker 容器化管理 sing-box
+Built with Go 1.24 + Next.js 16, managing sing-box via Docker containers
 
 </div>
 
-![Sing-box UI 界面截图](docs/zh.png)
+![Sing-box UI Screenshot](docs/en.png)
 
 ---
 
-## 核心功能
+## Features
 
-### 协议支持
+### Protocol Support
 
-| 入站协议 | 出站协议 | 订阅解析 |
-|---------|---------|---------|
-| WireGuard | 所有入站协议 | VMess |
-| Mixed (Socks5+HTTP) | direct (直连) | VLESS |
-| VLESS | block (屏蔽) | Trojan |
+| Inbound | Outbound | Subscription Parsing |
+|---------|----------|---------------------|
+| WireGuard | All inbound protocols | VMess |
+| Mixed (Socks5+HTTP) | direct | VLESS |
+| VLESS | block | Trojan |
 | VMess | | Shadowsocks |
 | Trojan | | AnyTLS |
-| Shadowsocks | | Clash YAML 格式 |
+| Shadowsocks | | Clash YAML |
 | Hysteria2 | | |
 | TUIC | | |
 | Naive | | |
@@ -39,63 +39,63 @@
 | AnyTLS | | |
 | HTTP | | |
 
-### TLS 证书管理
+### TLS Certificate Management
 
-- **ACME 自动证书**: 支持 Let's Encrypt 自动申请和续期
-- **手动证书**: 支持上传自有证书文件
-- **多协议支持**: VLESS、VMess、Trojan、Hysteria2 等 TLS 协议均支持 ACME
+- **ACME Auto-cert**: Automatic Let's Encrypt certificate issuance and renewal
+- **Manual Certificate**: Upload your own certificate files
+- **Multi-protocol**: ACME support for VLESS, VMess, Trojan, Hysteria2, etc.
 
-### 路由规则配置
+### Route Rule Configuration
 
-- **快速模板**: 一键启用常用规则（广告屏蔽、中国 IP/域名直连、私有 IP 直连）
-- **快速添加规则**: 支持快速添加 IP 或域名到直连/代理/屏蔽列表
-- **直连模式**: 无代理出站时自动配置为直连模式
+- **Quick Templates**: One-click common rules (ad blocking, China IP/domain direct, private IP direct)
+- **Quick Add Rules**: Quickly add IPs or domains to direct/proxy/block lists
+- **Direct Mode**: Auto-configures direct mode when no proxy outbound exists
 
-### 负载均衡
+### Load Balancing
 
-- **URLTest 模式**: 基于 sing-box `urltest` 出站，自动选择最低延迟节点
-- **可配置容差**: 自定义延迟容差值（默认 50ms），避免频繁切换
-- **动态节点池**: 从订阅中灵活选择多个节点组成负载均衡组
-- **智能路由**: 自动生成路由规则，实现流量智能分发
+- **URLTest Mode**: Based on sing-box `urltest` outbound, auto-selects lowest latency node
+- **Configurable Tolerance**: Custom latency tolerance (default 50ms) to avoid frequent switching
+- **Dynamic Node Pool**: Flexibly select multiple nodes from subscriptions to form a load balancing group
+- **Smart Routing**: Auto-generates routing rules for intelligent traffic distribution
 
-### 多实例管理
+### Multi-Instance Management
 
-- 支持创建多个命名 sing-box 实例
-- 每个实例独立配置、启停
-- 独立的容器日志和状态监控
+- Create multiple named sing-box instances
+- Independent configuration and start/stop per instance
+- Separate container logs and status monitoring
 
-### WireGuard VPN 管理
+### WireGuard VPN Management
 
-- Curve25519 密钥生成
-- IP 绑定密钥缓存
-- 客户端配置管理 (批量生成、二维码、配置下载)
+- Curve25519 key generation
+- IP-bound key caching
+- Client config management (batch generation, QR codes, config download)
 
-### Cloudflare WARP 出站
+### Cloudflare WARP Outbound
 
-- **一键注册**: 自动生成 Curve25519 密钥对并调用 Cloudflare 注册 API, 本地缓存设备 token, 无需手动配置
-- **WARP+ 绑定**: 支持填入 License 绑定 WARP+ 账户, 获得无限流量
-- **端点优选**: 真实 WireGuard 握手探测——向候选 `IP:Port` 发送 WG 初始化包, 校验返回的 92 字节 `MessageResponse`, 按丢包率 + 平均 RTT 排序, 精确反映 UDP 路径质量(参考 [CloudflareWarpSpeedTest](https://github.com/peanut996/CloudflareWarpSpeedTest) 实现)
-- **广覆盖扫描**: 8 个 Cloudflare /24 段 × 54 个已知 WARP UDP 端口, 并发探测并打乱采样, 快速找到最快的边缘节点
+- **One-click registration**: Auto-generates a Curve25519 keypair and calls the Cloudflare registration API; device token is cached locally — no manual setup
+- **WARP+ binding**: Paste a license key to upgrade the device to WARP+ and unlock unlimited bandwidth
+- **Endpoint optimization**: Real WireGuard handshake probing — sends a WG initiation packet to each candidate `IP:Port` and validates the 92-byte `MessageResponse`, then ranks by loss rate + average RTT to accurately reflect UDP path quality (based on [CloudflareWarpSpeedTest](https://github.com/peanut996/CloudflareWarpSpeedTest))
+- **Wide coverage**: Scans 8 Cloudflare /24 subnets × 54 known WARP UDP ports in parallel with shuffled sampling, quickly finding the fastest edge node
 
-### 节点健康探测
+### Node Health Probing
 
-- 异步多节点并发探测
-- 成功率滑动窗口统计
-- API 轮询获取探测结果
+- Async concurrent multi-node probing
+- Sliding window success rate statistics
+- API polling for probe results
 
-### 管理功能
+### Management
 
-- 配置预览 (JSON 编辑器)
-- 容器日志查看
-- 容器状态监控
+- Config preview (JSON editor)
+- Container log viewer
+- Container status monitoring
 
 ---
 
-## 快速开始
+## Quick Start
 
-### Docker Compose (推荐)
+### Docker Compose (Recommended)
 
-创建 `docker-compose.yml`:
+Create `docker-compose.yml`:
 
 ```yaml
 services:
@@ -118,44 +118,44 @@ services:
 docker compose up -d
 ```
 
-访问 http://127.0.0.1:7000
+Visit http://127.0.0.1:7000
 
-> **说明**:
-> - 使用 `network_mode: host` 以便容器直接使用宿主机网络
-> - 默认监听 `127.0.0.1:7000`，仅本地访问，可通过 `LISTEN_ADDR` 环境变量自定义
-> - 挂载 Docker Socket 用于管理 sing-box 容器
-> - `HOST_DATA_DIR` 通过 `${PWD}` 自动映射宿主机数据目录，用于 sing-box 容器挂载
-> - 内置 sing-box v1.13.5 镜像，首次启动自动加载，无需联网拉取
+> **Notes**:
+> - Uses `network_mode: host` for direct host network access
+> - Listens on `127.0.0.1:7000` by default (local only), customizable via `LISTEN_ADDR`
+> - Mounts Docker Socket to manage the sing-box container
+> - `HOST_DATA_DIR` maps host data directory via `${PWD}` for sing-box container volume mounts
+> - Bundled sing-box v1.13.5 image, auto-loaded on first start without network access
 
-### 远程访问
+### Remote Access
 
-服务默认仅监听 `127.0.0.1`，推荐通过 SSH 隧道安全访问：
+The service listens on `127.0.0.1` by default. Use SSH tunnel for secure remote access:
 
 ```bash
 ssh -L 7000:127.0.0.1:7000 user@your-server
 ```
 
-然后在本地浏览器访问 http://127.0.0.1:7000
+Then visit http://127.0.0.1:7000 in your local browser.
 
-> **安全提示**: 不建议将 `LISTEN_ADDR` 改为 `0.0.0.0:7000` 直接暴露到公网，管理面板无认证保护。如需外网访问，请使用 SSH 隧道或配置带认证的反向代理（如 Nginx + Basic Auth）。
-
----
-
-## 环境变量
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DATA_DIR` | 容器内数据目录 | `/home/data` |
-| `HOST_DATA_DIR` | 宿主机数据目录（用于 sing-box 容器挂载） | `${PWD}/data` |
-| `LISTEN_ADDR` | 服务监听地址 | `127.0.0.1:7000` |
-| `TZ` | 时区 | `Asia/Shanghai` |
+> **Security Note**: Do not change `LISTEN_ADDR` to `0.0.0.0:7000` to expose it publicly — the panel has no authentication. For external access, use SSH tunneling or a reverse proxy with authentication (e.g., Nginx + Basic Auth).
 
 ---
 
-## 技术栈
+## Environment Variables
 
-| 前端 | 后端 |
-|------|------|
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATA_DIR` | Data directory inside container | `/home/data` |
+| `HOST_DATA_DIR` | Host data directory (for sing-box container mounts) | `${PWD}/data` |
+| `LISTEN_ADDR` | Server listen address | `127.0.0.1:7000` |
+| `TZ` | Timezone | `Asia/Shanghai` |
+
+---
+
+## Tech Stack
+
+| Frontend | Backend |
+|----------|---------|
 | Next.js 16 | Go 1.24 |
 | React 19 | Gin 1.11 |
 | Tailwind CSS | Docker SDK |
@@ -163,15 +163,11 @@ ssh -L 7000:127.0.0.1:7000 user@your-server
 
 ---
 
-## 许可证
+## License
 
 [MIT License](LICENSE)
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=SpadesA99/singbox_ui&type=Date)](https://star-history.com/#SpadesA99/singbox_ui&Date)
-
-## 致谢
+## Acknowledgments
 
 - [sing-box](https://github.com/SagerNet/sing-box)
 - [Next.js](https://nextjs.org/)
