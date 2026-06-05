@@ -1,4 +1,4 @@
-//go:build !openwrt
+//go:build docker
 
 package speedtest
 

@@ -1,6 +1,6 @@
 // Package singbox provides services for managing sing-box configuration and containers.
 //
-//go:build !openwrt
+//go:build docker
 
 package singbox
 

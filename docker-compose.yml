@@ -1,6 +1,6 @@
 services:
   singbox-ui:
-    image: ghcr.io/spadesa99/singbox_ui:latest
+    build: .
     container_name: singbox-ui
     restart: unless-stopped
     network_mode: host
