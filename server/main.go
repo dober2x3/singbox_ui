@@ -36,6 +36,7 @@ import (
 	"net/http"
 
 	"singbox-config-service/internal/pkg/config"
+	"singbox-config-service/internal/pkg/tunnelrunner"
 	"singbox-config-service/internal/certificate"
 	"singbox-config-service/internal/prober"
 	"singbox-config-service/internal/scheduler"
@@ -86,7 +87,7 @@ func main() {
 	subStore := subscription.NewFileStore(cfg.GetDataDir())
 	subSvc := subscription.NewService(subStore)
 	proberSvc := prober.NewService(cfg.GetDataDir(), subSvc)
-	speedtestSvc := speedtest.NewService(speedtest.NewTempRuntime(cfg), cfg)
+	speedtestSvc := speedtest.NewService(tunnelrunner.NewRunner(cfg), cfg)
 
 	// Create auto-update scheduler
 	sched := scheduler.New(subSvc, nil)
