@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,11 +14,32 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
+// tempDirWithRetryCleanup creates a temp directory and registers a cleanup
+// that retries os.RemoveAll on failure. This works around a known issue where
+// t.TempDir() cleanup can fail on overlay filesystems (Docker/GHA) with
+// "unlinkat ... directory not empty".
+func tempDirWithRetryCleanup(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "speedtest-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 3; i++ {
+			if err := os.RemoveAll(dir); err == nil {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	})
+	return dir
+}
+
 // newTestHandler creates a Handler backed by a mock TempRuntime for testing.
 func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	mockRT := newMockTempRuntime()
-	cfgDir := t.TempDir()
+	cfgDir := tempDirWithRetryCleanup(t)
 	t.Setenv("DATA_DIR", cfgDir)
 	cfg, err := config.Init()
 	if err != nil {
@@ -85,7 +108,7 @@ func TestHandler_StopSpeedTest(t *testing.T) {
 // TestHandler_WithRunningService verifies start/status/stop flow with a real node provider.
 func TestHandler_WithRunningService(t *testing.T) {
 	mockRT := newMockTempRuntime()
-	cfgDir := t.TempDir()
+	cfgDir := tempDirWithRetryCleanup(t)
 	t.Setenv("DATA_DIR", cfgDir)
 	cfg, err := config.Init()
 	if err != nil {
