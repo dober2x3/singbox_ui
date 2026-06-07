@@ -36,7 +36,7 @@ type UpdateSettingsRequest struct {
 
 // Config holds configuration parameters for subscription fetching.
 type Config struct {
-	InsecureTLS bool `json:"insecure_tls" yaml:"insecure_tls" example:"false"`
+	InsecureTLS bool `json:"insecure_tls" yaml:"insecure_tls" example:"false" description:"Allow insecure TLS when fetching subscriptions"`
 }
 
 // DefaultConfig returns a Config with sensible defaults.
