@@ -7,11 +7,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/home/data
+      - ./config.yaml:/home/data/config.yaml
     environment:
       - DATA_DIR=/home/data
-      - HOST_DATA_DIR=${PWD}/data
-      - LISTEN_ADDR=0.0.0.0:7000
       - TZ=Asia/Shanghai
-    # Default: backend only (TUI connects from another machine).
-    # For frontend+backend on same machine, uncomment:
-    # command: ["./sing-box-ui", "--dashboard"]
+    # The config.yaml file is loaded automatically from DATA_DIR/config.yaml.
+    # See config.example.yaml for all available options.
