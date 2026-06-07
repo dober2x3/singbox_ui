@@ -10,6 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"singbox-config-service/internal/prober"
+	"singbox-config-service/internal/scheduler"
+	"singbox-config-service/internal/subscription"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,41 +26,30 @@ type ServerConfig struct {
 	ServeDashboard  bool   `yaml:"serve_dashboard"`
 }
 
-// ProberConfig holds configuration for the node probing engine.
-type ProberConfig struct {
-	Interval      int    `yaml:"interval"`
-	Timeout       int    `yaml:"timeout"`
-	Concurrent    int    `yaml:"concurrent"`
-	MaxResults    int    `yaml:"max_results"`
-	MaxRetries    int    `yaml:"max_retries"`
-	BindAddress   string `yaml:"bind_address,omitempty"`
-	BindInterface string `yaml:"bind_interface,omitempty"`
-}
-
 // SpeedtestConfig holds configuration for the speed test service.
+// Defined inline here because speedtest imports config (would create a cycle).
 type SpeedtestConfig struct {
 	LatencyURL  string `yaml:"latency_url"`
 	DownloadURL string `yaml:"download_url"`
 	Duration    int    `yaml:"duration"`
 }
 
-// SchedulerConfig holds configuration for the background task scheduler.
-type SchedulerConfig struct {
-	Interval int `yaml:"interval"`
-}
-
-// SubscriptionConfig holds configuration for subscription fetching.
-type SubscriptionConfig struct {
-	InsecureTLS bool `yaml:"insecure_tls"`
+// defaultSpeedtestConfig returns a SpeedtestConfig with sensible defaults.
+func defaultSpeedtestConfig() SpeedtestConfig {
+	return SpeedtestConfig{
+		LatencyURL:  "http://www.gstatic.com/generate_204",
+		DownloadURL: "https://speed.cloudflare.com/__down?bytes=10000000",
+		Duration:    10,
+	}
 }
 
 // AppConfig is the top-level application configuration.
 type AppConfig struct {
-	Server       ServerConfig       `yaml:"server"`
-	Prober       ProberConfig       `yaml:"prober"`
-	Speedtest    SpeedtestConfig    `yaml:"speedtest"`
-	Scheduler    SchedulerConfig    `yaml:"scheduler"`
-	Subscription SubscriptionConfig `yaml:"subscription"`
+	Server       ServerConfig         `yaml:"server"`
+	Prober       prober.Config        `yaml:"prober"`
+	Speedtest    SpeedtestConfig      `yaml:"speedtest"`
+	Scheduler    scheduler.Config     `yaml:"scheduler"`
+	Subscription subscription.Config  `yaml:"subscription"`
 }
 
 // defaultAppConfig returns an AppConfig with all defaults set.
@@ -65,24 +58,10 @@ func defaultAppConfig() AppConfig {
 		Server: ServerConfig{
 			ListenAddr: "127.0.0.1:7000",
 		},
-		Prober: ProberConfig{
-			Interval:   30,
-			Timeout:    5000,
-			Concurrent: 5,
-			MaxResults: 100,
-			MaxRetries: 2,
-		},
-		Speedtest: SpeedtestConfig{
-			LatencyURL:  "http://www.gstatic.com/generate_204",
-			DownloadURL: "https://speed.cloudflare.com/__down?bytes=10000000",
-			Duration:    10,
-		},
-		Scheduler: SchedulerConfig{
-			Interval: 60,
-		},
-		Subscription: SubscriptionConfig{
-			InsecureTLS: false,
-		},
+		Prober:       prober.DefaultConfig(),
+		Speedtest:    defaultSpeedtestConfig(),
+		Scheduler:    scheduler.DefaultConfig(),
+		Subscription: subscription.DefaultConfig(),
 	}
 }
 
