@@ -34,11 +34,13 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"singbox-config-service/internal/pkg/config"
 	"singbox-config-service/internal/pkg/tunnelrunner"
 	"singbox-config-service/internal/certificate"
 	"singbox-config-service/internal/prober"
+	"singbox-config-service/internal/resourcecheck"
 	"singbox-config-service/internal/scheduler"
 	"singbox-config-service/internal/singbox"
 	"singbox-config-service/internal/speedtest"
@@ -89,6 +91,16 @@ func main() {
 	proberSvc := prober.NewService(cfg.GetDataDir(), subSvc)
 	speedtestSvc := speedtest.NewService(tunnelrunner.NewRunner(cfg), cfg)
 
+	// Create resource checker
+	rcChecker := resourcecheck.NewChecker(tunnelrunner.NewRunner(cfg), cfg)
+	rcSvc := resourcecheck.NewService(rcChecker, subSvc, resourcecheck.ProberConfig{
+		ResourcesPath: filepath.Join(cfg.GetDataDir(), "resources.yaml"),
+		DBPath:        filepath.Join(cfg.GetDataDir(), "resource_checks.db"),
+	})
+	if err := rcSvc.Init(); err != nil {
+		log.Printf("Warning: failed to initialize resource checker: %v", err)
+	}
+
 	// Create auto-update scheduler
 	sched := scheduler.New(subSvc, nil)
 
@@ -100,6 +112,7 @@ func main() {
 	subHandler := subscription.NewHandler(subSvc)
 	proberHandler := prober.NewHandler(proberSvc)
 	speedtestHandler := speedtest.NewHandler(speedtestSvc)
+	rcHandler := resourcecheck.NewHandler(rcSvc)
 
 	// Initialize prober
 	if err := proberSvc.Init(); err != nil {
@@ -156,6 +169,10 @@ func main() {
 		// WARP routes
 		warpGroup := api.Group("/warp")
 		warpHandler.RegisterRoutes(warpGroup)
+
+		// Resource check routes
+		rcGroup := api.Group("/resourcecheck")
+		rcHandler.RegisterRoutes(rcGroup)
 	}
 
 	// Swagger API documentation
