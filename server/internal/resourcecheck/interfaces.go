@@ -17,5 +17,5 @@ type Runner interface {
 
 // NodeProvider provides proxy nodes to check resources through.
 type NodeProvider interface {
-	GetAllNodes() []types.ProxyNode
+	GetAllNodes() ([]types.ProxyNode, error)
 }

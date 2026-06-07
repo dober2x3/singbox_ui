@@ -14,8 +14,8 @@ type mockNodeProvider struct {
 	nodes []types.ProxyNode
 }
 
-func (m *mockNodeProvider) GetAllNodes() []types.ProxyNode {
-	return m.nodes
+func (m *mockNodeProvider) GetAllNodes() ([]types.ProxyNode, error) {
+	return m.nodes, nil
 }
 
 func newTestService(t *testing.T) *Service {

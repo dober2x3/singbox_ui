@@ -96,7 +96,10 @@ func (s *Service) GetResources() []ResourceConfig {
 
 // RunAll checks all resources through all nodes.
 func (s *Service) RunAll(ctx context.Context) error {
-	allNodes := s.nodeProvider.GetAllNodes()
+	allNodes, err := s.nodeProvider.GetAllNodes()
+	if err != nil {
+		return fmt.Errorf("get nodes: %w", err)
+	}
 	if len(allNodes) == 0 {
 		return fmt.Errorf("no nodes available")
 	}
@@ -112,7 +115,10 @@ func (s *Service) RunAll(ctx context.Context) error {
 
 // RunForTag checks all resources through a specific node tag.
 func (s *Service) RunForTag(ctx context.Context, tag string) error {
-	allNodes := s.nodeProvider.GetAllNodes()
+	allNodes, err := s.nodeProvider.GetAllNodes()
+	if err != nil {
+		return fmt.Errorf("get nodes: %w", err)
+	}
 	var node *types.ProxyNode
 	for i := range allNodes {
 		n := &allNodes[i]
