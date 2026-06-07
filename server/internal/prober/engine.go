@@ -10,10 +10,15 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"singbox-config-service/internal/pkg/types"
 )
+
+// SO_BINDTODEVICE forces a socket to use a specific network interface (Linux).
+// Value is 25 (0x19) on Linux; not exported in Go's syscall package.
+const soBindToDevice = 0x19
 
 // nodeHistory tracks probe success history using a ring buffer.
 type nodeHistory struct {
@@ -312,11 +317,38 @@ func (p *Prober) probeNode(node types.ProbeNode) {
 }
 
 // tcpProbe attempts a TCP connection to the given address and port.
+// If BindAddress or BindInterface is configured, the probe bypasses the
+// system routing table (e.g. a TUN tunnel) and goes through the specified
+// local IP or network interface instead.
 func (p *Prober) tcpProbe(address string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", address, port)
 
 	dialer := &net.Dialer{
 		Timeout: time.Duration(p.config.ProbeTimeout) * time.Millisecond,
+	}
+
+	// Bind to a specific local IP address if configured.
+	// This makes the TCP connection originate from that IP, bypassing
+	// any TUN tunnel that might otherwise capture the traffic.
+	if p.config.BindAddress != "" {
+		localAddr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(p.config.BindAddress, "0"))
+		if err == nil {
+			dialer.LocalAddr = localAddr
+		}
+	}
+
+	// Bind to a specific network interface if configured.
+	// Uses SO_BINDTODEVICE (Linux only; requires root or CAP_NET_ADMIN).
+	// Forces the socket to egress through the named physical interface
+	// (e.g. "eth0") even when a TUN interface is the default route.
+	if p.config.BindInterface != "" {
+		dialer.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				if err := syscall.SetsockoptString(int(fd), syscall.SOL_SOCKET, soBindToDevice, p.config.BindInterface); err != nil {
+					log.Printf("Prober: failed to bind to interface %s: %v", p.config.BindInterface, err)
+				}
+			})
+		}
 	}
 
 	conn, err := dialer.DialContext(p.ctx, "tcp", addr)
