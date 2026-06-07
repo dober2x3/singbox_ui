@@ -45,8 +45,8 @@ func (h *nodeHistory) update(success bool) float64 {
 	return float64(successCount) / float64(h.size) * 100
 }
 
-// maxRetries is the number of retry attempts for a failed probe.
-const maxRetries = 2
+// defaultMaxRetries is the fallback retry count when the config value is zero.
+const defaultMaxRetries = 2
 
 // Prober periodically probes network nodes and tracks their availability.
 type Prober struct {
@@ -72,17 +72,6 @@ func NewProber(config Config) *Prober {
 		semaphore: make(chan struct{}, config.Concurrent),
 		ctx:       ctx,
 		cancel:    cancel,
-	}
-}
-
-// DefaultConfig returns a Config with sensible defaults.
-func DefaultConfig() Config {
-	return Config{
-		Interval:    30,
-		Timeout:     5000,
-		Concurrent:  5,
-		MaxResults:  100,
-		MaxRetries:  2,
 	}
 }
 
@@ -291,6 +280,11 @@ func (p *Prober) probeAllNodes() {
 func (p *Prober) probeNode(node types.ProbeNode) {
 	var latency int64 = -1
 	var success bool
+
+	maxRetries := p.config.MaxRetries
+	if maxRetries <= 0 {
+		maxRetries = defaultMaxRetries
+	}
 
 	for retry := 0; retry <= maxRetries; retry++ {
 		if !p.IsRunning() {
