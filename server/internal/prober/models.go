@@ -1,14 +1,14 @@
 package prober
 
-// ProberConfig holds configuration parameters for the prober engine.
-// @Description Prober engine configuration
-type ProberConfig struct {
-	ProbeInterval   int    `json:"probe_interval" example:"60"`    // seconds
-	ProbeTimeout    int    `json:"probe_timeout" example:"5000"`   // ms
-	ProbeConcurrent int    `json:"probe_concurrent" example:"10"`  // max concurrent probes
-	MaxResults      int    `json:"max_results" example:"100"`      // ring buffer size
-	BindAddress     string `json:"bind_address,omitempty" example:"192.168.1.100"`     // local IP to bind probes to (bypasses tunnel)
-	BindInterface   string `json:"bind_interface,omitempty" example:"eth0"`             // network interface to bind probes to (requires root/CAP_NET_ADMIN)
+// Config holds configuration parameters for the prober engine.
+type Config struct {
+	Interval       int    `json:"interval" yaml:"interval" example:"30"`
+	Timeout        int    `json:"timeout" yaml:"timeout" example:"5000"`
+	Concurrent     int    `json:"concurrent" yaml:"concurrent" example:"5"`
+	MaxResults     int    `json:"max_results" yaml:"max_results" example:"100"`
+	MaxRetries     int    `json:"max_retries" yaml:"max_retries" example:"2"`
+	BindAddress    string `json:"bind_address,omitempty" yaml:"bind_address" example:"192.168.1.100"`
+	BindInterface  string `json:"bind_interface,omitempty" yaml:"bind_interface" example:"eth0"`
 }
 
 // ProberStatus contains the current prober status and statistics
