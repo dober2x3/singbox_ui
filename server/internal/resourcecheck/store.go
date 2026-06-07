@@ -62,7 +62,7 @@ func (s *Store) SaveResult(r CheckResult) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Upsert tag
 	_, err = tx.Exec("INSERT OR IGNORE INTO tags (tag) VALUES (?)", r.Tag)

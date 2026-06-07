@@ -86,9 +86,9 @@ func TestStore_GetResultsForTag(t *testing.T) {
 	defer store.Close()
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	store.SaveResult(CheckResult{Resource: "youtube", Tag: "node-1", Status: "ok", LatencyMs: 100, CheckedAt: now})
-	store.SaveResult(CheckResult{Resource: "telegram", Tag: "node-1", Status: "ok", LatencyMs: 50, CheckedAt: now})
-	store.SaveResult(CheckResult{Resource: "youtube", Tag: "node-2", Status: "timeout", LatencyMs: -1, CheckedAt: now})
+	_ = store.SaveResult(CheckResult{Resource: "youtube", Tag: "node-1", Status: "ok", LatencyMs: 100, CheckedAt: now})
+	_ = store.SaveResult(CheckResult{Resource: "telegram", Tag: "node-1", Status: "ok", LatencyMs: 50, CheckedAt: now})
+	_ = store.SaveResult(CheckResult{Resource: "youtube", Tag: "node-2", Status: "timeout", LatencyMs: -1, CheckedAt: now})
 
 	results, err := store.GetResultsForTag("node-1")
 	if err != nil {
