@@ -12,17 +12,6 @@ type Config struct {
 	BindInterface  string `json:"bind_interface,omitempty" yaml:"bind_interface,omitempty" example:"eth0"`
 }
 
-// DefaultConfig returns a Config with sensible defaults.
-func DefaultConfig() Config {
-	return Config{
-		Interval:    30,
-		Timeout:     5000,
-		Concurrent:  5,
-		MaxResults:  100,
-		MaxRetries:  2,
-	}
-}
-
 // ProberStatus contains the current prober status and statistics
 // @Description Current prober engine status
 type ProberStatus struct {

@@ -50,7 +50,7 @@ const maxRetries = 2
 
 // Prober periodically probes network nodes and tracks their availability.
 type Prober struct {
-	config    ProberConfig
+	config    Config
 	nodes     sync.Map // map[string]types.ProbeNode
 	results   sync.Map // map[string]*types.ProbeResult
 	history   sync.Map // map[string]*nodeHistory
@@ -64,24 +64,25 @@ type Prober struct {
 }
 
 // NewProber creates a new Prober with the given configuration.
-func NewProber(config ProberConfig) *Prober {
+func NewProber(config Config) *Prober {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Prober{
 		config:    config,
 		stopChan:  make(chan struct{}),
-		semaphore: make(chan struct{}, config.ProbeConcurrent),
+		semaphore: make(chan struct{}, config.Concurrent),
 		ctx:       ctx,
 		cancel:    cancel,
 	}
 }
 
-// DefaultProberConfig returns a ProberConfig with sensible defaults.
-func DefaultProberConfig() ProberConfig {
-	return ProberConfig{
-		ProbeInterval:   30,
-		ProbeTimeout:    5000,
-		ProbeConcurrent: 5,
-		MaxResults:      100,
+// DefaultConfig returns a Config with sensible defaults.
+func DefaultConfig() Config {
+	return Config{
+		Interval:    30,
+		Timeout:     5000,
+		Concurrent:  5,
+		MaxResults:  100,
+		MaxRetries:  2,
 	}
 }
 
@@ -241,7 +242,7 @@ func (p *Prober) probeLoop() {
 
 	p.probeAllNodes()
 
-	ticker := time.NewTicker(time.Duration(p.config.ProbeInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(p.config.Interval) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -324,7 +325,7 @@ func (p *Prober) tcpProbe(address string, port int) bool {
 	addr := fmt.Sprintf("%s:%d", address, port)
 
 	dialer := &net.Dialer{
-		Timeout: time.Duration(p.config.ProbeTimeout) * time.Millisecond,
+		Timeout: time.Duration(p.config.Timeout) * time.Millisecond,
 	}
 
 	// Bind to a specific local IP address if configured.
@@ -425,9 +426,9 @@ func (p *Prober) GetStats() map[string]interface{} {
 		"offlineNodes": offlineNodes,
 		"timeoutNodes": timeoutNodes,
 		"config": map[string]interface{}{
-			"probeInterval":   p.config.ProbeInterval,
-			"probeTimeout":    p.config.ProbeTimeout,
-			"probeConcurrent": p.config.ProbeConcurrent,
+			"probeInterval":   p.config.Interval,
+			"probeTimeout":    p.config.Timeout,
+			"probeConcurrent": p.config.Concurrent,
 			"maxResults":      p.config.MaxResults,
 		},
 	}

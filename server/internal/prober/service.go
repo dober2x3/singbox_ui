@@ -11,7 +11,7 @@ import (
 // Service provides the business-logic layer above the Prober engine.
 type Service struct {
 	prober       *Prober
-	config       ProberConfig
+	config       Config
 	baseDir      string
 	resultSaver  ProbeResultSaver
 	nodeProvider NodeProvider
@@ -22,7 +22,7 @@ func NewService(baseDir string, resultSaver ProbeResultSaver) *Service {
 	return &Service{
 		baseDir:     baseDir,
 		resultSaver: resultSaver,
-		config:      DefaultProberConfig(),
+		config:      DefaultConfig(),
 	}
 }
 
