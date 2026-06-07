@@ -119,7 +119,7 @@ func (n *NativeRuntime) Stop(ctx context.Context, name string, timeout *int) err
 	}
 	waitCh := make(chan bool, 1)
 	go func() {
-		proc.Wait()
+		_, _ = proc.Wait()
 		waitCh <- true
 	}()
 	select {

@@ -69,7 +69,7 @@ func (n *NativeTempRuntime) StopTemp(ctx context.Context, id string) error {
 		_ = proc.Signal(syscall.SIGTERM)
 		time.Sleep(500 * time.Millisecond)
 		_ = proc.Kill()
-		inst.cmd.Wait()
+		_ = inst.cmd.Wait()
 	}
 	delete(instances, id)
 	return nil
