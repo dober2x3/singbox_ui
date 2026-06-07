@@ -60,13 +60,11 @@ var distFS embed.FS
 // HTTP handlers, the background task scheduler, and finally starts the Gin HTTP server.
 func main() {
 	// Parse CLI flags
-	serveDashboard := flag.Bool("dashboard", false, "Serve embedded frontend dashboard")
-	singboxBin := flag.String("singbox-bin", "", "Path to sing-box binary (native/OpenWrt mode)")
+	configPath := flag.String("config", "", "Path to config file (default: DATA_DIR/config.yaml)")
 	flag.Parse()
 
 	// Initialize config
-	cfg, err := config.Init()
-	cfg.SetSingboxBinPath(*singboxBin)
+	cfg, err := config.Init(*configPath)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize config: %v", err)
 		log.Println("Some features may not work properly")
@@ -84,12 +82,16 @@ func main() {
 	warpSvc := warp.NewService(cfg.GetDataDir())
 	certSvc := certificate.NewService(cfg.GetSingboxDir())
 	subStore := subscription.NewFileStore(cfg.GetDataDir())
-	subSvc := subscription.NewService(subStore)
-	proberSvc := prober.NewService(cfg.GetDataDir(), subSvc)
-	speedtestSvc := speedtest.NewService(speedtest.NewTempRuntime(cfg), cfg)
+	subSvc := subscription.NewService(subStore, cfg.Subscription)
+	proberSvc := prober.NewService(cfg.Prober, cfg.GetDataDir(), subSvc)
+	speedtestSvc := speedtest.NewService(speedtest.NewTempRuntime(cfg), cfg, speedtest.Config{
+		LatencyURL:  cfg.Speedtest.LatencyURL,
+		DownloadURL: cfg.Speedtest.DownloadURL,
+		Duration:    cfg.Speedtest.Duration,
+	})
 
 	// Create auto-update scheduler
-	sched := scheduler.New(subSvc, nil)
+	sched := scheduler.New(subSvc, nil, cfg.Scheduler)
 
 	// Create HTTP handlers
 	wgHandler := wireguard.NewHandler(wgSvc)
@@ -163,8 +165,8 @@ func main() {
 	// Health check
 	r.GET("/health", healthCheck)
 
-	// Static file server (optional, controlled by --dashboard flag)
-	if *serveDashboard {
+	// Static file server (optional, controlled by config.yaml)
+	if cfg.Server.ServeDashboard {
 		setupStaticFiles(r)
 		log.Println("Dashboard static files are being served")
 	} else {

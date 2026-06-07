@@ -18,11 +18,11 @@ func newTestHandler(t *testing.T) *Handler {
 	mockRT := newMockTempRuntime()
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	return NewHandler(svc)
 }
 
@@ -87,11 +87,11 @@ func TestHandler_WithRunningService(t *testing.T) {
 	mockRT := newMockTempRuntime()
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.WithNodeProvider(&mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443,

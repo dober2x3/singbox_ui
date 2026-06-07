@@ -17,12 +17,12 @@ type Service struct {
 	nodeProvider NodeProvider
 }
 
-// NewService creates a new Service with the given base directory and result saver.
-func NewService(baseDir string, resultSaver ProbeResultSaver) *Service {
+// NewService creates a new Service with the given config, base directory and result saver.
+func NewService(config Config, baseDir string, resultSaver ProbeResultSaver) *Service {
 	return &Service{
 		baseDir:     baseDir,
 		resultSaver: resultSaver,
-		config:      DefaultConfig(),
+		config:      config,
 	}
 }
 

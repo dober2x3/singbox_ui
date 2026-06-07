@@ -76,11 +76,11 @@ func newMockRuntime() *mockRuntime {
 }
 
 // newTestService creates a Service with a mock runtime and temporary directory for testing.
-func newTestService(t *testing.T) (*Service, *config.Config, func()) {
+func newTestService(t *testing.T) (*Service, *config.AppConfig, func()) {
 	t.Helper()
 	dir := t.TempDir()
 	os.Setenv("DATA_DIR", dir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatalf("config.Init() error = %v", err)
 	}

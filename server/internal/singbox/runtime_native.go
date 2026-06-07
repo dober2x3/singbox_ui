@@ -29,7 +29,7 @@ type NativeRuntime struct {
 }
 
 // NewRuntime creates a Runtime backed by native OS processes.
-func NewRuntime(cfg *config.Config) (Runtime, error) {
+func NewRuntime(cfg *config.AppConfig) (Runtime, error) {
 	binaryPath := cfg.GetSingboxBinPath()
 	if binaryPath == "" {
 		var err error

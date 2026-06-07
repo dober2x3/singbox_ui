@@ -18,11 +18,11 @@ const singBoxImage = "ghcr.io/sagernet/sing-box:v1.13.5"
 // DockerTempRuntime creates temporary sing-box containers for speed tests.
 type DockerTempRuntime struct {
 	client *docker.Client
-	cfg    *config.Config
+	cfg    *config.AppConfig
 }
 
 // NewTempRuntime creates a TempRuntime backed by Docker containers.
-func NewTempRuntime(cfg *config.Config) TempRuntime {
+func NewTempRuntime(cfg *config.AppConfig) TempRuntime {
 	client, err := docker.NewClient()
 	if err != nil {
 		return &DockerTempRuntime{cfg: cfg}
