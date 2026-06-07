@@ -40,6 +40,7 @@ server/data/
 deploy.sh
 
 # IDE
+.zed/
 .vscode/
 .idea/
 *.swp
