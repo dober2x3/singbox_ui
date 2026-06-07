@@ -21,19 +21,11 @@ import (
 	"singbox-config-service/internal/pkg/types"
 )
 
-const (
-	// speedTestLatencyURL is the URL used to measure proxy latency.
-	speedTestLatencyURL = "http://www.gstatic.com/generate_204"
-	// speedTestDownloadURL is the URL used to measure download speed.
-	speedTestDownloadURL = "https://speed.cloudflare.com/__down?bytes=10000000"
-	// speedTestDuration is the maximum time allowed for a download speed test.
-	speedTestDuration = 10 * time.Second
-)
-
 // Service orchestrates speed tests against proxy nodes using sing-box instances.
 type Service struct {
 	tempRuntime  TempRuntime
-	cfg          *config.Config
+	cfg          *config.AppConfig
+	speedCfg     Config
 	nodeProvider NodeProvider
 	resultSaver  SpeedTestResultSaver
 	state        *SpeedTestState
@@ -41,11 +33,12 @@ type Service struct {
 	cancel       context.CancelFunc
 }
 
-// NewService creates a new Service with the given TempRuntime and config.
-func NewService(tempRuntime TempRuntime, cfg *config.Config) *Service {
+// NewService creates a new Service with the given TempRuntime, app config, and speedtest config.
+func NewService(tempRuntime TempRuntime, cfg *config.AppConfig, speedCfg Config) *Service {
 	return &Service{
 		tempRuntime: tempRuntime,
 		cfg:         cfg,
+		speedCfg:    speedCfg,
 		state:       &SpeedTestState{},
 	}
 }
@@ -243,7 +236,7 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 		default:
 		}
 		t0 := time.Now()
-		req, _ := http.NewRequestWithContext(ctx, "GET", speedTestLatencyURL, nil)
+		req, _ := http.NewRequestWithContext(ctx, "GET", s.speedCfg.LatencyURL, nil)
 		resp, err := client.Do(req)
 		if err != nil {
 			continue
@@ -259,10 +252,11 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 		return 0, 0, "", fmt.Errorf("latency probe failed")
 	}
 
-	dlClient := newProxyClient(proxyURL, speedTestDuration+5*time.Second)
-	dlCtx, dlCancel := context.WithTimeout(ctx, speedTestDuration)
+	dlTimeout := time.Duration(s.speedCfg.Duration) * time.Second
+	dlClient := newProxyClient(proxyURL, dlTimeout+5*time.Second)
+	dlCtx, dlCancel := context.WithTimeout(ctx, dlTimeout)
 	defer dlCancel()
-	req, _ := http.NewRequestWithContext(dlCtx, "GET", speedTestDownloadURL, nil)
+	req, _ := http.NewRequestWithContext(dlCtx, "GET", s.speedCfg.DownloadURL, nil)
 	t0 := time.Now()
 	resp, err := dlClient.Do(req)
 	if err != nil {

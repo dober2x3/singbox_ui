@@ -17,12 +17,12 @@ type Scheduler struct {
 	running      bool
 }
 
-// New creates a new Scheduler with the given updater and container manager.
-func New(subUpdater SubscriptionUpdater, containerMgr ContainerManager) *Scheduler {
+// New creates a new Scheduler with the given updater, container manager, and config.
+func New(subUpdater SubscriptionUpdater, containerMgr ContainerManager, cfg Config) *Scheduler {
 	return &Scheduler{
 		subUpdater:   subUpdater,
 		containerMgr: containerMgr,
-		interval:     60 * time.Second,
+		interval:     time.Duration(cfg.Interval) * time.Second,
 	}
 }
 

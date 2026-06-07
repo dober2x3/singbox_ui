@@ -18,11 +18,11 @@ import (
 // DockerRuntime manages sing-box instances via Docker containers.
 type DockerRuntime struct {
 	client *docker.Client
-	cfg    *config.Config
+	cfg    *config.AppConfig
 }
 
 // NewRuntime creates a Runtime backed by Docker.
-func NewRuntime(cfg *config.Config) (Runtime, error) {
+func NewRuntime(cfg *config.AppConfig) (Runtime, error) {
 	client, err := docker.NewClient()
 	if err != nil {
 		return nil, fmt.Errorf("docker client: %w", err)

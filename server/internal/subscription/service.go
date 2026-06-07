@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -22,11 +21,12 @@ import (
 // updating, deleting, and refreshing proxy node subscriptions.
 type Service struct {
 	store *FileStore
+	cfg   Config
 }
 
 // NewService creates a new Service backed by the given FileStore.
-func NewService(store *FileStore) *Service {
-	return &Service{store: store}
+func NewService(store *FileStore, cfg Config) *Service {
+	return &Service{store: store, cfg: cfg}
 }
 
 // generateID returns a unique subscription ID based on the current Unix nanosecond timestamp.
@@ -34,10 +34,9 @@ func generateID() string {
 	return fmt.Sprintf("sub_%d", time.Now().UnixNano())
 }
 
-// allowInsecureTLS returns true if the SUBSCRIPTION_INSECURE_TLS env var is set to a truthy value.
-func allowInsecureTLS() bool {
-	value := strings.TrimSpace(strings.ToLower(os.Getenv("SUBSCRIPTION_INSECURE_TLS")))
-	return value == "1" || value == "true" || value == "yes"
+// allowInsecureTLS returns true if the subscription config has InsecureTLS enabled.
+func (s *Service) allowInsecureTLS() bool {
+	return s.cfg.InsecureTLS
 }
 
 // isPublicAddr checks whether the IP is a public address not in the blocked prefix list.
@@ -110,7 +109,7 @@ func (s *Service) FetchSubscription(subURL string, userAgent ...string) ([]types
 		Proxy: http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{
 			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: allowInsecureTLS(),
+			InsecureSkipVerify: s.allowInsecureTLS(),
 		},
 	}
 	client := &http.Client{

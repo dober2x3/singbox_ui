@@ -51,7 +51,7 @@ func TestScheduler_autoUpdateTrigger(t *testing.T) {
 		},
 	}
 	containerMock := &mockContainerManager{}
-	sched := New(subMock, containerMock)
+	sched := New(subMock, containerMock, DefaultConfig())
 
 	sched.checkAndAutoUpdateSubscriptions()
 
@@ -70,7 +70,7 @@ func TestScheduler_skipIfNotDue(t *testing.T) {
 			},
 		},
 	}
-	sched := New(subMock, &mockContainerManager{})
+	sched := New(subMock, &mockContainerManager{}, DefaultConfig())
 	sched.checkAndAutoUpdateSubscriptions()
 	if subMock.updated["test"] {
 		t.Error("Subscription should NOT be updated if not due")
@@ -86,7 +86,7 @@ func TestScheduler_skipIfAutoUpdateDisabled(t *testing.T) {
 			},
 		},
 	}
-	sched := New(subMock, &mockContainerManager{})
+	sched := New(subMock, &mockContainerManager{}, DefaultConfig())
 	sched.checkAndAutoUpdateSubscriptions()
 	if subMock.updated["test"] {
 		t.Error("Subscription should NOT be updated if AutoUpdate is false")
@@ -96,7 +96,7 @@ func TestScheduler_skipIfAutoUpdateDisabled(t *testing.T) {
 // TestScheduler_startStop verifies the scheduler start/stop lifecycle.
 func TestScheduler_startStop(t *testing.T) {
 	subMock := &mockSubUpdater{}
-	sched := New(subMock, &mockContainerManager{})
+	sched := New(subMock, &mockContainerManager{}, DefaultConfig())
 	sched.Start()
 	if !sched.IsRunning() {
 		t.Error("Scheduler should be running after Start()")

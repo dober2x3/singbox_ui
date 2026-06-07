@@ -22,7 +22,7 @@ type NativeTempRuntime struct {
 }
 
 // NewTempRuntime creates a TempRuntime backed by native OS processes.
-func NewTempRuntime(cfg *config.Config) TempRuntime {
+func NewTempRuntime(cfg *config.AppConfig) TempRuntime {
 	binaryPath := cfg.GetSingboxBinPath()
 	if binaryPath == "" {
 		if p, err := exec.LookPath("sing-box"); err == nil {

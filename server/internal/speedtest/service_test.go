@@ -101,11 +101,11 @@ func TestPickFreePort(t *testing.T) {
 // TestNewService verifies that NewService returns a non-nil Service with an initialized state.
 func TestNewService(t *testing.T) {
 	mockRT := newMockTempRuntime()
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	if svc == nil {
 		t.Fatal("NewService() returned nil")
 	}
@@ -117,11 +117,11 @@ func TestNewService(t *testing.T) {
 // TestService_StartSpeedTest_NoProvider verifies that StartSpeedTest fails without a node provider.
 func TestService_StartSpeedTest_NoProvider(t *testing.T) {
 	mockRT := newMockTempRuntime()
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 
 	err = svc.StartSpeedTest()
 	if err == nil {
@@ -135,11 +135,11 @@ func TestService_StartSpeedTest_NoProvider(t *testing.T) {
 // TestService_StartSpeedTest_NoNodes verifies that StartSpeedTest fails with an empty node list.
 func TestService_StartSpeedTest_NoNodes(t *testing.T) {
 	mockRT := newMockTempRuntime()
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.WithNodeProvider(&mockNodeProvider{nodes: []types.ProxyNode{}})
 
 	err = svc.StartSpeedTest()
@@ -163,11 +163,11 @@ func TestService_StartSpeedTest_AlreadyRunning(t *testing.T) {
 
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.nodeProvider = &mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443,
@@ -192,11 +192,11 @@ func TestService_StartSpeedTest_AlreadyRunning(t *testing.T) {
 // TestService_GetSpeedTestState verifies the initial state is not running.
 func TestService_GetSpeedTestState(t *testing.T) {
 	mockRT := newMockTempRuntime()
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 
 	state := svc.GetSpeedTestState()
 	if state == nil {
@@ -212,11 +212,11 @@ func TestService_StopSpeedTest(t *testing.T) {
 	mockRT := newMockTempRuntime()
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.nodeProvider = &mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443,
@@ -250,12 +250,12 @@ func TestService_RunSpeedTest_ContainerStartFails(t *testing.T) {
 
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.WithNodeProvider(&mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test-node", Protocol: "vmess", Address: "1.1.1.1", Port: 443,
@@ -289,13 +289,13 @@ func TestService_RunSpeedTest_WithResultSaver(t *testing.T) {
 
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	saver := &mockResultSaver{}
-	svc := NewService(mockRT, cfg)
+	svc := NewService(mockRT, cfg, DefaultConfig())
 	svc.WithNodeProvider(&mockNodeProvider{
 		nodes: []types.ProxyNode{
 			{Name: "test-node", Protocol: "vmess", Address: "1.1.1.1", Port: 443,
