@@ -11,17 +11,17 @@ import (
 
 // TestNewProber verifies that NewProber initialises correctly.
 func TestNewProber(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 	if p == nil {
 		t.Fatal("NewProber() returned nil")
 	}
 
-	if p.config.ProbeInterval != 30 {
-		t.Errorf("Expected ProbeInterval 30, got %d", p.config.ProbeInterval)
+	if p.config.Interval != 30 {
+		t.Errorf("Expected Interval 30, got %d", p.config.Interval)
 	}
 
-	if p.config.ProbeTimeout != 5000 {
-		t.Errorf("Expected ProbeTimeout 5000, got %d", p.config.ProbeTimeout)
+	if p.config.Timeout != 5000 {
+		t.Errorf("Expected Timeout 5000, got %d", p.config.Timeout)
 	}
 
 	if p.ctx == nil {
@@ -34,7 +34,7 @@ func TestNewProber(t *testing.T) {
 
 // TestProberAddRemoveNode verifies adding and removing nodes.
 func TestProberAddRemoveNode(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{
 		Tag:      "test-node-1",
@@ -65,7 +65,7 @@ func TestProberAddRemoveNode(t *testing.T) {
 
 // TestProberUpdateNodes verifies that UpdateNodes replaces all nodes.
 func TestProberUpdateNodes(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	nodes := []types.ProbeNode{
 		{Tag: "node-1", Protocol: "vmess", Address: "1.1.1.1", Port: 443},
@@ -103,7 +103,7 @@ func TestProberUpdateNodes(t *testing.T) {
 
 // TestProberClearNodes verifies that ClearNodes removes all nodes.
 func TestProberClearNodes(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "a", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 	p.AddNode(types.ProbeNode{Tag: "b", Protocol: "vmess", Address: "2.2.2.2", Port: 443})
@@ -118,7 +118,7 @@ func TestProberClearNodes(t *testing.T) {
 
 // TestProberStartStop verifies the start/stop lifecycle and idempotency.
 func TestProberStartStop(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	if p.IsRunning() {
 		t.Error("Prober should not be running initially")
@@ -151,7 +151,7 @@ func TestProberStartStop(t *testing.T) {
 
 // TestProberStartStopRace verifies concurrent start/stop does not panic.
 func TestProberStartStopRace(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
@@ -173,7 +173,7 @@ func TestProberStartStopRace(t *testing.T) {
 
 // TestProberGetBestNode verifies best-node selection by latency.
 func TestProberGetBestNode(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	best := p.GetBestNode()
 	if best != nil {
@@ -206,7 +206,7 @@ func TestProberGetBestNode(t *testing.T) {
 
 // TestProberGetOnlineNodes verifies online node filtering.
 func TestProberGetOnlineNodes(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "online-1", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 	p.AddNode(types.ProbeNode{Tag: "online-2", Protocol: "vmess", Address: "2.2.2.2", Port: 443})
@@ -224,7 +224,7 @@ func TestProberGetOnlineNodes(t *testing.T) {
 
 // TestProberConcurrentAccess verifies thread-safe concurrent node operations.
 func TestProberConcurrentAccess(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
@@ -255,7 +255,7 @@ func TestProberConcurrentAccess(t *testing.T) {
 
 // TestProberStats verifies the stats output counts correctly.
 func TestProberStats(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "node-1", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 	p.AddNode(types.ProbeNode{Tag: "node-2", Protocol: "vmess", Address: "2.2.2.2", Port: 443})
@@ -280,7 +280,7 @@ func TestProberStats(t *testing.T) {
 
 // TestProberUpdateResult verifies result status transitions based on success/failure.
 func TestProberUpdateResult(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 	p.config.MaxResults = 5
 
 	p.AddNode(types.ProbeNode{Tag: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
@@ -315,7 +315,7 @@ func TestProberUpdateResult(t *testing.T) {
 
 // TestProberUpdateResultDeletedNode verifies no panic when updating a deleted node.
 func TestProberUpdateResultDeletedNode(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 	p.RemoveNode("test")
@@ -325,7 +325,7 @@ func TestProberUpdateResultDeletedNode(t *testing.T) {
 
 // TestProberResultIsCopy verifies that GetResult returns a copy not the original.
 func TestProberResultIsCopy(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 	p.results.Store("test", &types.ProbeResult{
@@ -346,7 +346,7 @@ func TestProberResultIsCopy(t *testing.T) {
 
 // TestProberContextCancellation verifies clean stop within a reasonable time.
 func TestProberContextCancellation(t *testing.T) {
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "test", Protocol: "vmess", Address: "192.0.2.1", Port: 443})
 
@@ -389,7 +389,7 @@ func TestNodeHistoryThreadSafe(t *testing.T) {
 // TestSaveNodesToFile verifies saving and loading nodes to/from a file.
 func TestSaveNodesToFile(t *testing.T) {
 	dir := t.TempDir()
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	p.AddNode(types.ProbeNode{Tag: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443})
 
@@ -423,7 +423,7 @@ func TestSaveNodesToFile(t *testing.T) {
 // TestSaveNodesToFile_NoFile verifies LoadNodesFromFile handles a missing file gracefully.
 func TestSaveNodesToFile_NoFile(t *testing.T) {
 	dir := t.TempDir()
-	p := NewProber(DefaultProberConfig())
+	p := NewProber(DefaultConfig())
 
 	if err := p.LoadNodesFromFile(dir); err != nil {
 		t.Errorf("LoadNodesFromFile() should not error when file does not exist: %v", err)

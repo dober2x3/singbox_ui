@@ -18,10 +18,10 @@ const singBoxImage = "ghcr.io/sagernet/sing-box:v1.13.5"
 
 type dockerRunner struct {
 	client *docker.Client
-	cfg    *config.Config
+	cfg    *config.AppConfig
 }
 
-func NewRunner(cfg *config.Config) Runner {
+func NewRunner(cfg *config.AppConfig) Runner {
 	client, err := docker.NewClient()
 	if err != nil {
 		return &dockerRunner{cfg: cfg}

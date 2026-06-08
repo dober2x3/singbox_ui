@@ -23,11 +23,11 @@ const (
 // Checker runs resource availability checks through proxy tunnels.
 type Checker struct {
 	runner Runner
-	cfg    *config.Config
+	cfg    *config.AppConfig
 }
 
 // NewChecker creates a Checker with the given Runner and Config.
-func NewChecker(runner Runner, cfg *config.Config) *Checker {
+func NewChecker(runner Runner, cfg *config.AppConfig) *Checker {
 	return &Checker{runner: runner, cfg: cfg}
 }
 

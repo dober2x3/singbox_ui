@@ -14,11 +14,11 @@ import (
 // Service provides business logic for sing-box configuration and instance management.
 type Service struct {
 	runtime Runtime
-	cfg     *config.Config
+	cfg     *config.AppConfig
 }
 
 // NewService creates a new Service with the given Runtime and Config.
-func NewService(runtime Runtime, cfg *config.Config) *Service {
+func NewService(runtime Runtime, cfg *config.AppConfig) *Service {
 	return &Service{
 		runtime: runtime,
 		cfg:     cfg,

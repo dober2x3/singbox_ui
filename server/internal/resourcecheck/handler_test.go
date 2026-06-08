@@ -36,7 +36,7 @@ func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	cfgDir := tempDirWithRetryCleanup(t)
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestHandler_GetStatus_Idle(t *testing.T) {
 func TestHandler_Run_NoNodes(t *testing.T) {
 	cfgDir := tempDirWithRetryCleanup(t)
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	svc := NewService(checker, &mockNodeProvider{}, ProberConfig{
 		DBPath: filepath.Join(cfgDir, "test.db"),

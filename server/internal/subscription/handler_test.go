@@ -15,7 +15,7 @@ func newTestHandler(t *testing.T) *Handler {
 	t.Helper()
 	dir := t.TempDir()
 	store := NewFileStore(dir)
-	svc := NewService(store)
+	svc := NewService(store, DefaultConfig())
 	return NewHandler(svc)
 }
 

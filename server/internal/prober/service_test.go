@@ -18,7 +18,7 @@ func (m *mockResultSaver) SaveProbeResults(results []types.ProbeResultUpdate) er
 func TestNewService(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 	if svc == nil {
 		t.Fatal("NewService() returned nil")
 	}
@@ -28,7 +28,7 @@ func TestNewService(t *testing.T) {
 func TestServiceInit(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -43,7 +43,7 @@ func TestServiceInit(t *testing.T) {
 func TestServiceStartStop(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -64,7 +64,7 @@ func TestServiceStartStop(t *testing.T) {
 func TestServiceCRUD(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -87,7 +87,7 @@ func TestServiceCRUD(t *testing.T) {
 func TestServiceSaveProbeResults(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -108,7 +108,7 @@ func TestServiceSaveProbeResults(t *testing.T) {
 func TestServiceSaveProbeResults_Empty(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -127,7 +127,7 @@ func TestServiceSaveProbeResults_Empty(t *testing.T) {
 func TestServiceSaveNodes(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -157,7 +157,7 @@ func TestServiceSaveNodes(t *testing.T) {
 func TestServiceGetAllResults(t *testing.T) {
 	dir := t.TempDir()
 	saver := &mockResultSaver{}
-	svc := NewService(dir, saver)
+	svc := NewService(DefaultConfig(), dir, saver)
 
 	if err := svc.Init(); err != nil {
 		t.Fatalf("Init() error = %v", err)

@@ -19,7 +19,7 @@ type nativeRunner struct {
 	binaryPath string
 }
 
-func NewRunner(cfg *config.Config) Runner {
+func NewRunner(cfg *config.AppConfig) Runner {
 	binaryPath := cfg.GetSingboxBinPath()
 	if binaryPath == "" {
 		if p, err := exec.LookPath("sing-box"); err == nil {

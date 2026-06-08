@@ -33,3 +33,13 @@ type UpdateSettingsRequest struct {
 	AutoUpdate     bool `json:"auto_update" example:"true" description:"Enable or disable auto-update"`
 	UpdateInterval int  `json:"update_interval" example:"12" description:"Update interval in hours"`
 }
+
+// Config holds configuration parameters for subscription fetching.
+type Config struct {
+	InsecureTLS bool `json:"insecure_tls" yaml:"insecure_tls" example:"false" description:"Allow insecure TLS when fetching subscriptions"`
+}
+
+// DefaultConfig returns a Config with sensible defaults.
+func DefaultConfig() Config {
+	return Config{InsecureTLS: false}
+}

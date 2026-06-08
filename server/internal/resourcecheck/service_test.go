@@ -23,7 +23,7 @@ func newTestService(t *testing.T) *Service {
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
 
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestService_Init(t *testing.T) {
 func TestService_RunAll_NoNodes(t *testing.T) {
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	svc := NewService(checker, &mockNodeProvider{}, ProberConfig{
 		DBPath: filepath.Join(cfgDir, "test.db"),
@@ -94,7 +94,7 @@ func TestService_RunAll_NoNodes(t *testing.T) {
 func TestService_RunForTag_NotFound(t *testing.T) {
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	svc := NewService(checker, &mockNodeProvider{}, ProberConfig{
 		DBPath: filepath.Join(cfgDir, "test.db"),
@@ -108,7 +108,7 @@ func TestService_RunForTag_NotFound(t *testing.T) {
 
 func TestService_GetStatus_Initial(t *testing.T) {
 	cfgDir := t.TempDir()
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	svc := NewService(checker, &mockNodeProvider{}, ProberConfig{
 		DBPath: filepath.Join(cfgDir, "test.db"),
@@ -122,7 +122,7 @@ func TestService_GetStatus_Initial(t *testing.T) {
 
 func TestService_Stop_Idempotent(t *testing.T) {
 	cfgDir := t.TempDir()
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	svc := NewService(checker, &mockNodeProvider{}, ProberConfig{
 		DBPath: filepath.Join(cfgDir, "test.db"),

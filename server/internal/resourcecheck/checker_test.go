@@ -51,7 +51,7 @@ func (m *mockRunner) GetTempLogs(ctx context.Context, id string) string {
 }
 
 func TestChecker_CheckNodeResources_MissingOutbound(t *testing.T) {
-	cfg, _ := config.Init()
+	cfg, _ := config.Init("")
 	checker := NewChecker(&mockRunner{}, cfg)
 	node := &types.ProxyNode{Name: "test", Protocol: "vmess", Address: "1.1.1.1", Port: 443}
 
@@ -64,7 +64,7 @@ func TestChecker_CheckNodeResources_MissingOutbound(t *testing.T) {
 func TestChecker_CheckNodeResources_TunnelStartFails(t *testing.T) {
 	cfgDir := t.TempDir()
 	t.Setenv("DATA_DIR", cfgDir)
-	cfg, err := config.Init()
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatal(err)
 	}

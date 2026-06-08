@@ -1,0 +1,68 @@
+# Singbox UI Configuration
+# Copy this file to config.yaml and edit as needed.
+# By default, the application looks for config.yaml in DATA_DIR.
+# Pass --config /path/to/config.yaml to use a different path.
+
+# Server settings
+server:
+  # HTTP server listen address (default: "127.0.0.1:7000")
+  listen_addr: "0.0.0.0:7000"
+
+  # Data directory for storing subscriptions, configs, etc. (default: auto-detected)
+  # Falls back to working directory if unset. DATA_DIR env var overrides this.
+  data_dir: "/home/data"
+
+  # Host-visible path for DATA_DIR (used for Docker bind mounts)
+  # Maps container DATA_DIR paths to host paths so Docker can mount them.
+  host_data_dir: "/absolute/host/path/to/data"
+
+  # Path to sing-box binary (native/OpenWrt mode only)
+  # If empty, the application looks for "sing-box" in PATH.
+  singbox_bin_path: "/usr/bin/sing-box"
+
+  # Serve the embedded frontend dashboard (default: false)
+  serve_dashboard: true
+
+# Node probing engine
+prober:
+  # Interval in seconds between probe cycles (default: 30)
+  interval: 30
+
+  # Timeout in milliseconds per probe request (default: 5000)
+  timeout: 5000
+
+  # Number of concurrent probes (default: 5)
+  concurrent: 5
+
+  # Maximum number of probe results to retain (default: 100)
+  max_results: 100
+
+  # Maximum retries per node before marking it failed (default: 2)
+  max_retries: 2
+
+  # Bind probe requests to a specific IP address (optional)
+  # bind_address: "192.168.1.100"
+
+  # Bind probe requests to a specific network interface (optional)
+  # bind_interface: "eth0"
+
+# Speed test service
+speedtest:
+  # URL for latency measurement (default: "http://www.gstatic.com/generate_204")
+  latency_url: "http://www.gstatic.com/generate_204"
+
+  # URL for download speed measurement (default: "https://speed.cloudflare.com/__down?bytes=10000000")
+  download_url: "https://speed.cloudflare.com/__down?bytes=10000000"
+
+  # Maximum duration in seconds for a download test (default: 10)
+  duration: 10
+
+# Background task scheduler
+scheduler:
+  # Interval in seconds between subscription auto-update checks (default: 60)
+  interval: 60
+
+# Subscription fetching
+subscription:
+  # Allow insecure TLS when fetching subscriptions (default: false)
+  insecure_tls: false
