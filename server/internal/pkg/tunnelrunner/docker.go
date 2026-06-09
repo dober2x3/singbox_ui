@@ -1,10 +1,11 @@
 //go:build docker
 
-package speedtest
+package tunnelrunner
 
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -15,22 +16,20 @@ import (
 const speedTestContainerName = "sing-box-speedtest"
 const singBoxImage = "ghcr.io/sagernet/sing-box:v1.13.5"
 
-// DockerTempRuntime creates temporary sing-box containers for speed tests.
-type DockerTempRuntime struct {
+type dockerRunner struct {
 	client *docker.Client
 	cfg    *config.AppConfig
 }
 
-// NewTempRuntime creates a TempRuntime backed by Docker containers.
-func NewTempRuntime(cfg *config.AppConfig) TempRuntime {
+func NewRunner(cfg *config.AppConfig) Runner {
 	client, err := docker.NewClient()
 	if err != nil {
-		return &DockerTempRuntime{cfg: cfg}
+		return &dockerRunner{cfg: cfg}
 	}
-	return &DockerTempRuntime{client: client, cfg: cfg}
+	return &dockerRunner{client: client, cfg: cfg}
 }
 
-func (d *DockerTempRuntime) StartTemp(ctx context.Context, configPath string) (string, error) {
+func (d *dockerRunner) StartTemp(ctx context.Context, configPath string) (string, error) {
 	if d.client == nil {
 		return "", fmt.Errorf("Docker client not available")
 	}
@@ -69,16 +68,16 @@ func (d *DockerTempRuntime) StartTemp(ctx context.Context, configPath string) (s
 	return "", fmt.Errorf("failed to create speedtest container after retries")
 }
 
-func (d *DockerTempRuntime) StopTemp(ctx context.Context, id string) error {
+func (d *dockerRunner) StopTemp(ctx context.Context, id string) error {
 	d.cleanupContainer(ctx)
 	return nil
 }
 
-func (d *DockerTempRuntime) WaitTempReady(ctx context.Context, id string, port int, timeout time.Duration) error {
+func (d *dockerRunner) WaitTempReady(ctx context.Context, id string, port int, timeout time.Duration) error {
 	return waitProxyReady(ctx, port, timeout)
 }
 
-func (d *DockerTempRuntime) GetTempLogs(ctx context.Context, id string) string {
+func (d *dockerRunner) GetTempLogs(ctx context.Context, id string) string {
 	if d.client == nil {
 		return "Docker client not available"
 	}
@@ -89,7 +88,7 @@ func (d *DockerTempRuntime) GetTempLogs(ctx context.Context, id string) string {
 	return logs
 }
 
-func (d *DockerTempRuntime) cleanupContainer(ctx context.Context) {
+func (d *dockerRunner) cleanupContainer(ctx context.Context) {
 	if d.client == nil {
 		return
 	}
@@ -102,4 +101,23 @@ func isConflictError(err error) bool {
 	}
 	s := err.Error()
 	return strings.Contains(s, "already in use") || strings.Contains(s, "Conflict")
+}
+
+func waitProxyReady(ctx context.Context, port int, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	for time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+		if err == nil {
+			conn.Close()
+			return nil
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout")
 }

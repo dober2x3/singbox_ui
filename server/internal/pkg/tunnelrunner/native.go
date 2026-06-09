@@ -1,11 +1,10 @@
-
-
-package speedtest
+package tunnelrunner
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -16,20 +15,18 @@ import (
 	"singbox-config-service/internal/pkg/config"
 )
 
-// NativeTempRuntime creates temporary sing-box processes for speed tests.
-type NativeTempRuntime struct {
+type nativeRunner struct {
 	binaryPath string
 }
 
-// NewTempRuntime creates a TempRuntime backed by native OS processes.
-func NewTempRuntime(cfg *config.AppConfig) TempRuntime {
+func NewRunner(cfg *config.AppConfig) Runner {
 	binaryPath := cfg.GetSingboxBinPath()
 	if binaryPath == "" {
 		if p, err := exec.LookPath("sing-box"); err == nil {
 			binaryPath = p
 		}
 	}
-	return &NativeTempRuntime{binaryPath: binaryPath}
+	return &nativeRunner{binaryPath: binaryPath}
 }
 
 type tempInstance struct {
@@ -39,7 +36,7 @@ type tempInstance struct {
 
 var instances = make(map[string]*tempInstance)
 
-func (n *NativeTempRuntime) StartTemp(ctx context.Context, configPath string) (string, error) {
+func (n *nativeRunner) StartTemp(ctx context.Context, configPath string) (string, error) {
 	if n.binaryPath == "" {
 		return "", fmt.Errorf("sing-box binary not configured")
 	}
@@ -59,7 +56,7 @@ func (n *NativeTempRuntime) StartTemp(ctx context.Context, configPath string) (s
 	return id, nil
 }
 
-func (n *NativeTempRuntime) StopTemp(ctx context.Context, id string) error {
+func (n *nativeRunner) StopTemp(ctx context.Context, id string) error {
 	inst, ok := instances[id]
 	if !ok {
 		return nil
@@ -75,11 +72,11 @@ func (n *NativeTempRuntime) StopTemp(ctx context.Context, id string) error {
 	return nil
 }
 
-func (n *NativeTempRuntime) WaitTempReady(ctx context.Context, id string, port int, timeout time.Duration) error {
+func (n *nativeRunner) WaitTempReady(ctx context.Context, id string, port int, timeout time.Duration) error {
 	return waitProxyReady(ctx, port, timeout)
 }
 
-func (n *NativeTempRuntime) GetTempLogs(ctx context.Context, id string) string {
+func (n *nativeRunner) GetTempLogs(ctx context.Context, id string) string {
 	inst, ok := instances[id]
 	if !ok {
 		return "instance not found"
@@ -87,7 +84,6 @@ func (n *NativeTempRuntime) GetTempLogs(ctx context.Context, id string) string {
 	return inst.logBuf.String()
 }
 
-// mustParsePid extracts a numeric PID from a "pid:N" string.
 func mustParsePid(id string) int {
 	s := strings.TrimPrefix(id, "pid:")
 	pid, err := strconv.Atoi(s)
@@ -95,4 +91,23 @@ func mustParsePid(id string) int {
 		return -1
 	}
 	return pid
+}
+
+func waitProxyReady(ctx context.Context, port int, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	for time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+		if err == nil {
+			conn.Close()
+			return nil
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout")
 }

@@ -18,12 +18,13 @@ import (
 	"time"
 
 	"singbox-config-service/internal/pkg/config"
+	"singbox-config-service/internal/pkg/tunnelrunner"
 	"singbox-config-service/internal/pkg/types"
 )
 
 // Service orchestrates speed tests against proxy nodes using sing-box instances.
 type Service struct {
-	tempRuntime  TempRuntime
+	runner tunnelrunner.Runner
 	cfg          *config.AppConfig
 	speedCfg     Config
 	nodeProvider NodeProvider
@@ -33,12 +34,12 @@ type Service struct {
 	cancel       context.CancelFunc
 }
 
-// NewService creates a new Service with the given TempRuntime, app config, and speedtest config.
-func NewService(tempRuntime TempRuntime, cfg *config.AppConfig, speedCfg Config) *Service {
+// NewService creates a new Service with the given Runner, app config, and speedtest config.
+func NewService(runner tunnelrunner.Runner, cfg *config.AppConfig, speedCfg Config) *Service {
 	return &Service{
-		tempRuntime: tempRuntime,
-		cfg:         cfg,
-		speedCfg:    speedCfg,
+		runner:   runner,
+		cfg:      cfg,
+		speedCfg: speedCfg,
 		state:       &SpeedTestState{},
 	}
 }
@@ -211,17 +212,17 @@ func (s *Service) testOneNode(ctx context.Context, node *types.ProxyNode, tag st
 	}
 	defer os.Remove(cfgPath)
 
-	id, err := s.tempRuntime.StartTemp(ctx, cfgPath)
+	id, err := s.runner.StartTemp(ctx, cfgPath)
 	if err != nil {
 		return 0, 0, "", fmt.Errorf("start temp instance: %w", err)
 	}
 
 	defer func() {
-		_ = s.tempRuntime.StopTemp(ctx, id)
+		_ = s.runner.StopTemp(ctx, id)
 	}()
 
-	if err := s.tempRuntime.WaitTempReady(ctx, id, port, 10*time.Second); err != nil {
-		logs := s.tempRuntime.GetTempLogs(ctx, id)
+	if err := s.runner.WaitTempReady(ctx, id, port, 10*time.Second); err != nil {
+		logs := s.runner.GetTempLogs(ctx, id)
 		return 0, 0, "", fmt.Errorf("proxy not ready (port %d): %s", port, logs)
 	}
 
@@ -280,26 +281,6 @@ func pickFreePort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-// waitProxyReady polls the given TCP port until it accepts a connection or the timeout expires.
-func waitProxyReady(ctx context.Context, port int, timeout time.Duration) error {
-	deadline := time.Now().Add(timeout)
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	for time.Now().Before(deadline) {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
-		if err == nil {
-			conn.Close()
-			return nil
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
-	return fmt.Errorf("timeout")
 }
 
 // newProxyClient creates an http.Client that routes through the given proxy URL.

@@ -1,0 +1,7 @@
+resources:
+  - name: youtube
+    url: https://www.youtube.com
+    type: http
+  - name: telegram
+    url: https://telegram.org
+    type: http
