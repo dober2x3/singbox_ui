@@ -61,15 +61,8 @@ func (c *Client) do(method, path string, body, result interface{}) error {
 			return fmt.Errorf("decode response: %w", err)
 		}
 	} else {
-		io.Copy(io.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 	}
 	return nil
 }
 
-func (c *Client) GetProxies() (*ProxiesResponse, error) {
-	var resp ProxiesResponse
-	if err := c.do("GET", "/proxies", nil, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
