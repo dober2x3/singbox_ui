@@ -312,7 +312,10 @@ func (h *Handler) LoadNamedConfigFromContainer(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", data)
+	c.JSON(http.StatusOK, gin.H{
+		"config":     string(data),
+		"clash_port": h.service.GetClashPort(name),
+	})
 }
 
 // CheckNamedConfig validates a named configuration's JSON syntax.

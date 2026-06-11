@@ -38,6 +38,7 @@ import (
 
 	"singbox-config-service/internal/pkg/config"
 	"singbox-config-service/internal/pkg/tunnelrunner"
+	"singbox-config-service/internal/clashapi"
 	"singbox-config-service/internal/certificate"
 	"singbox-config-service/internal/prober"
 	"singbox-config-service/internal/resourcecheck"
@@ -120,6 +121,24 @@ func main() {
 	speedtestHandler := speedtest.NewHandler(speedtestSvc)
 	rcHandler := resourcecheck.NewHandler(rcSvc)
 
+	// Initialize Port Manager for Clash API
+	pm := clashapi.NewPortManager(9090)
+	if err := pm.Load(filepath.Join(cfg.GetDataDir(), "clash_ports.json")); err != nil {
+		log.Printf("Warning: failed to load clash ports: %v", err)
+	}
+
+	instances, _ := singboxSvc.ListNamedConfigs()
+	for _, inst := range instances {
+		pm.Assign(inst.Name)
+	}
+
+	singboxSvc.SetPortManager(pm)
+	defer func() {
+		if err := pm.Save(filepath.Join(cfg.GetDataDir(), "clash_ports.json")); err != nil {
+			log.Printf("Warning: failed to save clash ports: %v", err)
+		}
+	}()
+
 	// Initialize prober
 	if err := proberSvc.Init(); err != nil {
 		log.Printf("Warning: Failed to initialize prober: %v", err)
@@ -179,6 +198,10 @@ func main() {
 		// Resource check routes
 		rcGroup := api.Group("/resourcecheck")
 		rcHandler.RegisterRoutes(rcGroup)
+
+		// Clash API routes
+		clashGroup := api.Group("/clash")
+		clashapi.RegisterAllRoutes(clashGroup, pm)
 	}
 
 	// Swagger API documentation
