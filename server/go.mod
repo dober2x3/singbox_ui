@@ -3,13 +3,16 @@ module singbox-config-service
 go 1.25.0
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/docker/docker v25.0.6+incompatible
 	github.com/gin-gonic/gin v1.11.0
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
+	modernc.org/sqlite v1.52.0
 )
 
 require (
@@ -42,7 +45,6 @@ require (
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -84,5 +86,4 @@ require (
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.52.0 // indirect
 )

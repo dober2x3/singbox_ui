@@ -8,13 +8,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"singbox-config-service/internal/clashapi"
 	"singbox-config-service/internal/pkg/config"
 )
 
 // Service provides business logic for sing-box configuration and instance management.
 type Service struct {
-	runtime Runtime
-	cfg     *config.AppConfig
+	runtime     Runtime
+	cfg         *config.AppConfig
+	portManager *clashapi.PortManager
 }
 
 // NewService creates a new Service with the given Runtime and Config.
@@ -26,6 +28,21 @@ func NewService(runtime Runtime, cfg *config.AppConfig) *Service {
 }
 
 // SaveConfig writes the configuration data to disk and returns the file path.
+func (s *Service) SetPortManager(pm *clashapi.PortManager) {
+	s.portManager = pm
+}
+
+func (s *Service) GetClashPort(instanceName string) int {
+	if s.portManager == nil {
+		return 0
+	}
+	port, ok := s.portManager.Get(instanceName)
+	if !ok {
+		return 0
+	}
+	return port
+}
+
 func (s *Service) SaveConfig(data []byte) (string, error) {
 	configPath := filepath.Join(s.cfg.GetSingboxDir(), "config.json")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
