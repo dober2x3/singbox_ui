@@ -3,6 +3,7 @@ module singbox-config-service
 go 1.25.0
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/docker/docker v25.0.6+incompatible
 	github.com/gin-gonic/gin v1.11.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -12,7 +13,6 @@ require (
 	golang.org/x/crypto v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.52.0
-	nhooyr.io/websocket v1.8.17
 )
 
 require (
@@ -24,7 +24,6 @@ require (
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
-	github.com/coder/websocket v1.8.14 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
