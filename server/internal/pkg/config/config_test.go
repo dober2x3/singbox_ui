@@ -1,13 +1,20 @@
-package config
+package config_test
 
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"singbox-config-service/internal/pkg/config"
+	"singbox-config-service/internal/prober"
+	"singbox-config-service/internal/speedtest"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestLoadConfig_fileNotFound(t *testing.T) {
-	cfg, err := Load("/nonexistent/config.yaml")
+	cfg, err := config.Load("/nonexistent/config.yaml")
 	if err != nil {
 		t.Fatalf("Load() with missing file should not error: %v", err)
 	}
@@ -24,15 +31,20 @@ func TestLoadConfig_partial(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(path)
+	cfg, err := config.Load(path)
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 	if cfg.Server.ListenAddr != "0.0.0.0:8080" {
 		t.Errorf("expected 0.0.0.0:8080, got %s", cfg.Server.ListenAddr)
 	}
-	if cfg.Prober.Interval != 30 {
-		t.Errorf("expected default prober interval 30, got %d", cfg.Prober.Interval)
+	// Verify domain sections parse with defaults
+	pc, err := prober.ParseConfig(&cfg.Prober)
+	if err != nil {
+		t.Fatalf("ParseConfig(prober) error = %v", err)
+	}
+	if pc.Interval != 30 {
+		t.Errorf("expected default prober interval 30, got %d", pc.Interval)
 	}
 }
 
@@ -53,26 +65,44 @@ prober:
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(path)
+	cfg, err := config.Load(path)
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Prober.Interval != 60 {
-		t.Errorf("expected prober interval 60, got %d", cfg.Prober.Interval)
-	}
-	if cfg.Prober.Timeout != 3000 {
-		t.Errorf("expected prober timeout 3000, got %d", cfg.Prober.Timeout)
-	}
+
 	if !cfg.Server.ServeDashboard {
 		t.Error("expected serve_dashboard true")
 	}
-	if cfg.Speedtest.LatencyURL == "" {
+
+	// Check prober fields via ParseConfig
+	pc, err := prober.ParseConfig(&cfg.Prober)
+	if err != nil {
+		t.Fatalf("ParseConfig(prober) error = %v", err)
+	}
+	if pc.Interval != 60 {
+		t.Errorf("expected prober interval 60, got %d", pc.Interval)
+	}
+	if pc.Timeout != 3000 {
+		t.Errorf("expected prober timeout 3000, got %d", pc.Timeout)
+	}
+	if pc.Concurrent != 10 {
+		t.Errorf("expected prober concurrent 10, got %d", pc.Concurrent)
+	}
+
+	// Check speedtest defaults via ParseConfig
+	sc, err := speedtest.ParseConfig(&cfg.Speedtest)
+	if err != nil {
+		t.Fatalf("ParseConfig(speedtest) error = %v", err)
+	}
+	if sc.LatencyURL == "" {
 		t.Error("expected speedtest defaults")
 	}
 }
 
 func TestInit_withConfigFlag(t *testing.T) {
-	os.Clearenv()
+	t.Setenv("DATA_DIR", "")
+	t.Setenv("LISTEN_ADDR", "")
+	t.Setenv("HOST_DATA_DIR", "")
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 	content := []byte("server:\n  listen_addr: \"0.0.0.0:9090\"\n")
@@ -80,7 +110,7 @@ func TestInit_withConfigFlag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Init(path)
+	cfg, err := config.Init(path)
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -89,31 +119,27 @@ func TestInit_withConfigFlag(t *testing.T) {
 	}
 }
 
-func TestInit_defaultPath(t *testing.T) {
-	os.Clearenv()
-	origWd, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origWd) }()
+func TestInit_defaultDataDir(t *testing.T) {
+	t.Setenv("DATA_DIR", "")
+	t.Setenv("LISTEN_ADDR", "")
+	t.Setenv("HOST_DATA_DIR", "")
 
-	tmpDir := t.TempDir()
-	_ = os.Chdir(tmpDir)
-	_ = os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module test"), 0644)
-
-	cfg, err := Init("")
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
-	if cfg.GetSingboxDir() != filepath.Join(tmpDir, "singbox") {
-		t.Errorf("GetSingboxDir() = %q, want %q", cfg.GetSingboxDir(), filepath.Join(tmpDir, "singbox"))
+	if !strings.HasSuffix(cfg.GetDataDir(), "singbox_ui") {
+		t.Errorf("expected GetDataDir() to end with 'singbox_ui', got %q", cfg.GetDataDir())
 	}
 }
 
 func TestInit_withDataDirEnv(t *testing.T) {
-	os.Clearenv()
 	tmpDir := t.TempDir()
-	os.Setenv("DATA_DIR", tmpDir)
-	defer os.Unsetenv("DATA_DIR")
+	t.Setenv("DATA_DIR", tmpDir)
+	t.Setenv("LISTEN_ADDR", "")
+	t.Setenv("HOST_DATA_DIR", "")
 
-	cfg, err := Init("")
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -123,13 +149,12 @@ func TestInit_withDataDirEnv(t *testing.T) {
 }
 
 func TestResolveHostConfigDir(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("DATA_DIR", "/home/data")
-	os.Setenv("HOST_DATA_DIR", "/host/data")
+	t.Setenv("DATA_DIR", "/home/data")
+	t.Setenv("HOST_DATA_DIR", "/host/data")
 	defer os.Unsetenv("DATA_DIR")
 	defer os.Unsetenv("HOST_DATA_DIR")
 
-	cfg, err := Init("")
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -145,11 +170,11 @@ func TestResolveHostConfigDir(t *testing.T) {
 }
 
 func TestResolveHostConfigDir_noHostDir(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("DATA_DIR", "/home/data")
+	t.Setenv("DATA_DIR", "/home/data")
+	t.Setenv("HOST_DATA_DIR", "")
 	defer os.Unsetenv("DATA_DIR")
 
-	cfg, err := Init("")
+	cfg, err := config.Init("")
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
 	}
@@ -161,20 +186,47 @@ func TestResolveHostConfigDir_noHostDir(t *testing.T) {
 }
 
 func TestGetListenAddr_default(t *testing.T) {
-	os.Clearenv()
-	cfg, _ := Init("")
+	t.Setenv("DATA_DIR", "")
+	t.Setenv("LISTEN_ADDR", "")
+	t.Setenv("HOST_DATA_DIR", "")
+	cfg, _ := config.Init("")
 	if cfg.GetListenAddr() != "127.0.0.1:7000" {
 		t.Errorf("GetListenAddr() = %q, want %q", cfg.GetListenAddr(), "127.0.0.1:7000")
 	}
 }
 
 func TestGetListenAddr_custom(t *testing.T) {
-	os.Clearenv()
-	os.Setenv("LISTEN_ADDR", "0.0.0.0:8080")
+	t.Setenv("LISTEN_ADDR", "0.0.0.0:8080")
+	t.Setenv("DATA_DIR", "")
+	t.Setenv("HOST_DATA_DIR", "")
 	defer os.Unsetenv("LISTEN_ADDR")
 
-	cfg, _ := Init("")
+	cfg, _ := config.Init("")
 	if cfg.GetListenAddr() != "0.0.0.0:8080" {
 		t.Errorf("GetListenAddr() = %q, want %q", cfg.GetListenAddr(), "0.0.0.0:8080")
+	}
+}
+
+func TestYamlNodeRoundTrip(t *testing.T) {
+	// Verify that yaml.Node correctly captures and decodes a config section
+	content := []byte(`
+prober:
+  interval: 45
+  timeout: 2000
+`)
+	var cfg config.AppConfig
+	if err := yaml.Unmarshal(content, &cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	pc, err := prober.ParseConfig(&cfg.Prober)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pc.Interval != 45 {
+		t.Errorf("expected interval 45, got %d", pc.Interval)
+	}
+	if pc.Timeout != 2000 {
+		t.Errorf("expected timeout 2000, got %d", pc.Timeout)
 	}
 }
