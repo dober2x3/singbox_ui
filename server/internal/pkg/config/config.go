@@ -7,12 +7,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
-
-	"singbox-config-service/internal/prober"
-	"singbox-config-service/internal/scheduler"
-	"singbox-config-service/internal/subscription"
 
 	"gopkg.in/yaml.v3"
 )
@@ -26,48 +23,33 @@ type ServerConfig struct {
 	ServeDashboard  bool   `yaml:"serve_dashboard"`
 }
 
-// SpeedtestConfig holds configuration for the speed test service.
-// Defined inline here because speedtest imports config (would create a cycle).
-type SpeedtestConfig struct {
-	LatencyURL  string `yaml:"latency_url"`
-	DownloadURL string `yaml:"download_url"`
-	Duration    int    `yaml:"duration"`
-}
-
-// defaultSpeedtestConfig returns a SpeedtestConfig with sensible defaults.
-func defaultSpeedtestConfig() SpeedtestConfig {
-	return SpeedtestConfig{
-		LatencyURL:  "http://www.gstatic.com/generate_204",
-		DownloadURL: "https://speed.cloudflare.com/__down?bytes=10000000",
-		Duration:    10,
-	}
-}
-
 // AppConfig is the top-level application configuration.
+// Domain-specific sections (Prober, Speedtest, Scheduler, Subscription) are stored
+// as raw yaml.Node and parsed by each domain's ParseConfig function.
 type AppConfig struct {
-	Server       ServerConfig         `yaml:"server"`
-	Prober       prober.Config        `yaml:"prober"`
-	Speedtest    SpeedtestConfig      `yaml:"speedtest"`
-	Scheduler    scheduler.Config     `yaml:"scheduler"`
-	Subscription subscription.Config  `yaml:"subscription"`
+	Server       ServerConfig `yaml:"server"`
+	Prober       yaml.Node    `yaml:"prober"`
+	Speedtest    yaml.Node    `yaml:"speedtest"`
+	Scheduler    yaml.Node    `yaml:"scheduler"`
+	Subscription yaml.Node    `yaml:"subscription"`
 }
 
-// defaultAppConfig returns an AppConfig with all defaults set.
-func defaultAppConfig() AppConfig {
-	return AppConfig{
-		Server: ServerConfig{
-			ListenAddr: "127.0.0.1:7000",
-		},
-		Prober:       prober.DefaultConfig(),
-		Speedtest:    defaultSpeedtestConfig(),
-		Scheduler:    scheduler.DefaultConfig(),
-		Subscription: subscription.DefaultConfig(),
+// defaultDataDir returns the default data directory: $HOME/singbox_ui.
+// Falls back to working directory if home dir cannot be determined.
+func defaultDataDir() string {
+	if u, err := user.Current(); err == nil {
+		return filepath.Join(u.HomeDir, "singbox_ui")
 	}
+	if wd, err := os.Getwd(); err == nil {
+		return wd
+	}
+	return "."
 }
 
-// Load reads a YAML config file and merges defaults for zero-valued fields.
+// Load reads a YAML config file and returns an AppConfig with defaults applied.
 func Load(path string) (*AppConfig, error) {
-	cfg := defaultAppConfig()
+	var cfg AppConfig
+	cfg.Server.ListenAddr = "127.0.0.1:7000"
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -81,64 +63,20 @@ func Load(path string) (*AppConfig, error) {
 		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 
-	cfg = mergeDefaults(cfg)
+	if cfg.Server.ListenAddr == "" {
+		cfg.Server.ListenAddr = "127.0.0.1:7000"
+	}
 
 	return &cfg, nil
 }
 
-// mergeDefaults fills zero-valued fields with defaults.
-func mergeDefaults(cfg AppConfig) AppConfig {
-	def := defaultAppConfig()
-
-	if cfg.Server.ListenAddr == "" {
-		cfg.Server.ListenAddr = def.Server.ListenAddr
-	}
-	if cfg.Prober.Interval == 0 {
-		cfg.Prober.Interval = def.Prober.Interval
-	}
-	if cfg.Prober.Timeout == 0 {
-		cfg.Prober.Timeout = def.Prober.Timeout
-	}
-	if cfg.Prober.Concurrent == 0 {
-		cfg.Prober.Concurrent = def.Prober.Concurrent
-	}
-	if cfg.Prober.MaxResults == 0 {
-		cfg.Prober.MaxResults = def.Prober.MaxResults
-	}
-	if cfg.Prober.MaxRetries == 0 {
-		cfg.Prober.MaxRetries = def.Prober.MaxRetries
-	}
-	if cfg.Speedtest.LatencyURL == "" {
-		cfg.Speedtest.LatencyURL = def.Speedtest.LatencyURL
-	}
-	if cfg.Speedtest.DownloadURL == "" {
-		cfg.Speedtest.DownloadURL = def.Speedtest.DownloadURL
-	}
-	if cfg.Speedtest.Duration == 0 {
-		cfg.Speedtest.Duration = def.Speedtest.Duration
-	}
-	if cfg.Scheduler.Interval == 0 {
-		cfg.Scheduler.Interval = def.Scheduler.Interval
-	}
-	return cfg
-}
-
 // Init bootstraps configuration. It resolves the data directory and config file path.
-// If configPath is non-empty, it is used directly. Otherwise DATA_DIR/config.yaml is tried.
+// If configPath is non-empty, it is used directly.
+// Otherwise DATA_DIR env var is used, or $HOME/singbox_ui as fallback.
 func Init(configPath string) (*AppConfig, error) {
 	dataDir := os.Getenv("DATA_DIR")
 	if dataDir == "" {
-		workDir, err := os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("cannot determine working directory: %w", err)
-		}
-		if _, err := os.Stat(filepath.Join(workDir, "go.mod")); err == nil {
-			dataDir = workDir
-		} else if _, err := os.Stat(filepath.Join(workDir, "server", "go.mod")); err == nil {
-			dataDir = filepath.Join(workDir, "server")
-		} else {
-			dataDir = workDir
-		}
+		dataDir = defaultDataDir()
 	}
 
 	path := configPath
