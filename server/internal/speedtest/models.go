@@ -1,5 +1,9 @@
 package speedtest
 
+import (
+	"gopkg.in/yaml.v3"
+)
+
 // SpeedTestState represents the current state of a speed test.
 type SpeedTestState struct {
 	Running       bool    `json:"running" example:"true"`
@@ -25,4 +29,26 @@ func DefaultConfig() Config {
 		DownloadURL: "https://speed.cloudflare.com/__down?bytes=10000000",
 		Duration:    10,
 	}
+}
+
+// ParseConfig parses a yaml.Node into a Config, applying defaults.
+func ParseConfig(node *yaml.Node) (Config, error) {
+	cfg := DefaultConfig()
+	if node == nil || node.Kind == 0 {
+		return cfg, nil
+	}
+	if err := node.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	def := DefaultConfig()
+	if cfg.LatencyURL == "" {
+		cfg.LatencyURL = def.LatencyURL
+	}
+	if cfg.DownloadURL == "" {
+		cfg.DownloadURL = def.DownloadURL
+	}
+	if cfg.Duration == 0 {
+		cfg.Duration = def.Duration
+	}
+	return cfg, nil
 }
