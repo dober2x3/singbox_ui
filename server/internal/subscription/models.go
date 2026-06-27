@@ -1,6 +1,10 @@
 package subscription
 
-import "singbox-config-service/internal/pkg/types"
+import (
+	"singbox-config-service/internal/pkg/types"
+
+	"gopkg.in/yaml.v3"
+)
 
 // SubscriptionEntry represents a single subscription with its metadata and parsed proxy nodes.
 type SubscriptionEntry struct {
@@ -42,4 +46,16 @@ type Config struct {
 // DefaultConfig returns a Config with sensible defaults.
 func DefaultConfig() Config {
 	return Config{InsecureTLS: false}
+}
+
+// ParseConfig parses a yaml.Node into a Config, applying defaults.
+func ParseConfig(node *yaml.Node) (Config, error) {
+	cfg := DefaultConfig()
+	if node == nil || node.Kind == 0 {
+		return cfg, nil
+	}
+	if err := node.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
 }
