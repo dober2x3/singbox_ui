@@ -86,17 +86,17 @@ func main() {
 	warpSvc := warp.NewService(cfg.GetDataDir())
 	certSvc := certificate.NewService(cfg.GetSingboxDir())
 	subStore := subscription.NewFileStore(cfg.GetDataDir())
-	subSvc := subscription.NewService(subStore, cfg.Subscription)
-	proberSvc := prober.NewService(cfg.Prober, cfg.GetDataDir(), subSvc)
+	subCfg, _ := subscription.ParseConfig(&cfg.Subscription)
+	subSvc := subscription.NewService(subStore, subCfg)
+
+	proberCfg, _ := prober.ParseConfig(&cfg.Prober)
+	proberSvc := prober.NewService(proberCfg, cfg.GetDataDir(), subSvc)
 
 	// Create shared tunnel runner
 	tr := tunnelrunner.NewRunner(cfg)
 
-	speedtestSvc := speedtest.NewService(tr, cfg, speedtest.Config{
-		LatencyURL:  cfg.Speedtest.LatencyURL,
-		DownloadURL: cfg.Speedtest.DownloadURL,
-		Duration:    cfg.Speedtest.Duration,
-	})
+	speedCfg, _ := speedtest.ParseConfig(&cfg.Speedtest)
+	speedtestSvc := speedtest.NewService(tr, cfg, speedCfg)
 
 	// Create resource checker
 	rcChecker := resourcecheck.NewChecker(tr, cfg)
@@ -109,7 +109,8 @@ func main() {
 	}
 
 	// Create auto-update scheduler
-	sched := scheduler.New(subSvc, nil, cfg.Scheduler)
+	schedCfg, _ := scheduler.ParseConfig(&cfg.Scheduler)
+	sched := scheduler.New(subSvc, nil, schedCfg)
 
 	// Create HTTP handlers
 	wgHandler := wireguard.NewHandler(wgSvc)

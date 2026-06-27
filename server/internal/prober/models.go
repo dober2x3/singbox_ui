@@ -1,5 +1,7 @@
 package prober
 
+import "gopkg.in/yaml.v3"
+
 // Config holds configuration parameters for the prober engine.
 // @Description Prober engine configuration
 type Config struct {
@@ -21,6 +23,35 @@ func DefaultConfig() Config {
 		MaxResults:  100,
 		MaxRetries:  2,
 	}
+}
+
+// ParseConfig parses a yaml.Node into a Config, applying defaults.
+// Returns DefaultConfig if node is nil or zero-valued.
+func ParseConfig(node *yaml.Node) (Config, error) {
+	cfg := DefaultConfig()
+	if node == nil || node.Kind == 0 {
+		return cfg, nil
+	}
+	if err := node.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	def := DefaultConfig()
+	if cfg.Interval == 0 {
+		cfg.Interval = def.Interval
+	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = def.Timeout
+	}
+	if cfg.Concurrent == 0 {
+		cfg.Concurrent = def.Concurrent
+	}
+	if cfg.MaxResults == 0 {
+		cfg.MaxResults = def.MaxResults
+	}
+	if cfg.MaxRetries == 0 {
+		cfg.MaxRetries = def.MaxRetries
+	}
+	return cfg, nil
 }
 
 // ProberStatus contains the current prober status and statistics
